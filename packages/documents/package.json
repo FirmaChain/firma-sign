@@ -1,0 +1,56 @@
+{
+	"name": "@firma-sign/documents",
+	"version": "0.0.1",
+	"type": "module",
+	"description": "React components for document handling",
+	"main": "dist/index.js",
+	"module": "dist/index.esm.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.esm.js",
+			"require": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./styles": "./dist/documents.css"
+	},
+	"scripts": {
+		"build": "vite build",
+		"dev": "storybook dev -p 6006",
+		"test": "vitest",
+		"test:watch": "vitest --watch",
+		"lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+		"lintfix": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",
+		"format": "prettier --write src/**/*.{ts,tsx}",
+		"format:check": "prettier --check src/**/*.{ts,tsx}",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build"
+	},
+	"devDependencies": {
+		"storybook": "catalog:frontend",
+		"@storybook/addon-essentials": "catalog:frontend",
+		"@storybook/addon-interactions": "catalog:frontend",
+		"@storybook/addon-links": "catalog:frontend",
+		"@storybook/blocks": "catalog:frontend",
+		"@storybook/react": "catalog:frontend",
+		"@storybook/react-vite": "catalog:frontend",
+		"@storybook/test": "catalog:frontend",
+		"react": "catalog:frontend",
+		"react-dom": "catalog:frontend",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"@vitejs/plugin-react": "catalog:frontend",
+		"@types/react": "catalog:frontend",
+		"@types/react-dom": "catalog:frontend",
+		"@types/node": "catalog:",
+		"eslint": "catalog:",
+		"prettier": "catalog:",
+		"vitest": "catalog:",
+		"@testing-library/react": "catalog:frontend",
+		"@testing-library/jest-dom": "catalog:frontend",
+		"jsdom": "catalog:",
+		"tailwindcss": "catalog:frontend",
+		"autoprefixer": "catalog:frontend",
+		"postcss": "catalog:frontend"
+	}
+}

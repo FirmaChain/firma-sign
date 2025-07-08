@@ -1,0 +1,29 @@
+{
+	"name": "firma-sign",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"preinstall": "node scripts/block-npm-install.js",
+		"build": "pnpm -r build",
+		"dev": "turbo run dev --parallel",
+		"test": "pnpm -r test",
+		"install:all": "pnpm install",
+		"format": "turbo run format && node scripts/format.mjs",
+		"format:check": "turbo run format:check",
+		"lint": "turbo run lint",
+		"lintfix": "turbo run lintfix"
+	},
+	"keywords": [],
+	"author": "cto@firmachain.com",
+	"license": "MIT",
+	"packageManager": "pnpm@10.12.4",
+	"private": true,
+	"devDependencies": {
+		"i": "^0.3.7",
+		"npm": "^11.4.2",
+		"prettier": "^3.6.2",
+		"turbo": "^2.5.4",
+		"vite-plugin-lib-inject-css": "^2.2.2"
+	}
+}
