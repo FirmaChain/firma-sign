@@ -5,9 +5,9 @@ interface LoadingComponentProps {
 	message?: string;
 }
 
-export const LoadingComponent: React.FC<LoadingComponentProps> = ({ 
-	isLoading = true, 
-	message = 'Loading PDF...' 
+export const LoadingComponent: React.FC<LoadingComponentProps> = ({
+	isLoading = true,
+	message = 'Loading PDF...',
 }) => (
 	<div className="absolute inset-0 flex items-center justify-center bg-gray-50">
 		<div className="text-center">

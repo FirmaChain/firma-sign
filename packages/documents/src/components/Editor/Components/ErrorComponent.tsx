@@ -7,11 +7,11 @@ interface ErrorComponentProps {
 	onRetry: () => void;
 }
 
-export const ErrorComponent: React.FC<ErrorComponentProps> = ({ 
-	error, 
-	currentUrlIndex, 
-	totalUrls, 
-	onRetry 
+export const ErrorComponent: React.FC<ErrorComponentProps> = ({
+	error,
+	currentUrlIndex,
+	totalUrls,
+	onRetry,
 }) => (
 	<div className="absolute inset-0 flex items-center justify-center bg-gray-50">
 		<div className="text-center">

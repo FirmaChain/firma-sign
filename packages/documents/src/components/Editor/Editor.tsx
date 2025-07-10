@@ -91,7 +91,7 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 			};
 
 			// Adjust positions only after initial render
-			const timeoutId = setTimeout(adjustPanelPositions, 100);
+			const timeoutId = setTimeout(adjustPanelPositions, 300);
 
 			return () => {
 				clearTimeout(timeoutId);
@@ -208,7 +208,11 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 				>
 					{/* Document Area Container */}
 					<div className="w-full h-full">
-						<DocumentArea ref={pdfManager.$DocumentArea} id="editor-document-area" className="w-full h-full">
+						<DocumentArea
+							ref={pdfManager.$DocumentArea}
+							id="editor-document-area"
+							className="w-full h-full"
+						>
 							{/* Ribbon Menu */}
 							<div
 								className={cn(
@@ -240,7 +244,9 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 									<span className="opacity-50">{pdfManager.numPages}</span>
 								</div>
 								{pdfManager.numPages > 1 && (
-									<div className="text-xs opacity-75 mt-1">Place: P{pdfManager.selectedPage + 1}</div>
+									<div className="text-xs opacity-75 mt-1">
+										Place: P{pdfManager.selectedPage + 1}
+									</div>
 								)}
 							</div>
 
@@ -396,7 +402,7 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 								{componentManager.documentComponents.length > 0
 									? `${componentManager.documentComponents.length} component${
 											componentManager.documentComponents.length !== 1 ? 's' : ''
-									  } added`
+										} added`
 									: 'No components added'}
 							</span>
 							<div className="flex gap-2">

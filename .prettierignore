@@ -1,0 +1,12 @@
+# Exclude package manager lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Exclude build outputs
+dist/
+build/
+coverage/
+
+# Exclude node_modules
+node_modules/ 
