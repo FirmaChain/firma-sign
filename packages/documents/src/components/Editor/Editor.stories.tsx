@@ -99,6 +99,31 @@ const sampleComponents: DocumentComponent[] = [
     size: { width: 20, height: 20 },
     assigned: sampleSigners[2],
     config: { required: true },
+    created: Date.now() - 200
+  },
+  {
+    id: 'comp-4',
+    type: ComponentType.RECTANGLE,
+    pageNumber: 0,
+    position: { x: 50, y: 400 },
+    size: { width: 200, height: 100 },
+    assigned: {
+      email: 'system@editor.com',
+      name: 'Drawing Tool',
+      color: '#666666',
+    },
+    config: {},
+    created: Date.now() - 100
+  },
+  {
+    id: 'comp-5',
+    type: ComponentType.INPUT_FIELD,
+    pageNumber: 1,
+    position: { x: 150, y: 250 },
+    size: { width: 180, height: 35 },
+    assigned: sampleSigners[0],
+    config: { required: true, placeholder: 'Enter your address...' },
+    value: '',
     created: Date.now()
   }
 ];
@@ -226,4 +251,48 @@ export const InputModeWithComponents: Story = {
     signers: sampleSigners,
     components: sampleComponents,
   },
+};
+
+export const ComponentManagement: Story = {
+  args: {
+    viewMode: 'editor',
+    preview: false,
+    hideActionBtn: false,
+    hideSave: false,
+    enableNext: false,
+    fileUrl: MULTI_PAGE_PDF_BASE64,
+    fileId: 'component-management-demo',
+    contractId: 'contract-mgmt',
+    signers: sampleSigners,
+    components: sampleComponents,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Demonstrates the component management panel with search, filtering, editing, import/export capabilities. The right panel shows all document components with their details and allows for configuration. You can export components as JSON and import them back. A sample components file is available at `src/components/Editor/sample-components.json` for testing the import feature.'
+      }
+    }
+  }
+};
+
+export const ImportFeatureDemo: Story = {
+  args: {
+    viewMode: 'editor',
+    preview: false,
+    hideActionBtn: false,
+    hideSave: false,
+    enableNext: false,
+    fileUrl: MULTI_PAGE_PDF_BASE64,
+    fileId: 'import-demo',
+    contractId: 'contract-import',
+    signers: sampleSigners,
+    components: [], // Start with empty components to test import
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Demo for testing the import feature. Start with no components and use the Import button in the right panel to load the sample components from `src/components/Editor/sample-components.json`. You can test both "Add to existing" and "Replace all" import modes.'
+      }
+    }
+  }
 };

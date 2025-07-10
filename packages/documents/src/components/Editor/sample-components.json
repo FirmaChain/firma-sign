@@ -1,0 +1,170 @@
+[
+  {
+    "id": "sample-comp-1",
+    "type": "SIGNATURE",
+    "pageNumber": 0,
+    "position": {
+      "x": 120,
+      "y": 250
+    },
+    "size": {
+      "width": 180,
+      "height": 70
+    },
+    "assigned": {
+      "userId": "user-1",
+      "email": "alice.johnson@company.com",
+      "name": "Alice Johnson",
+      "color": "#3b82f6"
+    },
+    "config": {
+      "required": true,
+      "backgroundColor": "#f8f9ff",
+      "borderColor": "#3b82f6"
+    },
+    "created": 1704067200000
+  },
+  {
+    "id": "sample-comp-2",
+    "type": "TEXT",
+    "pageNumber": 0,
+    "position": {
+      "x": 350,
+      "y": 180
+    },
+    "size": {
+      "width": 140,
+      "height": 35
+    },
+    "assigned": {
+      "userId": "user-2",
+      "email": "bob.smith@company.com",
+      "name": "Bob Smith",
+      "color": "#10b981"
+    },
+    "config": {
+      "fontSize": 14,
+      "placeholder": "Enter full name..."
+    },
+    "value": "Robert Smith",
+    "created": 1704067260000
+  },
+  {
+    "id": "sample-comp-3",
+    "type": "CHECKBOX",
+    "pageNumber": 0,
+    "position": {
+      "x": 180,
+      "y": 350
+    },
+    "size": {
+      "width": 24,
+      "height": 24
+    },
+    "assigned": {
+      "userId": "user-3",
+      "email": "carol.white@company.com",
+      "name": "Carol White",
+      "color": "#f59e0b"
+    },
+    "config": {
+      "required": true
+    },
+    "value": true,
+    "created": 1704067320000
+  },
+  {
+    "id": "sample-comp-4",
+    "type": "DATE",
+    "pageNumber": 0,
+    "position": {
+      "x": 280,
+      "y": 420
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "assigned": {
+      "userId": "user-1",
+      "email": "alice.johnson@company.com",
+      "name": "Alice Johnson",
+      "color": "#3b82f6"
+    },
+    "config": {
+      "required": true,
+      "format": "MM/DD/YYYY"
+    },
+    "value": "12/25/2024",
+    "created": 1704067380000
+  },
+  {
+    "id": "sample-comp-5",
+    "type": "RECTANGLE",
+    "pageNumber": 1,
+    "position": {
+      "x": 100,
+      "y": 150
+    },
+    "size": {
+      "width": 250,
+      "height": 120
+    },
+    "assigned": {
+      "email": "system@editor.com",
+      "name": "Drawing Tool",
+      "color": "#666666"
+    },
+    "config": {},
+    "created": 1704067440000
+  },
+  {
+    "id": "sample-comp-6",
+    "type": "INPUT_FIELD",
+    "pageNumber": 1,
+    "position": {
+      "x": 150,
+      "y": 300
+    },
+    "size": {
+      "width": 200,
+      "height": 40
+    },
+    "assigned": {
+      "userId": "user-2",
+      "email": "bob.smith@company.com",
+      "name": "Bob Smith",
+      "color": "#10b981"
+    },
+    "config": {
+      "required": true,
+      "placeholder": "Enter your address..."
+    },
+    "value": "",
+    "created": 1704067500000
+  },
+  {
+    "id": "sample-comp-7",
+    "type": "STAMP",
+    "pageNumber": 0,
+    "position": {
+      "x": 450,
+      "y": 300
+    },
+    "size": {
+      "width": 80,
+      "height": 80
+    },
+    "assigned": {
+      "userId": "user-3",
+      "email": "carol.white@company.com",
+      "name": "Carol White",
+      "color": "#f59e0b"
+    },
+    "config": {
+      "stampType": "approved",
+      "color": "#10b981"
+    },
+    "created": 1704067560000
+  }
+]

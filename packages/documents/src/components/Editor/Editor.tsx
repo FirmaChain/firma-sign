@@ -4,14 +4,15 @@ import { cn } from '../../utils/cn';
 import { SAMPLE_PDF_BASE64, tryPDFSources, makeCORSFriendly } from './pdf-utils';
 import { DocumentLayer } from './DocumentLayer';
 import { EnhancedPalette } from './EnhancedPalette';
-import { 
-  DocumentComponent, 
-  ViewMode, 
-  ComponentType, 
-  AssignedUser, 
-  Position, 
-  Size, 
-  ResizeHandle 
+import { ComponentsPanel } from './ComponentsPanel';
+import {
+	DocumentComponent,
+	ViewMode,
+	ComponentType,
+	AssignedUser,
+	Position,
+	Size,
+	ResizeHandle,
 } from './types';
 import { TOOLS_INFO } from './constants';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -90,13 +91,13 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 		const [displayScale, setDisplayScale] = useState(1);
 		const [renderRatio, setRenderRatio] = useState(1);
 		const [currentVisible, setCurrentVisible] = useState(0);
-	const [selectedPage, setSelectedPage] = useState(0); // Page to place new components on
+		const [selectedPage, setSelectedPage] = useState(0); // Page to place new components on
 		const [pagesPosition, setPagesPosition] = useState<any[]>([]);
 		const [isLoading, setIsLoading] = useState(true);
 		const [loadError, setLoadError] = useState<string | null>(null);
 		const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
 		const [fallbackUrls, setFallbackUrls] = useState<string[]>([]);
-		
+
 		// Document component state
 		const [documentComponents, setDocumentComponents] = useState<DocumentComponent[]>(components);
 		const [selectedComponentId, setSelectedComponentId] = useState<string>('');
@@ -107,12 +108,18 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 		const renderScale = useMemo(() => displayScale * renderRatio, [displayScale, renderRatio]);
 		const editorViewMode = useMemo(() => {
 			switch (viewMode) {
-				case 'editor': return ViewMode.EDITOR;
-				case 'input': return ViewMode.INPUT;
-				case 'sign': return ViewMode.SIGN;
-				case 'preview': return ViewMode.PREVIEW;
-				case 'viewer': return ViewMode.VIEWER;
-				default: return ViewMode.EDITOR;
+				case 'editor':
+					return ViewMode.EDITOR;
+				case 'input':
+					return ViewMode.INPUT;
+				case 'sign':
+					return ViewMode.SIGN;
+				case 'preview':
+					return ViewMode.PREVIEW;
+				case 'viewer':
+					return ViewMode.VIEWER;
+				default:
+					return ViewMode.EDITOR;
 			}
 		}, [viewMode]);
 
@@ -158,20 +165,23 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 			[displayScale, viewMode],
 		);
 
-		const onDocumentLoadError = useCallback((error: any) => {
-			console.error('Error loading PDF:', error);
-			
-			// Try next fallback URL if available
-			if (currentUrlIndex < fallbackUrls.length - 1) {
-				console.log(`Trying fallback URL ${currentUrlIndex + 1}/${fallbackUrls.length}`);
-				setCurrentUrlIndex(prev => prev + 1);
-				setLoadError(null);
-				return;
-			}
-			
-			setLoadError('Failed to load PDF document');
-			setIsLoading(false);
-		}, [currentUrlIndex, fallbackUrls.length]);
+		const onDocumentLoadError = useCallback(
+			(error: any) => {
+				console.error('Error loading PDF:', error);
+
+				// Try next fallback URL if available
+				if (currentUrlIndex < fallbackUrls.length - 1) {
+					console.log(`Trying fallback URL ${currentUrlIndex + 1}/${fallbackUrls.length}`);
+					setCurrentUrlIndex((prev) => prev + 1);
+					setLoadError(null);
+					return;
+				}
+
+				setLoadError('Failed to load PDF document');
+				setIsLoading(false);
+			},
+			[currentUrlIndex, fallbackUrls.length],
+		);
 
 		const onDocumentLoadProgress = useCallback((progress: any) => {
 			// Handle loading progress if needed
@@ -195,63 +205,20 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 				setCurrentVisible(page);
 			}
 		}, []);
-		
+
 		// Component management functions
 		const generateComponentId = useCallback(() => {
-			return `component-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+			return `component-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 		}, []);
-		
-		const handleToolSelect = useCallback((tool: ComponentType) => {
-			setSelectedTool(tool);
-			setSelectedComponentId('');
-			
-			// If this tool doesn't need assignment, create it immediately
-			const toolInfo = TOOLS_INFO[tool];
-			if (!toolInfo.needsAssignment) {
-				// Generate a better initial position that works well for multi-page documents
-				const getInitialPosition = () => {
-					const baseX = 50; // Start closer to left edge
-					const baseY = 50; // Start closer to top edge
-					const randomOffset = Math.floor(Math.random() * 100);
-					return {
-						x: baseX + randomOffset,
-						y: baseY + randomOffset
-					};
-				};
-				
-				const newComponent: DocumentComponent = {
-					id: generateComponentId(),
-					type: tool,
-					pageNumber: selectedPage,
-					position: getInitialPosition(),
-					size: toolInfo.defaultSize,
-					assigned: { 
-						email: 'system@editor.com', 
-						name: 'Drawing Tool', 
-						color: '#666666' 
-					}, // Default neutral assignment
-					config: toolInfo.defaultConfig,
-					created: Date.now()
-				};
-				
-				const updatedComponents = [...documentComponents, newComponent];
-				setDocumentComponents(updatedComponents);
-				onComponentsChange?.(updatedComponents);
-				
-				// Clear tool selection after creating neutral component
-				setSelectedTool(null);
-			}
-		}, [currentVisible, documentComponents, onComponentsChange, generateComponentId]);
-		
-		const handleUserSelect = useCallback((user: AssignedUser) => {
-			setSelectedUser(user);
-			
-			// If we have a selected tool that needs assignment, create a component
-			if (selectedTool) {
-				const toolInfo = TOOLS_INFO[selectedTool];
-				
-				// Only create if this tool needs assignment
-				if (toolInfo.needsAssignment) {
+
+		const handleToolSelect = useCallback(
+			(tool: ComponentType) => {
+				setSelectedTool(tool);
+				setSelectedComponentId('');
+
+				// If this tool doesn't need assignment, create it immediately
+				const toolInfo = TOOLS_INFO[tool];
+				if (!toolInfo.needsAssignment) {
 					// Generate a better initial position that works well for multi-page documents
 					const getInitialPosition = () => {
 						const baseX = 50; // Start closer to left edge
@@ -259,176 +226,237 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 						const randomOffset = Math.floor(Math.random() * 100);
 						return {
 							x: baseX + randomOffset,
-							y: baseY + randomOffset
+							y: baseY + randomOffset,
 						};
 					};
-					
+
 					const newComponent: DocumentComponent = {
 						id: generateComponentId(),
-						type: selectedTool,
+						type: tool,
 						pageNumber: selectedPage,
 						position: getInitialPosition(),
 						size: toolInfo.defaultSize,
-						assigned: user,
+						assigned: {
+							email: 'system@editor.com',
+							name: 'Drawing Tool',
+							color: '#666666',
+						}, // Default neutral assignment
 						config: toolInfo.defaultConfig,
-						created: Date.now()
+						created: Date.now(),
 					};
-					
+
 					const updatedComponents = [...documentComponents, newComponent];
 					setDocumentComponents(updatedComponents);
 					onComponentsChange?.(updatedComponents);
-					
-					// Clear selections
+
+					// Clear tool selection after creating neutral component
 					setSelectedTool(null);
-					setSelectedUser(null);
 				}
-			}
-		}, [selectedTool, currentVisible, documentComponents, onComponentsChange, generateComponentId]);
-		
-		const handleComponentUpdate = useCallback((updatedComponent: DocumentComponent) => {
-			const updatedComponents = documentComponents.map(comp => 
-				comp.id === updatedComponent.id ? updatedComponent : comp
-			);
-			setDocumentComponents(updatedComponents);
-			onComponentsChange?.(updatedComponents);
-		}, [documentComponents, onComponentsChange]);
-		
-		const handleComponentDelete = useCallback((componentId: string) => {
-			const updatedComponents = documentComponents.filter(comp => comp.id !== componentId);
-			setDocumentComponents(updatedComponents);
-			onComponentsChange?.(updatedComponents);
-			setSelectedComponentId('');
-		}, [documentComponents, onComponentsChange]);
-		
+			},
+			[currentVisible, documentComponents, onComponentsChange, generateComponentId],
+		);
+
+		const handleUserSelect = useCallback(
+			(user: AssignedUser) => {
+				setSelectedUser(user);
+
+				// If we have a selected tool that needs assignment, create a component
+				if (selectedTool) {
+					const toolInfo = TOOLS_INFO[selectedTool];
+
+					// Only create if this tool needs assignment
+					if (toolInfo.needsAssignment) {
+						// Generate a better initial position that works well for multi-page documents
+						const getInitialPosition = () => {
+							const baseX = 50; // Start closer to left edge
+							const baseY = 50; // Start closer to top edge
+							const randomOffset = Math.floor(Math.random() * 100);
+							return {
+								x: baseX + randomOffset,
+								y: baseY + randomOffset,
+							};
+						};
+
+						const newComponent: DocumentComponent = {
+							id: generateComponentId(),
+							type: selectedTool,
+							pageNumber: selectedPage,
+							position: getInitialPosition(),
+							size: toolInfo.defaultSize,
+							assigned: user,
+							config: toolInfo.defaultConfig,
+							created: Date.now(),
+						};
+
+						const updatedComponents = [...documentComponents, newComponent];
+						setDocumentComponents(updatedComponents);
+						onComponentsChange?.(updatedComponents);
+
+						// Clear selections
+						setSelectedTool(null);
+						setSelectedUser(null);
+					}
+				}
+			},
+			[selectedTool, currentVisible, documentComponents, onComponentsChange, generateComponentId],
+		);
+
+		const handleComponentUpdate = useCallback(
+			(updatedComponent: DocumentComponent) => {
+				const updatedComponents = documentComponents.map((comp) =>
+					comp.id === updatedComponent.id ? updatedComponent : comp,
+				);
+				setDocumentComponents(updatedComponents);
+				onComponentsChange?.(updatedComponents);
+			},
+			[documentComponents, onComponentsChange],
+		);
+
+		const handleComponentDelete = useCallback(
+			(componentId: string) => {
+				const updatedComponents = documentComponents.filter((comp) => comp.id !== componentId);
+				setDocumentComponents(updatedComponents);
+				onComponentsChange?.(updatedComponents);
+				setSelectedComponentId('');
+			},
+			[documentComponents, onComponentsChange],
+		);
+
 		const handleComponentSelect = useCallback((componentId: string) => {
 			setSelectedComponentId(componentId);
 			setSelectedTool(null); // Clear tool selection when selecting a component
 		}, []);
-		
+
 		const handleComponentHover = useCallback((componentId: string | undefined) => {
 			setHoveredComponentId(componentId || '');
 		}, []);
-		
+
 		// Keyboard event handler for component manipulation
-		const handleKeyDown = useCallback((e: KeyboardEvent) => {
-			if (!selectedComponentId) return;
-			
-			const component = documentComponents.find(c => c.id === selectedComponentId);
-			if (!component) return;
-			
-			const moveDistance = e.shiftKey ? 10 : 1;
-			let updatedComponent = { ...component };
-			
-			switch (e.key) {
-				case 'ArrowUp':
-					e.preventDefault();
-					updatedComponent.position.y = Math.max(0, component.position.y - moveDistance);
-					break;
-				case 'ArrowDown':
-					e.preventDefault();
-					updatedComponent.position.y = component.position.y + moveDistance;
-					break;
-				case 'ArrowLeft':
-					e.preventDefault();
-					updatedComponent.position.x = Math.max(0, component.position.x - moveDistance);
-					break;
-				case 'ArrowRight':
-					e.preventDefault();
-					updatedComponent.position.x = component.position.x + moveDistance;
-					break;
-				case 'Delete':
-				case 'Backspace':
-					e.preventDefault();
-					handleComponentDelete(selectedComponentId);
-					return;
-				case 'Escape':
-					e.preventDefault();
-					setSelectedComponentId('');
-					return;
-				default:
-					return;
-			}
-			
-			handleComponentUpdate(updatedComponent);
-		}, [selectedComponentId, documentComponents, handleComponentUpdate, handleComponentDelete]);
-		
+		const handleKeyDown = useCallback(
+			(e: KeyboardEvent) => {
+				if (!selectedComponentId) return;
+
+				const component = documentComponents.find((c) => c.id === selectedComponentId);
+				if (!component) return;
+
+				const moveDistance = e.shiftKey ? 10 : 1;
+				let updatedComponent = { ...component };
+
+				switch (e.key) {
+					case 'ArrowUp':
+						e.preventDefault();
+						updatedComponent.position.y = Math.max(0, component.position.y - moveDistance);
+						break;
+					case 'ArrowDown':
+						e.preventDefault();
+						updatedComponent.position.y = component.position.y + moveDistance;
+						break;
+					case 'ArrowLeft':
+						e.preventDefault();
+						updatedComponent.position.x = Math.max(0, component.position.x - moveDistance);
+						break;
+					case 'ArrowRight':
+						e.preventDefault();
+						updatedComponent.position.x = component.position.x + moveDistance;
+						break;
+					case 'Delete':
+					case 'Backspace':
+						e.preventDefault();
+						handleComponentDelete(selectedComponentId);
+						return;
+					case 'Escape':
+						e.preventDefault();
+						setSelectedComponentId('');
+						return;
+					default:
+						return;
+				}
+
+				handleComponentUpdate(updatedComponent);
+			},
+			[selectedComponentId, documentComponents, handleComponentUpdate, handleComponentDelete],
+		);
+
 		const handleStartDrag = useCallback((componentId: string, _startPosition: Position) => {
 			// Drag handling is now managed by DocumentComponent for better UX
 			// This callback is kept for compatibility but doesn't need to do anything
 			console.log('Drag started for component:', componentId);
 		}, []);
-		
-		const handleStartResize = useCallback((componentId: string, handle: ResizeHandle, startPosition: Position, startSize: Size) => {
-			const component = documentComponents.find(c => c.id === componentId);
-			if (!component) return;
-			
-			const handleMouseMove = (e: MouseEvent) => {
-				const deltaX = e.clientX - startPosition.x;
-				const deltaY = e.clientY - startPosition.y;
-				
-				let newSize = { ...startSize };
-				let newPosition = { ...component.position };
-				
-				switch (handle) {
-					case ResizeHandle.TOP_LEFT:
-						newSize.width = Math.max(20, startSize.width - deltaX);
-						newSize.height = Math.max(20, startSize.height - deltaY);
-						newPosition.x = component.position.x + deltaX;
-						newPosition.y = component.position.y + deltaY;
-						break;
-					case ResizeHandle.TOP_RIGHT:
-						newSize.width = Math.max(20, startSize.width + deltaX);
-						newSize.height = Math.max(20, startSize.height - deltaY);
-						newPosition.y = component.position.y + deltaY;
-						break;
-					case ResizeHandle.BOTTOM_LEFT:
-						newSize.width = Math.max(20, startSize.width - deltaX);
-						newSize.height = Math.max(20, startSize.height + deltaY);
-						newPosition.x = component.position.x + deltaX;
-						break;
-					case ResizeHandle.BOTTOM_RIGHT:
-						newSize.width = Math.max(20, startSize.width + deltaX);
-						newSize.height = Math.max(20, startSize.height + deltaY);
-						break;
-					case ResizeHandle.TOP:
-						newSize.height = Math.max(20, startSize.height - deltaY);
-						newPosition.y = component.position.y + deltaY;
-						break;
-					case ResizeHandle.BOTTOM:
-						newSize.height = Math.max(20, startSize.height + deltaY);
-						break;
-					case ResizeHandle.LEFT:
-						newSize.width = Math.max(20, startSize.width - deltaX);
-						newPosition.x = component.position.x + deltaX;
-						break;
-					case ResizeHandle.RIGHT:
-						newSize.width = Math.max(20, startSize.width + deltaX);
-						break;
-				}
-				
-				const updatedComponent = {
-					...component,
-					size: newSize,
-					position: newPosition
+
+		const handleStartResize = useCallback(
+			(componentId: string, handle: ResizeHandle, startPosition: Position, startSize: Size) => {
+				const component = documentComponents.find((c) => c.id === componentId);
+				if (!component) return;
+
+				const handleMouseMove = (e: MouseEvent) => {
+					const deltaX = e.clientX - startPosition.x;
+					const deltaY = e.clientY - startPosition.y;
+
+					let newSize = { ...startSize };
+					let newPosition = { ...component.position };
+
+					switch (handle) {
+						case ResizeHandle.TOP_LEFT:
+							newSize.width = Math.max(20, startSize.width - deltaX);
+							newSize.height = Math.max(20, startSize.height - deltaY);
+							newPosition.x = component.position.x + deltaX;
+							newPosition.y = component.position.y + deltaY;
+							break;
+						case ResizeHandle.TOP_RIGHT:
+							newSize.width = Math.max(20, startSize.width + deltaX);
+							newSize.height = Math.max(20, startSize.height - deltaY);
+							newPosition.y = component.position.y + deltaY;
+							break;
+						case ResizeHandle.BOTTOM_LEFT:
+							newSize.width = Math.max(20, startSize.width - deltaX);
+							newSize.height = Math.max(20, startSize.height + deltaY);
+							newPosition.x = component.position.x + deltaX;
+							break;
+						case ResizeHandle.BOTTOM_RIGHT:
+							newSize.width = Math.max(20, startSize.width + deltaX);
+							newSize.height = Math.max(20, startSize.height + deltaY);
+							break;
+						case ResizeHandle.TOP:
+							newSize.height = Math.max(20, startSize.height - deltaY);
+							newPosition.y = component.position.y + deltaY;
+							break;
+						case ResizeHandle.BOTTOM:
+							newSize.height = Math.max(20, startSize.height + deltaY);
+							break;
+						case ResizeHandle.LEFT:
+							newSize.width = Math.max(20, startSize.width - deltaX);
+							newPosition.x = component.position.x + deltaX;
+							break;
+						case ResizeHandle.RIGHT:
+							newSize.width = Math.max(20, startSize.width + deltaX);
+							break;
+					}
+
+					const updatedComponent = {
+						...component,
+						size: newSize,
+						position: newPosition,
+					};
+
+					handleComponentUpdate(updatedComponent);
 				};
-				
-				handleComponentUpdate(updatedComponent);
-			};
-			
-			const handleMouseUp = () => {
-				document.removeEventListener('mousemove', handleMouseMove);
-				document.removeEventListener('mouseup', handleMouseUp);
-			};
-			
-			document.addEventListener('mousemove', handleMouseMove);
-			document.addEventListener('mouseup', handleMouseUp);
-		}, [documentComponents, handleComponentUpdate]);
-		
+
+				const handleMouseUp = () => {
+					document.removeEventListener('mousemove', handleMouseMove);
+					document.removeEventListener('mouseup', handleMouseUp);
+				};
+
+				document.addEventListener('mousemove', handleMouseMove);
+				document.addEventListener('mouseup', handleMouseUp);
+			},
+			[documentComponents, handleComponentUpdate],
+		);
+
 		// Initialize components from props only on mount
 		useEffect(() => {
 			setDocumentComponents(components);
 		}, []); // Only run on mount
-		
+
 		// Handle prop updates when components array changes externally
 		useEffect(() => {
 			// Use a simple check to avoid infinite loops
@@ -436,7 +464,7 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 				setDocumentComponents(components);
 			}
 		}, [components.length]);
-		
+
 		// Add keyboard event listener
 		useEffect(() => {
 			document.addEventListener('keydown', handleKeyDown);
@@ -480,9 +508,7 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 			<div className="absolute inset-0 flex items-center justify-center bg-gray-50">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-					<div className="text-gray-600">
-						{isLoading ? 'Loading PDF...' : 'PDF Loading...'}
-					</div>
+					<div className="text-gray-600">{isLoading ? 'Loading PDF...' : 'PDF Loading...'}</div>
 				</div>
 			</div>
 		);
@@ -550,9 +576,7 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 								/>
 							) : (
 								<div className="w-full h-full bg-gray-50 border-r border-gray-200">
-									<div className="p-4 text-sm text-gray-500">
-										Viewer Sidebar
-									</div>
+									<div className="p-4 text-sm text-gray-500">Viewer Sidebar</div>
 								</div>
 							)}
 						</div>
@@ -590,12 +614,10 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 									<span className="opacity-50">{numPages}</span>
 								</div>
 								{numPages > 1 && (
-									<div className="text-xs opacity-75 mt-1">
-										Place: P{selectedPage + 1}
-									</div>
+									<div className="text-xs opacity-75 mt-1">Place: P{selectedPage + 1}</div>
 								)}
 							</div>
-							
+
 							{/* Debug info for pages position */}
 							{process.env.NODE_ENV === 'development' && pagesPosition.length > 0 && (
 								<div className="absolute top-16 right-4 z-10 bg-black bg-opacity-75 text-white text-xs p-2 rounded">
@@ -684,18 +706,30 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 
 						{/* Right Panel */}
 						<div className="hidden md:block">
-							<PanelWrapper isEditingMode={isEditingMode}>
-								<div className="h-full bg-gray-50 border-l border-gray-200">
-									<div className="p-4 text-sm text-gray-500">Panel V2</div>
-								</div>
-							</PanelWrapper>
+							<ComponentsPanel
+								components={documentComponents}
+								selectedComponentId={selectedComponentId}
+								viewMode={editorViewMode}
+								numPages={numPages}
+								onComponentSelect={handleComponentSelect}
+								onComponentUpdate={handleComponentUpdate}
+								onComponentDelete={handleComponentDelete}
+								onComponentsChange={(newComponents) => {
+									setDocumentComponents(newComponents);
+									onComponentsChange?.(newComponents);
+								}}
+							/>
 						</div>
 
 						{/* Mobile Bottom Panel */}
 						<div className="md:hidden">
 							<div className="h-16 bg-gray-50 border-t border-gray-200">
 								<div className="flex items-center justify-center h-full text-sm text-gray-500">
-									Mobile Bottom Panel
+									{documentComponents.length > 0 ? (
+										<span>{documentComponents.length} component{documentComponents.length !== 1 ? 's' : ''} added</span>
+									) : (
+										<span>Add components using the palette</span>
+									)}
 								</div>
 							</div>
 						</div>
