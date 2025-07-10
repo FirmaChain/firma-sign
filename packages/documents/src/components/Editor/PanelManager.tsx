@@ -1,6 +1,23 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { FloatingPanelPosition, PanelPosition } from './FloatingPanel';
 
+// Calculate smart default positions that work within typical container sizes
+const calculateDefaultPositions = () => {
+  // Assume a reasonable container size (most containers will be at least this wide)
+  const assumedContainerWidth = Math.max(800, typeof window !== 'undefined' ? window.innerWidth * 0.8 : 1200);
+  const leftPanelWidth = 260;
+  const rightPanelWidth = 320;
+  const gap = 20;
+
+  return {
+    left: { x: gap, y: 100 },
+    right: { 
+      x: Math.max(leftPanelWidth + gap * 2, assumedContainerWidth - rightPanelWidth - gap), 
+      y: 100 
+    }
+  };
+};
+
 export interface PanelState {
   position: PanelPosition;
   floatingPosition: FloatingPanelPosition;
@@ -22,26 +39,31 @@ export interface PanelManagerContextType {
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
   resetPanels: () => void;
+  adjustPanelsToContainer: (containerWidth: number, containerHeight: number) => void;
 }
 
-const getDefaultPanelState = (): PanelManagerState => ({
-  leftPanel: {
-    position: 'floating',
-    floatingPosition: { x: 20, y: 100 },
-    isPinned: false,
-    isVisible: true,
-    width: 260,
-    height: 600
-  },
-  rightPanel: {
-    position: 'floating',
-    floatingPosition: { x: typeof window !== 'undefined' ? window.innerWidth - 340 : 1000, y: 100 },
-    isPinned: false,
-    isVisible: true,
-    width: 320,
-    height: 600
-  }
-});
+const getDefaultPanelState = (): PanelManagerState => {
+  const positions = calculateDefaultPositions();
+  
+  return {
+    leftPanel: {
+      position: 'floating',
+      floatingPosition: positions.left,
+      isPinned: false,
+      isVisible: true,
+      width: 260,
+      height: 600
+    },
+    rightPanel: {
+      position: 'floating',
+      floatingPosition: positions.right,
+      isPinned: false,
+      isVisible: true,
+      width: 320,
+      height: 600
+    }
+  };
+};
 
 const PanelManagerContext = createContext<PanelManagerContextType | null>(null);
 
@@ -99,13 +121,51 @@ export const PanelManagerProvider: React.FC<PanelManagerProviderProps> = ({
     setState(getDefaultPanelState());
   }, []);
 
+  const adjustPanelsToContainer = useCallback((containerWidth: number, containerHeight: number) => {
+    setState(prev => {
+      const gap = 20;
+      const leftPanelWidth = prev.leftPanel.width;
+      const rightPanelWidth = prev.rightPanel.width;
+
+      // Calculate new positions based on actual container dimensions
+      const newLeftPosition = {
+        x: gap,
+        y: Math.min(prev.leftPanel.floatingPosition.y, containerHeight - prev.leftPanel.height - gap)
+      };
+
+      const newRightPosition = {
+        x: Math.max(
+          leftPanelWidth + gap * 2, // Don't overlap with left panel
+          Math.min(
+            prev.rightPanel.floatingPosition.x, // Keep current position if it fits
+            containerWidth - rightPanelWidth - gap // Or move it to fit within container
+          )
+        ),
+        y: Math.min(prev.rightPanel.floatingPosition.y, containerHeight - prev.rightPanel.height - gap)
+      };
+
+      return {
+        ...prev,
+        leftPanel: {
+          ...prev.leftPanel,
+          floatingPosition: newLeftPosition
+        },
+        rightPanel: {
+          ...prev.rightPanel,
+          floatingPosition: newRightPosition
+        }
+      };
+    });
+  }, []);
+
   const value: PanelManagerContextType = {
     state,
     updateLeftPanel,
     updateRightPanel,
     toggleLeftPanel,
     toggleRightPanel,
-    resetPanels
+    resetPanels,
+    adjustPanelsToContainer
   };
 
   return (

@@ -26,30 +26,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 // DocumentArea component with Tailwind styling
 const DocumentArea = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
 	({ className, ...props }, ref) => (
-		<div
-			ref={ref}
-			className={cn('relative w-full h-full', className)}
-			{...props}
-		/>
-	),
-);
-
-// PanelWrapper component with Tailwind styling
-interface PanelWrapperProps extends React.ComponentProps<'div'> {
-	isEditingMode?: boolean;
-}
-
-const PanelWrapper = React.forwardRef<HTMLDivElement, PanelWrapperProps>(
-	({ isEditingMode, className, ...props }, ref) => (
-		<div
-			ref={ref}
-			className={cn(
-				'h-full flex flex-col',
-				isEditingMode ? 'w-auto' : 'w-80 md:w-[320px]',
-				className,
-			)}
-			{...props}
-		/>
+		<div ref={ref} className={cn('relative w-full h-full', className)} {...props} />
 	),
 );
 
@@ -129,8 +106,6 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 		const curPageRef = useRef<HTMLDivElement>(null);
 		const $DocumentArea = useRef<HTMLDivElement>(null);
 		const $Scrollbar = useRef<any>(null);
-
-		const isEditingMode = useMemo(() => viewMode === 'editor', [viewMode]);
 
 		const onDocumentLoadSuccess = useCallback(
 			(pdf: any) => {
@@ -487,42 +462,77 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 			}
 		}, [fileUrl, fileId]);
 
+		// Adjust panel positions only on first render
 		useLayoutEffect(() => {
-			return () => {
-				// Cleanup logic
+			const adjustPanelPositions = () => {
+				if ($DocumentArea.current) {
+					const containerRect = $DocumentArea.current.getBoundingClientRect();
+					const containerWidth = containerRect.width;
+					const containerHeight = containerRect.height;
+					
+					// Only adjust if we have reasonable dimensions
+					if (containerWidth > 200 && containerHeight > 200) {
+						panelManager.adjustPanelsToContainer(containerWidth, containerHeight);
+					}
+				}
 			};
-		}, []);
+
+			// Adjust positions only after initial render
+			const timeoutId = setTimeout(adjustPanelPositions, 100);
+
+			return () => {
+				clearTimeout(timeoutId);
+			};
+		}, []); // Empty dependency array - runs only once on mount
 
 		// Panel management handlers
-		const handleLeftPanelPositionChange = useCallback((position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
-			panelManager.updateLeftPanel({ 
-				position, 
-				...(floatingPosition && { floatingPosition }) 
-			});
-		}, [panelManager]);
+		const handleLeftPanelPositionChange = useCallback(
+			(position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
+				panelManager.updateLeftPanel({
+					position,
+					...(floatingPosition && { floatingPosition }),
+				});
+			},
+			[panelManager],
+		);
 
-		const handleRightPanelPositionChange = useCallback((position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
-			panelManager.updateRightPanel({ 
-				position, 
-				...(floatingPosition && { floatingPosition }) 
-			});
-		}, [panelManager]);
+		const handleRightPanelPositionChange = useCallback(
+			(position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
+				panelManager.updateRightPanel({
+					position,
+					...(floatingPosition && { floatingPosition }),
+				});
+			},
+			[panelManager],
+		);
 
-		const handleLeftPanelPinnedChange = useCallback((pinned: boolean) => {
-			panelManager.updateLeftPanel({ isPinned: pinned });
-		}, [panelManager]);
+		const handleLeftPanelPinnedChange = useCallback(
+			(pinned: boolean) => {
+				panelManager.updateLeftPanel({ isPinned: pinned });
+			},
+			[panelManager],
+		);
 
-		const handleRightPanelPinnedChange = useCallback((pinned: boolean) => {
-			panelManager.updateRightPanel({ isPinned: pinned });
-		}, [panelManager]);
+		const handleRightPanelPinnedChange = useCallback(
+			(pinned: boolean) => {
+				panelManager.updateRightPanel({ isPinned: pinned });
+			},
+			[panelManager],
+		);
 
-		const handleLeftPanelVisibilityChange = useCallback((visible: boolean) => {
-			panelManager.updateLeftPanel({ isVisible: visible });
-		}, [panelManager]);
+		const handleLeftPanelVisibilityChange = useCallback(
+			(visible: boolean) => {
+				panelManager.updateLeftPanel({ isVisible: visible });
+			},
+			[panelManager],
+		);
 
-		const handleRightPanelVisibilityChange = useCallback((visible: boolean) => {
-			panelManager.updateRightPanel({ isVisible: visible });
-		}, [panelManager]);
+		const handleRightPanelVisibilityChange = useCallback(
+			(visible: boolean) => {
+				panelManager.updateRightPanel({ isVisible: visible });
+			},
+			[panelManager],
+		);
 
 		const file = useMemo(() => {
 			if (fallbackUrls.length > 0 && currentUrlIndex < fallbackUrls.length) {
@@ -582,8 +592,6 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 		const rightPanelState = panelManager.state.rightPanel;
 
 		// Determine if panels are docked for layout adjustments
-		const isLeftPanelDocked = leftPanelState.isVisible && leftPanelState.position !== 'floating';
-		const isRightPanelDocked = rightPanelState.isVisible && rightPanelState.position !== 'floating';
 
 		return (
 			<div ref={ref} className={cn('h-full relative', className)} {...props}>
@@ -677,54 +685,54 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 									<div className="max-w-4xl w-full">
 										{/* Document Pages */}
 										<div className="space-y-5 py-10">
-									{Array.from({ length: numPages || 1 }, (_, i) => (
-										<div
-											key={i}
-											className={cn(
-												'relative block mx-auto',
-												'border border-gray-400 shadow-lg',
-												'bg-white select-none text-center',
-												'mt-12 first:mt-5',
-											)}
-											data-page-number={i + 1}
-										>
-											<ReactPdfPage
-												pageNumber={i + 1}
-												scale={renderScale}
-												loading={
-													<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
-														<div className="text-gray-400">Loading page {i + 1}...</div>
-													</div>
-												}
-												error={
-													<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
-														<div className="text-red-400">Error loading page {i + 1}</div>
-													</div>
-												}
-												onLoadSuccess={(page: any) => {
-													onVisible(i, true);
-													handlePagePosition(i, { top: 0, height: page.height });
-												}}
-												className="pdf-page"
-											/>
+											{Array.from({ length: numPages || 1 }, (_, i) => (
+												<div
+													key={i}
+													className={cn(
+														'relative block mx-auto',
+														'border border-gray-400 shadow-lg',
+														'bg-white select-none text-center',
+														'mt-12 first:mt-5',
+													)}
+													data-page-number={i + 1}
+												>
+													<ReactPdfPage
+														pageNumber={i + 1}
+														scale={renderScale}
+														loading={
+															<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
+																<div className="text-gray-400">Loading page {i + 1}...</div>
+															</div>
+														}
+														error={
+															<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
+																<div className="text-red-400">Error loading page {i + 1}</div>
+															</div>
+														}
+														onLoadSuccess={(page: any) => {
+															onVisible(i, true);
+															handlePagePosition(i, { top: 0, height: page.height });
+														}}
+														className="pdf-page"
+													/>
 
-											{/* Document components layer */}
-											<DocumentLayer
-												pageNumber={i}
-												components={documentComponents}
-												selectedComponentId={selectedComponentId}
-												hoveredComponentId={hoveredComponentId}
-												viewMode={editorViewMode}
-												scale={renderScale} // Use render scale for proper positioning
-												onComponentUpdate={handleComponentUpdate}
-												onComponentSelect={handleComponentSelect}
-												onComponentDelete={handleComponentDelete}
-												onComponentHover={handleComponentHover}
-												onStartDrag={handleStartDrag}
-												onStartResize={handleStartResize}
-											/>
-										</div>
-									))}
+													{/* Document components layer */}
+													<DocumentLayer
+														pageNumber={i}
+														components={documentComponents}
+														selectedComponentId={selectedComponentId}
+														hoveredComponentId={hoveredComponentId}
+														viewMode={editorViewMode}
+														scale={renderScale} // Use render scale for proper positioning
+														onComponentUpdate={handleComponentUpdate}
+														onComponentSelect={handleComponentSelect}
+														onComponentDelete={handleComponentDelete}
+														onComponentHover={handleComponentHover}
+														onStartDrag={handleStartDrag}
+														onStartResize={handleStartResize}
+													/>
+												</div>
+											))}
 										</div>
 									</div>
 								</div>
@@ -827,11 +835,9 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 					<div className="h-12 bg-gray-50 border-t border-gray-200">
 						<div className="flex items-center justify-between h-full px-4 text-sm text-gray-500">
 							<span>
-								{documentComponents.length > 0 ? (
-									`${documentComponents.length} component${documentComponents.length !== 1 ? 's' : ''} added`
-								) : (
-									'No components added'
-								)}
+								{documentComponents.length > 0
+									? `${documentComponents.length} component${documentComponents.length !== 1 ? 's' : ''} added`
+									: 'No components added'}
 							</span>
 							<div className="flex gap-2">
 								<button
