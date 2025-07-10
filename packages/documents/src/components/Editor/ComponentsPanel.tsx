@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { cn } from '../../utils/cn';
 import { DocumentComponent, ComponentType, ViewMode, AssignedUser } from './types';
 import { TOOLS_INFO } from './constants';
+import { usePanelDimensions } from './FloatingPanel';
 
 interface ComponentsPanelProps {
   components: DocumentComponent[];
@@ -54,8 +55,11 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(component.value || '');
+  const dimensions = usePanelDimensions();
 
   const toolInfo = TOOLS_INFO[component.type];
+  const showCompactUI = dimensions.isCompact;
+  const showNarrowUI = dimensions.isNarrow;
 
   const handleSaveEdit = useCallback(() => {
     onUpdate({
@@ -73,7 +77,8 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
   return (
     <div
       className={cn(
-        'border rounded-lg p-3 transition-all duration-200 cursor-pointer',
+        'border rounded transition-all duration-200 cursor-pointer',
+        showCompactUI ? 'p-2 rounded-md' : 'p-3 rounded-lg',
         isSelected 
           ? 'border-blue-500 bg-blue-50' 
           : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
@@ -81,15 +86,27 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       onClick={() => onSelect(component.id)}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+      <div className={cn(
+        'flex items-center justify-between',
+        showCompactUI ? 'mb-1' : 'mb-2'
+      )}>
+        <div className="flex items-center gap-1 min-w-0 flex-1">
           <ComponentTypeIcon type={component.type} />
-          <div>
-            <div className="font-medium text-sm text-gray-900">
-              {toolInfo?.name || component.type}
+          <div className="min-w-0 flex-1">
+            <div className={cn(
+              'font-medium text-gray-900 truncate',
+              showCompactUI ? 'text-xs' : 'text-sm'
+            )}>
+              {showCompactUI 
+                ? (toolInfo?.name?.split(' ')[0] || component.type.split('_')[0])
+                : (toolInfo?.name || component.type)
+              }
             </div>
-            <div className="text-xs text-gray-500">
-              Page {component.pageNumber + 1}
+            <div className={cn(
+              'text-gray-500',
+              showCompactUI ? 'text-xs' : 'text-xs'
+            )}>
+              {showCompactUI ? `P${component.pageNumber + 1}` : `Page ${component.pageNumber + 1}`}
             </div>
           </div>
         </div>
@@ -98,31 +115,51 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
             e.stopPropagation();
             onDelete(component.id);
           }}
-          className="text-red-500 hover:text-red-700 text-sm"
+          className={cn(
+            'text-red-500 hover:text-red-700 flex-shrink-0',
+            showCompactUI ? 'text-xs' : 'text-sm'
+          )}
           title="Delete component"
         >
-          🗑️
+          {showCompactUI ? '✕' : '🗑️'}
         </button>
       </div>
 
       {/* Assigned User */}
-      {component.assigned && (
-        <div className="flex items-center gap-2 mb-2">
+      {component.assigned && !showCompactUI && (
+        <div className={cn(
+          'flex items-center gap-2',
+          showNarrowUI ? 'mb-1' : 'mb-2'
+        )}>
           <div
             className="w-3 h-3 rounded-full"
             style={{ backgroundColor: component.assigned.color }}
           />
-          <span className="text-xs text-gray-600">
-            {component.assigned.name}
+          <span className="text-xs text-gray-600 truncate">
+            {showNarrowUI ? component.assigned.name.split(' ')[0] : component.assigned.name}
           </span>
         </div>
       )}
 
-      {/* Position and Size */}
-      <div className="text-xs text-gray-500 mb-2">
-        <div>Position: ({Math.round(component.position.x)}, {Math.round(component.position.y)})</div>
-        <div>Size: {Math.round(component.size.width)} × {Math.round(component.size.height)}</div>
-      </div>
+      {/* Position and Size - Hide in compact mode */}
+      {!showCompactUI && (
+        <div className={cn(
+          'text-xs text-gray-500',
+          showNarrowUI ? 'mb-1' : 'mb-2'
+        )}>
+          {showNarrowUI ? (
+            <div>
+              {Math.round(component.position.x)},{Math.round(component.position.y)} • 
+              {Math.round(component.size.width)}×{Math.round(component.size.height)}
+            </div>
+          ) : (
+            <>
+              <div>Position: ({Math.round(component.position.x)}, {Math.round(component.position.y)})</div>
+              <div>Size: {Math.round(component.size.width)} × {Math.round(component.size.height)}</div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Value (if editable) */}
       {(component.type === ComponentType.TEXT || component.type === ComponentType.INPUT_FIELD) && (
@@ -223,6 +260,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
   const [filterAssignee, setFilterAssignee] = useState<string | 'all'>('all');
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dimensions = usePanelDimensions();
 
   // Get unique assignees
   const assignees = useMemo(() => {
@@ -404,94 +442,181 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
     );
   }
 
+  // Responsive flags
+  const showCompactUI = dimensions.isCompact;
+  const showNarrowUI = dimensions.isNarrow;
+
   return (
-    <div className={cn('w-80 h-full bg-gray-50 border-l border-gray-200 flex flex-col', className)}>
+    <div className={cn('w-full h-full bg-gray-50 flex flex-col', className)}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-gray-900 mb-3">Components</h2>
+      <div className={cn(
+        'border-b border-gray-200',
+        showCompactUI ? 'p-2' : 'p-4'
+      )}>
+        <h2 className={cn(
+          'font-semibold text-gray-900',
+          showCompactUI ? 'text-sm mb-2' : 'text-base mb-3'
+        )}>
+          {showCompactUI ? 'Items' : 'Components'}
+        </h2>
         
         {/* Statistics */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">{stats.total}</div>
-            <div className="text-xs text-gray-500">Total</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-red-600">{stats.required}</div>
-            <div className="text-xs text-gray-500">Required</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-bold text-green-600">{stats.completed}</div>
-            <div className="text-xs text-gray-500">Filled</div>
-          </div>
+        <div className={cn(
+          'grid gap-1 mb-3',
+          showCompactUI ? 'grid-cols-1' : 'grid-cols-3 gap-2 mb-4'
+        )}>
+          {showCompactUI ? (
+            // Compact single line stats
+            <div className="flex justify-between text-xs">
+              <span><span className="font-bold text-blue-600">{stats.total}</span> Total</span>
+              <span><span className="font-bold text-red-600">{stats.required}</span> Required</span>
+              <span><span className="font-bold text-green-600">{stats.completed}</span> Filled</span>
+            </div>
+          ) : (
+            // Normal grid stats
+            <>
+              <div className="text-center">
+                <div className={cn('font-bold text-blue-600', showNarrowUI ? 'text-base' : 'text-lg')}>
+                  {stats.total}
+                </div>
+                <div className="text-xs text-gray-500">Total</div>
+              </div>
+              <div className="text-center">
+                <div className={cn('font-bold text-red-600', showNarrowUI ? 'text-base' : 'text-lg')}>
+                  {stats.required}
+                </div>
+                <div className="text-xs text-gray-500">Required</div>
+              </div>
+              <div className="text-center">
+                <div className={cn('font-bold text-green-600', showNarrowUI ? 'text-base' : 'text-lg')}>
+                  {stats.completed}
+                </div>
+                <div className="text-xs text-gray-500">Filled</div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Search */}
-        <div className="mb-3">
-          <input
-            type="text"
-            placeholder="Search components..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        {!showCompactUI && (
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder={showNarrowUI ? "Search..." : "Search components..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={cn(
+                'w-full px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                showNarrowUI ? 'py-1 text-xs' : 'py-2 text-sm'
+              )}
+            />
+          </div>
+        )}
 
         {/* Filters */}
-        <div className="space-y-2">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-          >
-            <option value="all">All Types</option>
-            {Object.values(ComponentType).map(type => (
-              <option key={type} value={type}>
-                {TOOLS_INFO[type]?.name || type}
-              </option>
-            ))}
-          </select>
+        <div className={cn('space-y-1', !showCompactUI && 'space-y-2')}>
+          {!showCompactUI && (
+            <>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
+                className={cn(
+                  'w-full px-2 border border-gray-300 rounded',
+                  showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm'
+                )}
+              >
+                <option value="all">{showNarrowUI ? 'All' : 'All Types'}</option>
+                {Object.values(ComponentType).map(type => (
+                  <option key={type} value={type}>
+                    {showNarrowUI ? type.split('_')[0] : (TOOLS_INFO[type]?.name || type)}
+                  </option>
+                ))}
+              </select>
 
-          <select
-            value={filterPage}
-            onChange={(e) => setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-          >
-            <option value="all">All Pages</option>
-            {Array.from({ length: numPages }, (_, i) => (
-              <option key={i} value={i}>
-                Page {i + 1} ({stats.byPage.get(i) || 0})
-              </option>
-            ))}
-          </select>
+              <select
+                value={filterPage}
+                onChange={(e) => setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                className={cn(
+                  'w-full px-2 border border-gray-300 rounded',
+                  showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm'
+                )}
+              >
+                <option value="all">{showNarrowUI ? 'All' : 'All Pages'}</option>
+                {Array.from({ length: numPages }, (_, i) => (
+                  <option key={i} value={i}>
+                    {showNarrowUI ? `P${i + 1}` : `Page ${i + 1}`} ({stats.byPage.get(i) || 0})
+                  </option>
+                ))}
+              </select>
 
-          <select
-            value={filterAssignee}
-            onChange={(e) => setFilterAssignee(e.target.value)}
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-          >
-            <option value="all">All Assignees</option>
-            {assignees.map(assignee => (
-              <option key={assignee.email} value={assignee.email}>
-                {assignee.name}
-              </option>
-            ))}
-          </select>
+              <select
+                value={filterAssignee}
+                onChange={(e) => setFilterAssignee(e.target.value)}
+                className={cn(
+                  'w-full px-2 border border-gray-300 rounded',
+                  showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm'
+                )}
+              >
+                <option value="all">{showNarrowUI ? 'All' : 'All Assignees'}</option>
+                {assignees.map(assignee => (
+                  <option key={assignee.email} value={assignee.email}>
+                    {showNarrowUI ? assignee.name.split(' ')[0] : assignee.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          
+          {/* Compact filters - minimal interface */}
+          {showCompactUI && (
+            <div className="flex gap-1">
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
+                className="flex-1 px-1 py-1 text-xs border border-gray-300 rounded"
+              >
+                <option value="all">All</option>
+                {Object.values(ComponentType).map(type => (
+                  <option key={type} value={type}>
+                    {type.split('_')[0]}
+                  </option>
+                ))}
+              </select>
+              {numPages > 1 && (
+                <select
+                  value={filterPage}
+                  onChange={(e) => setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                  className="flex-1 px-1 py-1 text-xs border border-gray-300 rounded"
+                >
+                  <option value="all">All</option>
+                  {Array.from({ length: numPages }, (_, i) => (
+                    <option key={i} value={i}>P{i + 1}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Clear filters */}
         {(searchTerm || filterType !== 'all' || filterPage !== 'all' || filterAssignee !== 'all') && (
           <button
             onClick={clearAllFilters}
-            className="w-full mt-2 px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            className={cn(
+              'w-full mt-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300',
+              showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'
+            )}
           >
-            Clear Filters
+            {showCompactUI ? 'Clear' : 'Clear Filters'}
           </button>
         )}
       </div>
 
       {/* Components List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className={cn(
+        'flex-1 overflow-y-auto',
+        showCompactUI ? 'p-2' : 'p-4'
+      )}>
         {sortedComponents.length === 0 ? (
           <div className="text-center text-gray-500 text-sm py-8">
             {components.length === 0 ? (
@@ -526,7 +651,10 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
       </div>
 
       {/* Footer with bulk actions */}
-      <div className="border-t border-gray-200 p-4">
+      <div className={cn(
+        'border-t border-gray-200',
+        showCompactUI ? 'p-2' : 'p-4'
+      )}>
         {/* Hidden file input for import */}
         <input
           ref={fileInputRef}
@@ -536,15 +664,18 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
           className="hidden"
         />
         
-        <div className="space-y-2">
+        <div className={cn(showCompactUI ? 'space-y-1' : 'space-y-2')}>
           {/* Import/Export row */}
-          <div className="flex gap-2">
+          <div className={cn('flex', showCompactUI ? 'gap-1' : 'gap-2')}>
             <button
               onClick={handleImportClick}
               disabled={isImporting}
-              className="flex-1 px-3 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={cn(
+                'flex-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed',
+                showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
+              )}
             >
-              {isImporting ? 'Importing...' : 'Import'}
+              {isImporting ? (showCompactUI ? '...' : 'Importing...') : 'Import'}
             </button>
             <button
               onClick={() => {
@@ -559,7 +690,10 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                 URL.revokeObjectURL(url);
               }}
               disabled={components.length === 0}
-              className="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={cn(
+                'flex-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed',
+                showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
+              )}
             >
               Export
             </button>
@@ -573,9 +707,12 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
                   onComponentsChange?.([]);
                 }
               }}
-              className="w-full px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+              className={cn(
+                'w-full bg-red-500 text-white rounded hover:bg-red-600',
+                showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'
+              )}
             >
-              Clear All
+              {showCompactUI ? 'Clear' : 'Clear All'}
             </button>
           )}
         </div>

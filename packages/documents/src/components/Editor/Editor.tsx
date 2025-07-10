@@ -5,6 +5,8 @@ import { SAMPLE_PDF_BASE64, tryPDFSources, makeCORSFriendly } from './pdf-utils'
 import { DocumentLayer } from './DocumentLayer';
 import { EnhancedPalette } from './EnhancedPalette';
 import { ComponentsPanel } from './ComponentsPanel';
+import { FloatingPanel, PanelPosition, FloatingPanelPosition } from './FloatingPanel';
+import { PanelManagerProvider, usePanelManager } from './PanelManager';
 import {
 	DocumentComponent,
 	ViewMode,
@@ -26,7 +28,7 @@ const DocumentArea = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'
 	({ className, ...props }, ref) => (
 		<div
 			ref={ref}
-			className={cn('relative flex-1 h-full leading-none text-center', className)}
+			className={cn('relative w-full h-full', className)}
 			{...props}
 		/>
 	),
@@ -67,7 +69,7 @@ export interface EditorProps {
 	onComponentsChange?: (components: DocumentComponent[]) => void;
 }
 
-export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
+const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 	(
 		{
 			viewMode = 'editor',
@@ -87,6 +89,7 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 		},
 		ref,
 	) => {
+		const panelManager = usePanelManager();
 		const [numPages, setNumPages] = useState(0);
 		const [displayScale, setDisplayScale] = useState(1);
 		const [renderRatio, setRenderRatio] = useState(1);
@@ -490,6 +493,37 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 			};
 		}, []);
 
+		// Panel management handlers
+		const handleLeftPanelPositionChange = useCallback((position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
+			panelManager.updateLeftPanel({ 
+				position, 
+				...(floatingPosition && { floatingPosition }) 
+			});
+		}, [panelManager]);
+
+		const handleRightPanelPositionChange = useCallback((position: PanelPosition, floatingPosition?: FloatingPanelPosition) => {
+			panelManager.updateRightPanel({ 
+				position, 
+				...(floatingPosition && { floatingPosition }) 
+			});
+		}, [panelManager]);
+
+		const handleLeftPanelPinnedChange = useCallback((pinned: boolean) => {
+			panelManager.updateLeftPanel({ isPinned: pinned });
+		}, [panelManager]);
+
+		const handleRightPanelPinnedChange = useCallback((pinned: boolean) => {
+			panelManager.updateRightPanel({ isPinned: pinned });
+		}, [panelManager]);
+
+		const handleLeftPanelVisibilityChange = useCallback((visible: boolean) => {
+			panelManager.updateLeftPanel({ isVisible: visible });
+		}, [panelManager]);
+
+		const handleRightPanelVisibilityChange = useCallback((visible: boolean) => {
+			panelManager.updateRightPanel({ isVisible: visible });
+		}, [panelManager]);
+
 		const file = useMemo(() => {
 			if (fallbackUrls.length > 0 && currentUrlIndex < fallbackUrls.length) {
 				const currentUrl = fallbackUrls[currentUrlIndex];
@@ -543,8 +577,45 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 			);
 		}
 
+		// Get panel states
+		const leftPanelState = panelManager.state.leftPanel;
+		const rightPanelState = panelManager.state.rightPanel;
+
+		// Determine if panels are docked for layout adjustments
+		const isLeftPanelDocked = leftPanelState.isVisible && leftPanelState.position !== 'floating';
+		const isRightPanelDocked = rightPanelState.isVisible && rightPanelState.position !== 'floating';
+
 		return (
 			<div ref={ref} className={cn('h-full relative', className)} {...props}>
+				{/* Panel Toggle Buttons */}
+				<div className="absolute top-4 left-4 z-50 flex gap-2">
+					{!leftPanelState.isVisible && (
+						<button
+							onClick={panelManager.toggleLeftPanel}
+							className="px-3 py-2 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-600 text-sm"
+							title="Show Tools Panel"
+						>
+							🎨 Tools
+						</button>
+					)}
+					{!rightPanelState.isVisible && (
+						<button
+							onClick={panelManager.toggleRightPanel}
+							className="px-3 py-2 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 text-sm"
+							title="Show Components Panel"
+						>
+							📝 Components
+						</button>
+					)}
+					<button
+						onClick={panelManager.resetPanels}
+						className="px-3 py-2 bg-gray-500 text-white rounded-lg shadow-lg hover:bg-gray-600 text-sm"
+						title="Reset Panel Layout"
+					>
+						🔄 Reset
+					</button>
+				</div>
+
 				<Document
 					file={file}
 					onLoadSuccess={onDocumentLoadSuccess}
@@ -554,35 +625,9 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 					error={<ErrorComponent />}
 					className="h-full relative"
 				>
-					<div
-						className={cn(
-							'w-full h-full overflow-hidden flex justify-center relative',
-							'md:min-w-[1000px]',
-							'flex-col items-stretch md:flex-row md:items-center',
-						)}
-					>
-						{/* Sidebar/Palette area */}
-						<div className="flex-shrink-0">
-							{editorViewMode === ViewMode.EDITOR ? (
-								<EnhancedPalette
-									signers={signers}
-									selectedTool={selectedTool}
-									onToolSelect={handleToolSelect}
-									onUserSelect={handleUserSelect}
-									viewMode={editorViewMode}
-									numPages={numPages}
-									selectedPage={selectedPage}
-									onPageSelect={setSelectedPage}
-								/>
-							) : (
-								<div className="w-full h-full bg-gray-50 border-r border-gray-200">
-									<div className="p-4 text-sm text-gray-500">Viewer Sidebar</div>
-								</div>
-							)}
-						</div>
-
-						{/* Document Area */}
-						<DocumentArea ref={$DocumentArea} id="editor-document-area">
+					{/* Document Area Container */}
+					<div className="w-full h-full">
+						<DocumentArea ref={$DocumentArea} id="editor-document-area" className="w-full h-full">
 							{/* Ribbon Menu */}
 							<div
 								className={cn(
@@ -627,10 +672,11 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 
 							{/* Scrollable Document */}
 							<div className="h-full overflow-auto" ref={$Scrollbar}>
-								<div className="h-10" />
-
-								{/* Document Pages */}
-								<div className="space-y-5 pb-48">
+								{/* Centering container for document pages */}
+								<div className="min-h-full flex items-center justify-center p-4">
+									<div className="max-w-4xl w-full">
+										{/* Document Pages */}
+										<div className="space-y-5 py-10">
 									{Array.from({ length: numPages || 1 }, (_, i) => (
 										<div
 											key={i}
@@ -679,6 +725,8 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 											/>
 										</div>
 									))}
+										</div>
+									</div>
 								</div>
 							</div>
 
@@ -703,42 +751,120 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
 								</div>
 							</div>
 						</DocumentArea>
+					</div>
+				</Document>
 
-						{/* Right Panel */}
-						<div className="hidden md:block">
-							<ComponentsPanel
-								components={documentComponents}
-								selectedComponentId={selectedComponentId}
-								viewMode={editorViewMode}
-								numPages={numPages}
-								onComponentSelect={handleComponentSelect}
-								onComponentUpdate={handleComponentUpdate}
-								onComponentDelete={handleComponentDelete}
-								onComponentsChange={(newComponents) => {
-									setDocumentComponents(newComponents);
-									onComponentsChange?.(newComponents);
-								}}
-							/>
-						</div>
+				{/* Floating Panels */}
+				{/* Left Panel - Tools/Palette */}
+				<FloatingPanel
+					id="left-panel"
+					title="Document Tools"
+					position={leftPanelState.position}
+					floatingPosition={leftPanelState.floatingPosition}
+					isPinned={leftPanelState.isPinned}
+					isVisible={leftPanelState.isVisible}
+					onPositionChange={handleLeftPanelPositionChange}
+					onPinnedChange={handleLeftPanelPinnedChange}
+					onVisibilityChange={handleLeftPanelVisibilityChange}
+					width={leftPanelState.width}
+					height={leftPanelState.height}
+					minWidth={260}
+					minHeight={400}
+					maxWidth={400}
+					maxHeight={800}
+				>
+					{editorViewMode === ViewMode.EDITOR ? (
+						<EnhancedPalette
+							signers={signers}
+							selectedTool={selectedTool}
+							onToolSelect={handleToolSelect}
+							onUserSelect={handleUserSelect}
+							viewMode={editorViewMode}
+							numPages={numPages}
+							selectedPage={selectedPage}
+							onPageSelect={setSelectedPage}
+						/>
+					) : (
+						<div className="p-4 text-sm text-gray-500">Viewer mode - tools not available</div>
+					)}
+				</FloatingPanel>
 
-						{/* Mobile Bottom Panel */}
-						<div className="md:hidden">
-							<div className="h-16 bg-gray-50 border-t border-gray-200">
-								<div className="flex items-center justify-center h-full text-sm text-gray-500">
-									{documentComponents.length > 0 ? (
-										<span>{documentComponents.length} component{documentComponents.length !== 1 ? 's' : ''} added</span>
-									) : (
-										<span>Add components using the palette</span>
-									)}
-								</div>
+				{/* Right Panel - Components */}
+				<FloatingPanel
+					id="right-panel"
+					title="Component Manager"
+					position={rightPanelState.position}
+					floatingPosition={rightPanelState.floatingPosition}
+					isPinned={rightPanelState.isPinned}
+					isVisible={rightPanelState.isVisible}
+					onPositionChange={handleRightPanelPositionChange}
+					onPinnedChange={handleRightPanelPinnedChange}
+					onVisibilityChange={handleRightPanelVisibilityChange}
+					width={rightPanelState.width}
+					height={rightPanelState.height}
+					minWidth={320}
+					minHeight={400}
+					maxWidth={600}
+					maxHeight={800}
+				>
+					<ComponentsPanel
+						components={documentComponents}
+						selectedComponentId={selectedComponentId}
+						viewMode={editorViewMode}
+						numPages={numPages}
+						onComponentSelect={handleComponentSelect}
+						onComponentUpdate={handleComponentUpdate}
+						onComponentDelete={handleComponentDelete}
+						onComponentsChange={(newComponents) => {
+							setDocumentComponents(newComponents);
+							onComponentsChange?.(newComponents);
+						}}
+					/>
+				</FloatingPanel>
+
+				{/* Mobile Status Bar */}
+				<div className="md:hidden absolute bottom-0 left-0 right-0 z-40">
+					<div className="h-12 bg-gray-50 border-t border-gray-200">
+						<div className="flex items-center justify-between h-full px-4 text-sm text-gray-500">
+							<span>
+								{documentComponents.length > 0 ? (
+									`${documentComponents.length} component${documentComponents.length !== 1 ? 's' : ''} added`
+								) : (
+									'No components added'
+								)}
+							</span>
+							<div className="flex gap-2">
+								<button
+									onClick={panelManager.toggleLeftPanel}
+									className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+								>
+									Tools
+								</button>
+								<button
+									onClick={panelManager.toggleRightPanel}
+									className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+								>
+									Components
+								</button>
 							</div>
 						</div>
 					</div>
-				</Document>
+				</div>
 			</div>
 		);
 	},
 );
+
+EditorInner.displayName = 'EditorInner';
+
+// Main Editor component wrapped with PanelManagerProvider
+export const Editor = React.forwardRef<HTMLDivElement, EditorProps>((props, ref) => {
+	return (
+		<PanelManagerProvider>
+			<EditorInner {...props} ref={ref} />
+		</PanelManagerProvider>
+	);
+});
 
 Editor.displayName = 'Editor';
 

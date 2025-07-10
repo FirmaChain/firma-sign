@@ -269,7 +269,7 @@ export const ComponentManagement: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates the component management panel with search, filtering, editing, import/export capabilities. The right panel shows all document components with their details and allows for configuration. You can export components as JSON and import them back. A sample components file is available at `src/components/Editor/sample-components.json` for testing the import feature.'
+        story: 'Demonstrates the floating panel system with properly centered document area. The document stays centered while panels float around it. Both panels can be dragged, pinned/unpinned, and docked to different positions (left, right, top, bottom, or floating). Use the 📍 button in panel headers to change positions, 📌/📎 to pin/unpin, and ✕ to hide panels. A sample components file is available at `src/components/Editor/sample-components.json` for testing the import feature.'
       }
     }
   }
@@ -291,7 +291,29 @@ export const ImportFeatureDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demo for testing the import feature. Start with no components and use the Import button in the right panel to load the sample components from `src/components/Editor/sample-components.json`. You can test both "Add to existing" and "Replace all" import modes.'
+        story: 'Demo for testing the import feature with floating panels. Start with no components and use the Import button in the component management panel to load the sample components from `src/components/Editor/sample-components.json`. You can test both "Add to existing" and "Replace all" import modes. Try moving the panels to different positions!'
+      }
+    }
+  }
+};
+
+export const FloatingPanelsDemo: Story = {
+  args: {
+    viewMode: 'editor',
+    preview: false,
+    hideActionBtn: false,
+    hideSave: false,
+    enableNext: false,
+    fileUrl: SAMPLE_PDF_BASE64,
+    fileId: 'floating-panels-demo',
+    contractId: 'contract-floating',
+    signers: sampleSigners,
+    components: [],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Demonstrates the centered document layout with floating panels. The document area remains perfectly centered while panels float around it. Both the Tools panel (left) and Components panel (right) can be: 1) **Dragged** anywhere when floating and unpinned, 2) **Docked** to left, right, top, or bottom edges, 3) **Pinned/Unpinned** to prevent accidental dragging, 4) **Hidden/Shown** using toggle buttons, 5) **Resized** when floating (drag from bottom-right corner). Try different combinations and use the Reset button to restore default layout.'
       }
     }
   }
