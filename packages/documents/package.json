@@ -19,6 +19,7 @@
 	},
 	"dependencies": {
 		"clsx": "^2.1.0",
+		"pdf-lib": "^1.17.1",
 		"pdfjs-dist": "^4.0.379",
 		"react-pdf": "^7.7.0",
 		"tailwind-merge": "^2.2.0"

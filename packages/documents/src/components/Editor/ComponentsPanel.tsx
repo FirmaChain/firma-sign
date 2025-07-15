@@ -3,12 +3,15 @@ import { cn } from '../../utils/cn';
 import { DocumentComponent, ComponentType, ViewMode, AssignedUser } from './types';
 import { TOOLS_INFO } from './constants';
 import { usePanelDimensions } from './FloatingPanel';
+import { ExportPanel } from './Components/ExportPanel';
 
 interface ComponentsPanelProps {
 	components: DocumentComponent[];
 	selectedComponentId?: string;
 	viewMode: ViewMode;
 	numPages: number;
+	pdfUrl?: string;
+	fileName?: string;
 	onComponentSelect?: (componentId: string) => void;
 	onComponentUpdate?: (component: DocumentComponent) => void;
 	onComponentDelete?: (componentId: string) => void;
@@ -238,6 +241,8 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 	selectedComponentId,
 	viewMode,
 	numPages,
+	pdfUrl,
+	fileName,
 	onComponentSelect,
 	onComponentUpdate,
 	onComponentDelete,
@@ -736,6 +741,13 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 					)}
 				</div>
 			</div>
+
+			{/* Export Panel */}
+			<ExportPanel
+				components={components}
+				pdfUrl={pdfUrl}
+				fileName={fileName}
+			/>
 		</div>
 	);
 };
