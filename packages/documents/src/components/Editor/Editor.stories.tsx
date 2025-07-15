@@ -14,7 +14,7 @@ const meta: Meta<typeof Editor> = {
 	argTypes: {
 		viewMode: {
 			control: { type: 'select' },
-			options: ['editor', 'input', 'sign', 'preview', 'viewer'],
+			options: ['editor', 'form', 'preview'],
 		},
 		preview: {
 			control: { type: 'boolean' },
@@ -128,7 +128,7 @@ const sampleComponents: DocumentComponent[] = [
 	},
 ];
 
-export const Default: Story = {
+export const EditorMode: Story = {
 	args: {
 		viewMode: 'editor',
 		preview: false,
@@ -143,22 +143,9 @@ export const Default: Story = {
 	},
 };
 
-export const InputMode: Story = {
+export const FormMode: Story = {
 	args: {
-		viewMode: 'input',
-		preview: false,
-		hideActionBtn: false,
-		hideSave: true,
-		enableNext: false,
-		fileUrl: SAMPLE_PDF_BASE64,
-		fileId: 'sample-file-1',
-		contractId: 'contract-123',
-	},
-};
-
-export const SignMode: Story = {
-	args: {
-		viewMode: 'sign',
+		viewMode: 'form',
 		preview: false,
 		hideActionBtn: false,
 		hideSave: true,
@@ -182,22 +169,9 @@ export const PreviewMode: Story = {
 	},
 };
 
-export const ViewerMode: Story = {
-	args: {
-		viewMode: 'viewer',
-		preview: false,
-		hideActionBtn: true,
-		hideSave: true,
-		enableNext: false,
-		fileUrl: SAMPLE_PDF_BASE64,
-		fileId: 'sample-file-1',
-		contractId: 'contract-123',
-	},
-};
-
 export const WithNextButton: Story = {
 	args: {
-		viewMode: 'input',
+		viewMode: 'form',
 		preview: false,
 		hideActionBtn: false,
 		hideSave: true,
@@ -238,9 +212,9 @@ export const WithExistingComponents: Story = {
 	},
 };
 
-export const InputModeWithComponents: Story = {
+export const FormModeWithComponents: Story = {
 	args: {
-		viewMode: 'input',
+		viewMode: 'form',
 		preview: false,
 		hideActionBtn: false,
 		hideSave: true,

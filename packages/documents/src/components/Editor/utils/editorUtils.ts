@@ -13,13 +13,12 @@ export const getViewModeFromString = (viewMode: string): ViewMode => {
 		case 'editor':
 			return ViewMode.EDITOR;
 		case 'input':
-			return ViewMode.INPUT;
 		case 'sign':
-			return ViewMode.SIGN;
+		case 'form':
+			return ViewMode.FORM;
 		case 'preview':
-			return ViewMode.PREVIEW;
 		case 'viewer':
-			return ViewMode.VIEWER;
+			return ViewMode.PREVIEW;
 		default:
 			return ViewMode.EDITOR;
 	}

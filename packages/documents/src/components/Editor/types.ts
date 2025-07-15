@@ -75,11 +75,9 @@ export interface ComponentGroup {
 }
 
 export enum ViewMode {
-  EDITOR = 'editor',
-  INPUT = 'input',
-  SIGN = 'sign',
-  PREVIEW = 'preview',
-  VIEWER = 'viewer'
+  EDITOR = 'editor',    // Design and layout components
+  FORM = 'form',        // Fill out form fields and signatures  
+  PREVIEW = 'preview'   // Read-only view of completed document
 }
 
 export enum ToolMode {
