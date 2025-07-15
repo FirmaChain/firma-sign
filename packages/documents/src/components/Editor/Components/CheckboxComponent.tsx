@@ -1,5 +1,5 @@
 import React from 'react';
-import { ComponentProps } from '../types';
+import { ComponentProps, ViewMode } from '../types';
 
 export const CheckboxComponent: React.FC<ComponentProps> = ({
 	component,
@@ -14,12 +14,6 @@ export const CheckboxComponent: React.FC<ComponentProps> = ({
 	onStartDrag,
 	onStartResize,
 }) => {
-	const handleClick = () => {
-		if (onSelect) {
-			onSelect(component.id);
-		}
-	};
-
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (onUpdate) {
 			onUpdate({
@@ -29,38 +23,31 @@ export const CheckboxComponent: React.FC<ComponentProps> = ({
 		}
 	};
 
-	const isChecked = component.value === 'true';
+	const isChecked = component.value === 'true' || component.value === true;
 
 	return (
 		<div
-			className={`absolute cursor-pointer border-2 ${
-				isSelected ? 'border-blue-500' : 'border-gray-300'
-			} ${isHovered ? 'border-blue-400' : ''}`}
+			className="w-full h-full flex items-center justify-center"
 			style={{
-				left: component.position.x * scale,
-				top: component.position.y * scale,
-				width: component.size.width * scale,
-				height: component.size.height * scale,
-				backgroundColor: component.config.backgroundColor || '#ffffff',
-				borderColor: component.assigned.color || '#3b82f6',
+				backgroundColor: component.config?.backgroundColor || '#ffffff',
 			}}
-			onClick={handleClick}
 		>
-			<div className="w-full h-full flex items-center justify-center">
-				{viewMode === 'editor' ? (
-					<div className="text-xs text-gray-500">☑</div>
-				) : (
-					<input
-						type="checkbox"
-						checked={isChecked}
-						onChange={handleChange}
-						className="w-4 h-4"
-						style={{
-							accentColor: component.assigned.color || '#3b82f6',
-						}}
-					/>
-				)}
-			</div>
+			{viewMode === ViewMode.EDITOR ? (
+				<div className="w-full h-full flex items-center justify-center text-xs text-gray-500 border border-dashed border-gray-300">
+					☑ Checkbox
+				</div>
+			) : (
+				<input
+					type="checkbox"
+					checked={isChecked}
+					onChange={handleChange}
+					className="w-4 h-4 pointer-events-auto"
+					style={{
+						accentColor: component.assigned?.color || '#3b82f6',
+					}}
+					onClick={(e) => e.stopPropagation()}
+				/>
+			)}
 		</div>
 	);
 };

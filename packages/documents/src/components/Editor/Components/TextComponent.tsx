@@ -1,5 +1,5 @@
 import React from 'react';
-import { ComponentProps } from '../types';
+import { ComponentProps, ViewMode } from '../types';
 
 export const TextComponent: React.FC<ComponentProps> = ({
 	component,
@@ -14,12 +14,6 @@ export const TextComponent: React.FC<ComponentProps> = ({
 	onStartDrag,
 	onStartResize,
 }) => {
-	const handleClick = () => {
-		if (onSelect) {
-			onSelect(component.id);
-		}
-	};
-
 	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
 		if (onUpdate) {
 			onUpdate({
@@ -31,34 +25,27 @@ export const TextComponent: React.FC<ComponentProps> = ({
 
 	return (
 		<div
-			className={`absolute cursor-pointer border-2 ${
-				isSelected ? 'border-blue-500' : 'border-gray-300'
-			} ${isHovered ? 'border-blue-400' : ''}`}
+			className="w-full h-full flex items-center justify-center"
 			style={{
-				left: component.position.x * scale,
-				top: component.position.y * scale,
-				width: component.size.width * scale,
-				height: component.size.height * scale,
-				backgroundColor: component.config.backgroundColor || '#ffffff',
-				borderColor: component.assigned.color || '#3b82f6',
+				backgroundColor: component.config?.backgroundColor || '#ffffff',
 			}}
-			onClick={handleClick}
 		>
-			{viewMode === 'editor' ? (
-				<div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-					Text Field
+			{viewMode === ViewMode.EDITOR ? (
+				<div className="w-full h-full flex items-center justify-center text-xs text-gray-500 border border-dashed border-gray-300">
+					{component.value || 'Text Field'}
 				</div>
 			) : (
 				<input
 					type="text"
 					value={component.value || ''}
 					onChange={handleChange}
-					placeholder={component.config.placeholder || 'Enter text...'}
-					className="w-full h-full border-none outline-none bg-transparent px-2"
+					placeholder={component.config?.placeholder || 'Enter text...'}
+					className="w-full h-full border-none outline-none bg-transparent px-2 pointer-events-auto"
 					style={{
-						fontSize: (component.config.fontSize || 12) * scale,
-						color: component.config.color || '#000000',
+						fontSize: component.config?.fontSize || 12,
+						color: component.config?.color || '#000000',
 					}}
+					onClick={(e) => e.stopPropagation()}
 				/>
 			)}
 		</div>

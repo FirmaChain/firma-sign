@@ -41,11 +41,20 @@ export const useComponentManagement = ({
 	}, []); // Only run on mount
 
 	// Handle prop updates when components array changes externally
+	// Only update if we receive new/different components from parent
 	useEffect(() => {
-		if (initialComponents.length !== documentComponents.length) {
+		// Skip if initialComponents is empty (parent has no components)
+		if (initialComponents.length === 0) return;
+		
+		// Only update if we actually received different components from parent
+		const hasNewComponents = initialComponents.some(comp => 
+			!documentComponents.find(existing => existing.id === comp.id)
+		);
+		
+		if (hasNewComponents) {
 			setDocumentComponents(initialComponents);
 		}
-	}, [initialComponents.length, documentComponents.length]);
+	}, [initialComponents]);
 
 	const updateComponents = useCallback(
 		(newComponents: DocumentComponent[]) => {

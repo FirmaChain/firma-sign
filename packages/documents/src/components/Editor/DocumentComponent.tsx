@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '../../utils/cn';
 import {
-	DocumentComponent as IDocumentComponent,
 	ComponentProps,
 	ViewMode,
 	ResizeHandle,
@@ -77,7 +76,6 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 	component,
 	isSelected = false,
 	isHovered = false,
-	isFocused = false,
 	viewMode,
 	scale,
 	onUpdate,
@@ -92,10 +90,6 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 	const [isDragging, setIsDragging] = useState(false);
 	const [isResizing, setIsResizing] = useState(false);
 	const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
-	const [resizeStart, setResizeStart] = useState<{ position: Position; size: Size }>({
-		position: { x: 0, y: 0 },
-		size: { width: 0, height: 0 },
-	});
 
 	const isEditorMode = viewMode === ViewMode.EDITOR;
 	const canInteract = isEditorMode;
@@ -147,10 +141,6 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 			e.stopPropagation();
 
 			setIsResizing(true);
-			setResizeStart({
-				position: { x: e.clientX, y: e.clientY },
-				size: component.size,
-			});
 			onStartResize?.(component.id, handle, { x: e.clientX, y: e.clientY }, component.size);
 		},
 		[canInteract, component.id, component.size, onStartResize],
@@ -335,7 +325,7 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 			)}
 
 			{/* Component content */}
-			<div className={cn('w-full h-full', isEditorMode && 'pointer-events-none')}>{children}</div>
+			<div className="w-full h-full">{children}</div>
 
 			{/* Resize handles */}
 			{isSelected && isEditorMode && (
