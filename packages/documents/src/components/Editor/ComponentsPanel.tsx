@@ -743,11 +743,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 			</div>
 
 			{/* Export Panel */}
-			<ExportPanel
-				components={components}
-				pdfUrl={pdfUrl}
-				fileName={fileName}
-			/>
+			<ExportPanel components={components} pdfUrl={pdfUrl} fileName={fileName} />
 		</div>
 	);
 };

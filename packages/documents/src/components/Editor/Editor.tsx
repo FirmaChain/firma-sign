@@ -358,7 +358,9 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 						/>
 					) : (
 						<div className="p-4 text-sm text-gray-500">
-							{editorViewMode === ViewMode.FORM ? 'Form mode - design tools not available' : 'Preview mode - tools not available'}
+							{editorViewMode === ViewMode.FORM
+								? 'Form mode - design tools not available'
+								: 'Preview mode - tools not available'}
 						</div>
 					)}
 				</FloatingPanel>

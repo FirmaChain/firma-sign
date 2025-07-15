@@ -1,10 +1,7 @@
 import React from 'react';
 import { ComponentProps, ViewMode } from '../types';
 
-export const StampComponent: React.FC<ComponentProps> = ({
-	component,
-	viewMode,
-}) => {
+export const StampComponent: React.FC<ComponentProps> = ({ component, viewMode }) => {
 	return (
 		<div
 			className="w-full h-full border-2 rounded-full flex items-center justify-center text-xs font-semibold"

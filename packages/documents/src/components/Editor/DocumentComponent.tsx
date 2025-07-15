@@ -1,12 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '../../utils/cn';
-import {
-	ComponentProps,
-	ViewMode,
-	ResizeHandle,
-	Position,
-	Size,
-} from './types';
+import { ComponentProps, ViewMode, ResizeHandle, Position, Size } from './types';
 import { Z_INDEX, GRID, TOOLS_INFO } from './constants';
 
 interface DocumentComponentWrapperProps extends ComponentProps {

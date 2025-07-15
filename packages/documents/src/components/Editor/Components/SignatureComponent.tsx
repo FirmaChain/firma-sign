@@ -1,11 +1,7 @@
 import React from 'react';
 import { ComponentProps, ViewMode } from '../types';
 
-export const SignatureComponent: React.FC<ComponentProps> = ({
-	component,
-	viewMode,
-	onUpdate,
-}) => {
+export const SignatureComponent: React.FC<ComponentProps> = ({ component, viewMode, onUpdate }) => {
 	const handleSign = () => {
 		if (onUpdate && viewMode !== ViewMode.EDITOR) {
 			onUpdate({

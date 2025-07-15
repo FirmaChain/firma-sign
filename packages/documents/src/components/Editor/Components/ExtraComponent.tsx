@@ -1,10 +1,7 @@
 import React from 'react';
 import { ComponentProps, ViewMode } from '../types';
 
-export const ExtraComponent: React.FC<ComponentProps> = ({
-	component,
-	viewMode,
-}) => {
+export const ExtraComponent: React.FC<ComponentProps> = ({ component, viewMode }) => {
 	return (
 		<div
 			className="w-full h-full border-2 border-dashed"

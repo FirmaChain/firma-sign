@@ -44,7 +44,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
 		if (!validation.isValid) {
 			const proceed = confirm(
-				`There are ${validation.missingRequired.length} required components that haven't been filled out. Export anyway?`
+				`There are ${validation.missingRequired.length} required components that haven't been filled out. Export anyway?`,
 			);
 			if (!proceed) return;
 		}
@@ -114,7 +114,9 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 						{validation.missingRequired.map((component) => (
 							<li key={component.id} className="flex items-start gap-1">
 								<span>❌</span>
-								<span>{component.type} on page {component.pageNumber + 1}</span>
+								<span>
+									{component.type} on page {component.pageNumber + 1}
+								</span>
 							</li>
 						))}
 					</ul>
@@ -135,15 +137,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 					<div className="space-y-3 pl-4 border-l-2 border-gray-100">
 						{/* Quality Setting */}
 						<div>
-							<label className="block text-xs font-medium text-gray-700 mb-1">
-								Quality
-							</label>
+							<label className="block text-xs font-medium text-gray-700 mb-1">Quality</label>
 							<select
 								value={exportOptions.quality}
-								onChange={(e) => setExportOptions(prev => ({
-									...prev,
-									quality: e.target.value as 'low' | 'medium' | 'high'
-								}))}
+								onChange={(e) =>
+									setExportOptions((prev) => ({
+										...prev,
+										quality: e.target.value as 'low' | 'medium' | 'high',
+									}))
+								}
 								className="w-full text-xs border border-gray-300 rounded px-2 py-1"
 							>
 								<option value="low">Low (Fast)</option>
@@ -158,10 +160,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 								<input
 									type="checkbox"
 									checked={exportOptions.includeFormFields}
-									onChange={(e) => setExportOptions(prev => ({
-										...prev,
-										includeFormFields: e.target.checked
-									}))}
+									onChange={(e) =>
+										setExportOptions((prev) => ({
+											...prev,
+											includeFormFields: e.target.checked,
+										}))
+									}
 									className="rounded"
 								/>
 								<span>Include Form Fields</span>
@@ -177,10 +181,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 								<input
 									type="checkbox"
 									checked={exportOptions.flattenComponents}
-									onChange={(e) => setExportOptions(prev => ({
-										...prev,
-										flattenComponents: e.target.checked
-									}))}
+									onChange={(e) =>
+										setExportOptions((prev) => ({
+											...prev,
+											flattenComponents: e.target.checked,
+										}))
+									}
 									className="rounded"
 								/>
 								<span>Flatten Components</span>
@@ -235,12 +241,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
 				{!canExport && !isExporting && (
 					<p className="text-xs text-gray-500 text-center">
-						{components.length === 0 
+						{components.length === 0
 							? 'Add components to enable export'
-							: !pdfUrl 
-							? 'No PDF loaded'
-							: 'Export not available'
-						}
+							: !pdfUrl
+								? 'No PDF loaded'
+								: 'Export not available'}
 					</p>
 				)}
 			</div>
