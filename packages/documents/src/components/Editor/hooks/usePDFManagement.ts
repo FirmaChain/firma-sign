@@ -231,6 +231,46 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 		setRenderRatio(1);
 	}, []);
 
+	const handleFitWidth = useCallback(() => {
+		if (!$DocumentArea.current || !pdfPageDimensions) return;
+		
+		const containerRect = $DocumentArea.current.getBoundingClientRect();
+		const availableWidth = containerRect.width * 0.85; // Leave some margin for UI elements
+		
+		// Calculate the desired render scale to fit width
+		const desiredRenderScale = availableWidth / pdfPageDimensions.width;
+		
+		// Since renderScale = displayScale * renderRatio, we need to solve for displayScale
+		// displayScale = desiredRenderScale / renderRatio
+		const fitWidthDisplayScale = desiredRenderScale / renderRatio;
+		
+		const minScale = 0.25;
+		const maxScale = 2.5;
+		const clampedScale = Math.max(minScale, Math.min(fitWidthDisplayScale, maxScale));
+		
+		setDisplayScale(clampedScale);
+	}, [pdfPageDimensions, renderRatio]);
+
+	const handleFitHeight = useCallback(() => {
+		if (!$DocumentArea.current || !pdfPageDimensions) return;
+		
+		const containerRect = $DocumentArea.current.getBoundingClientRect();
+		const availableHeight = containerRect.height * 0.8; // Leave some margin for UI elements
+		
+		// Calculate the desired render scale to fit height
+		const desiredRenderScale = availableHeight / pdfPageDimensions.height;
+		
+		// Since renderScale = displayScale * renderRatio, we need to solve for displayScale
+		// displayScale = desiredRenderScale / renderRatio
+		const fitHeightDisplayScale = desiredRenderScale / renderRatio;
+		
+		const minScale = 0.25;
+		const maxScale = 2.5;
+		const clampedScale = Math.max(minScale, Math.min(fitHeightDisplayScale, maxScale));
+		
+		setDisplayScale(clampedScale);
+	}, [pdfPageDimensions, renderRatio]);
+
 	return {
 		// Document state
 		numPages,
@@ -262,5 +302,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 		handlePagePosition,
 		onVisible,
 		resetPDF,
+		handleFitWidth,
+		handleFitHeight,
 	};
 };

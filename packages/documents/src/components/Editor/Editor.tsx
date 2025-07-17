@@ -328,6 +328,8 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 							<ZoomBar
 								displayScale={pdfManager.displayScale}
 								onScaleChange={pdfManager.handleScaleChange}
+								onFitWidth={pdfManager.handleFitWidth}
+								onFitHeight={pdfManager.handleFitHeight}
 							/>
 						</DocumentArea>
 					</div>
