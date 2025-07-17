@@ -13,10 +13,6 @@ const meta: Meta<typeof ZoomBar> = {
 		scale: {
 			control: { type: 'range', min: 0.1, max: 3, step: 0.1 },
 		},
-		viewMode: {
-			control: { type: 'select' },
-			options: ['editor', 'form', 'preview'],
-		},
 	},
 	decorators: [
 		(Story) => (
@@ -86,7 +82,7 @@ export const Interactive: Story = {
 					<p className="text-gray-600 text-sm mb-4">Try the zoom controls to see them in action</p>
 				</div>
 
-				<ZoomBar scale={scale} onScaleChange={setScale} viewMode="editor" />
+				<ZoomBar scale={scale} onScaleChange={setScale} />
 
 				<div className="text-center">
 					<div className="text-sm text-gray-600">
@@ -117,29 +113,17 @@ export const DifferentViewModes: Story = {
 		<div className="space-y-6">
 			<div>
 				<h3 className="text-sm font-semibold mb-2">Editor Mode</h3>
-				<ZoomBar
-					scale={1}
-					viewMode="editor"
-					onScaleChange={(scale) => console.log('Editor scale:', scale)}
-				/>
+				<ZoomBar scale={1} onScaleChange={(scale) => console.log('Editor scale:', scale)} />
 			</div>
 
 			<div>
 				<h3 className="text-sm font-semibold mb-2">Form Mode</h3>
-				<ZoomBar
-					scale={1}
-					viewMode="form"
-					onScaleChange={(scale) => console.log('Form scale:', scale)}
-				/>
+				<ZoomBar scale={1} onScaleChange={(scale) => console.log('Form scale:', scale)} />
 			</div>
 
 			<div>
 				<h3 className="text-sm font-semibold mb-2">Preview Mode</h3>
-				<ZoomBar
-					scale={1}
-					viewMode="preview"
-					onScaleChange={(scale) => console.log('Preview scale:', scale)}
-				/>
+				<ZoomBar scale={1} onScaleChange={(scale) => console.log('Preview scale:', scale)} />
 			</div>
 		</div>
 	),
@@ -233,7 +217,7 @@ export const DocumentZoomDemo: Story = {
 				</div>
 
 				<div className="flex justify-center">
-					<ZoomBar scale={scale} onScaleChange={setScale} viewMode="editor" />
+					<ZoomBar scale={scale} onScaleChange={setScale} />
 				</div>
 
 				<div className="border-2 border-gray-300 rounded-lg p-6 bg-gray-50 overflow-auto">
@@ -324,7 +308,7 @@ export const ZoomBarInContext: Story = {
 						<div className="text-sm text-gray-500">Page 1 of 3</div>
 					</div>
 
-					<ZoomBar scale={scale} onScaleChange={setScale} viewMode="editor" />
+					<ZoomBar scale={scale} onScaleChange={setScale} />
 				</div>
 
 				{/* Content area */}

@@ -4,16 +4,10 @@ import { cn } from '../../utils/cn';
 interface ZoomBarProps {
 	scale: number;
 	onScaleChange: (scale: number) => void;
-	viewMode?: string;
 	className?: string;
 }
 
-export const ZoomBar: React.FC<ZoomBarProps> = ({
-	scale,
-	onScaleChange,
-	viewMode = 'editor',
-	className,
-}) => {
+export const ZoomBar: React.FC<ZoomBarProps> = ({ scale, onScaleChange, className }) => {
 	const handleZoomIn = useCallback(() => {
 		const newScale = Math.min(scale * 1.2, 3); // Max 300%
 		onScaleChange(newScale);

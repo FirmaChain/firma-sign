@@ -21,7 +21,7 @@ export interface ExportResult {
 export async function exportPDFWithComponents(
 	originalPdfUrl: string,
 	components: DocumentComponent[],
-	options: ExportOptions = {}
+	options: ExportOptions = {},
 ): Promise<ExportResult> {
 	try {
 		const {
@@ -46,7 +46,7 @@ export async function exportPDFWithComponents(
 
 		// Group components by page
 		const componentsByPage = new Map<number, DocumentComponent[]>();
-		components.forEach(component => {
+		components.forEach((component) => {
 			const pageNum = component.pageNumber;
 			if (!componentsByPage.has(pageNum)) {
 				componentsByPage.set(pageNum, []);
@@ -63,9 +63,7 @@ export async function exportPDFWithComponents(
 			const { width: pageWidth, height: pageHeight } = page.getSize();
 
 			// Sort components by creation time (z-index)
-			const sortedComponents = pageComponents.sort((a, b) => 
-				(a.created || 0) - (b.created || 0)
-			);
+			const sortedComponents = pageComponents.sort((a, b) => (a.created || 0) - (b.created || 0));
 
 			// Draw each component on the page
 			for (const component of sortedComponents) {
@@ -84,7 +82,6 @@ export async function exportPDFWithComponents(
 			fileName,
 			pdfBytes,
 		};
-
 	} catch (error) {
 		console.error('PDF export error:', error);
 		return {
@@ -104,7 +101,7 @@ async function drawComponentOnPage(
 	boldFont: any,
 	pageWidth: number,
 	pageHeight: number,
-	quality: 'low' | 'medium' | 'high'
+	quality: 'low' | 'medium' | 'high',
 ) {
 	const { position, size, type, value, config, assigned } = component;
 
@@ -120,7 +117,7 @@ async function drawComponentOnPage(
 	const backgroundColor = config?.backgroundColor ? hexToRgb(config.backgroundColor) : null;
 
 	// Draw background if specified
-	if (backgroundColor && backgroundColor.r !== 1 && backgroundColor.g !== 1 && backgroundColor.b !== 1) {
+	if (backgroundColor) {
 		page.drawRectangle({
 			x,
 			y,
@@ -136,7 +133,7 @@ async function drawComponentOnPage(
 			if (value) {
 				const fontSize = Math.min(config?.fontSize || 12, height * 0.8);
 				const textWidth = font.widthOfTextAtSize(value, fontSize);
-				
+
 				// Center text if it fits, otherwise left align
 				const textX = textWidth <= width - 8 ? x + (width - textWidth) / 2 : x + 4;
 				const textY = y + (height - fontSize) / 2;
@@ -149,7 +146,7 @@ async function drawComponentOnPage(
 					color: textColor,
 				});
 			}
-			
+
 			// Draw border for input fields
 			if (type === ComponentType.INPUT_FIELD) {
 				page.drawRectangle({
@@ -175,7 +172,7 @@ async function drawComponentOnPage(
 			});
 
 			// Draw checkmark if checked
-			if (value === 'true' || value === true) {
+			if (value === 'true') {
 				// Draw a checkmark using lines
 				const checkSize = Math.min(width, height) * 0.6;
 				const checkboxCenterX = x + width / 2;
@@ -185,15 +182,27 @@ async function drawComponentOnPage(
 				// Draw checkmark as two lines forming a "check" shape
 				// First line: bottom-left to center
 				page.drawLine({
-					start: { x: checkboxCenterX - checkboxHalfSize * 0.6, y: checkboxCenterY - checkboxHalfSize * 0.2 },
-					end: { x: checkboxCenterX - checkboxHalfSize * 0.1, y: checkboxCenterY - checkboxHalfSize * 0.6 },
+					start: {
+						x: checkboxCenterX - checkboxHalfSize * 0.6,
+						y: checkboxCenterY - checkboxHalfSize * 0.2,
+					},
+					end: {
+						x: checkboxCenterX - checkboxHalfSize * 0.1,
+						y: checkboxCenterY - checkboxHalfSize * 0.6,
+					},
 					thickness: 2,
 					color: borderColor,
 				});
 				// Second line: center to top-right
 				page.drawLine({
-					start: { x: checkboxCenterX - checkboxHalfSize * 0.1, y: checkboxCenterY - checkboxHalfSize * 0.6 },
-					end: { x: checkboxCenterX + checkboxHalfSize * 0.6, y: checkboxCenterY + checkboxHalfSize * 0.4 },
+					start: {
+						x: checkboxCenterX - checkboxHalfSize * 0.1,
+						y: checkboxCenterY - checkboxHalfSize * 0.6,
+					},
+					end: {
+						x: checkboxCenterX + checkboxHalfSize * 0.6,
+						y: checkboxCenterY + checkboxHalfSize * 0.4,
+					},
 					thickness: 2,
 					color: borderColor,
 				});
@@ -210,15 +219,27 @@ async function drawComponentOnPage(
 			// Draw checkmark as two lines forming a "check" shape
 			// First line: bottom-left to center
 			page.drawLine({
-				start: { x: checkmarkCenterX - checkmarkHalfSize * 0.6, y: checkmarkCenterY - checkmarkHalfSize * 0.2 },
-				end: { x: checkmarkCenterX - checkmarkHalfSize * 0.1, y: checkmarkCenterY - checkmarkHalfSize * 0.6 },
+				start: {
+					x: checkmarkCenterX - checkmarkHalfSize * 0.6,
+					y: checkmarkCenterY - checkmarkHalfSize * 0.2,
+				},
+				end: {
+					x: checkmarkCenterX - checkmarkHalfSize * 0.1,
+					y: checkmarkCenterY - checkmarkHalfSize * 0.6,
+				},
 				thickness: 3,
 				color: borderColor,
 			});
 			// Second line: center to top-right
 			page.drawLine({
-				start: { x: checkmarkCenterX - checkmarkHalfSize * 0.1, y: checkmarkCenterY - checkmarkHalfSize * 0.6 },
-				end: { x: checkmarkCenterX + checkmarkHalfSize * 0.6, y: checkmarkCenterY + checkmarkHalfSize * 0.4 },
+				start: {
+					x: checkmarkCenterX - checkmarkHalfSize * 0.1,
+					y: checkmarkCenterY - checkmarkHalfSize * 0.6,
+				},
+				end: {
+					x: checkmarkCenterX + checkmarkHalfSize * 0.6,
+					y: checkmarkCenterY + checkmarkHalfSize * 0.4,
+				},
 				thickness: 3,
 				color: borderColor,
 			});
@@ -388,7 +409,7 @@ function hexToRgb(hex: string) {
 		return rgb(
 			parseInt(result[1], 16) / 255,
 			parseInt(result[2], 16) / 255,
-			parseInt(result[3], 16) / 255
+			parseInt(result[3], 16) / 255,
 		);
 	}
 	return rgb(0, 0, 0);
@@ -414,7 +435,7 @@ export function previewPDF(pdfBytes: Uint8Array) {
 	const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 	const url = URL.createObjectURL(blob);
 	window.open(url, '_blank');
-	
+
 	// Clean up after a delay
 	setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
@@ -437,18 +458,19 @@ export function getExportStats(components: DocumentComponent[]): {
 		requiredComponents: 0,
 	};
 
-	components.forEach(component => {
+	components.forEach((component) => {
 		// Count by type
 		stats.componentsByType[component.type] = (stats.componentsByType[component.type] || 0) + 1;
-		
+
 		// Count by page
-		stats.componentsByPage[component.pageNumber] = (stats.componentsByPage[component.pageNumber] || 0) + 1;
-		
+		stats.componentsByPage[component.pageNumber] =
+			(stats.componentsByPage[component.pageNumber] || 0) + 1;
+
 		// Count filled components
 		if (component.value) {
 			stats.filledComponents++;
 		}
-		
+
 		// Count required components
 		if (component.config?.required) {
 			stats.requiredComponents++;
