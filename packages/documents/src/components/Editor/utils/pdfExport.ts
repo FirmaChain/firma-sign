@@ -176,30 +176,50 @@ async function drawComponentOnPage(
 
 			// Draw checkmark if checked
 			if (value === 'true' || value === true) {
+				// Draw a checkmark using lines
 				const checkSize = Math.min(width, height) * 0.6;
-				const checkX = x + (width - checkSize) / 2;
-				const checkY = y + (height - checkSize) / 2;
+				const checkboxCenterX = x + width / 2;
+				const checkboxCenterY = y + height / 2;
+				const checkboxHalfSize = checkSize / 2;
 
-				page.drawText('✓', {
-					x: checkX,
-					y: checkY,
-					size: checkSize,
-					font: boldFont,
+				// Draw checkmark as two lines forming a "check" shape
+				// First line: bottom-left to center
+				page.drawLine({
+					start: { x: checkboxCenterX - checkboxHalfSize * 0.6, y: checkboxCenterY - checkboxHalfSize * 0.2 },
+					end: { x: checkboxCenterX - checkboxHalfSize * 0.1, y: checkboxCenterY - checkboxHalfSize * 0.6 },
+					thickness: 2,
+					color: borderColor,
+				});
+				// Second line: center to top-right
+				page.drawLine({
+					start: { x: checkboxCenterX - checkboxHalfSize * 0.1, y: checkboxCenterY - checkboxHalfSize * 0.6 },
+					end: { x: checkboxCenterX + checkboxHalfSize * 0.6, y: checkboxCenterY + checkboxHalfSize * 0.4 },
+					thickness: 2,
 					color: borderColor,
 				});
 			}
 			break;
 
 		case ComponentType.CHECKMARK:
+			// Draw a checkmark using lines
 			const checkmarkSize = Math.min(width, height) * 0.8;
-			const checkmarkX = x + (width - checkmarkSize) / 2;
-			const checkmarkY = y + (height - checkmarkSize) / 2;
+			const checkmarkCenterX = x + width / 2;
+			const checkmarkCenterY = y + height / 2;
+			const checkmarkHalfSize = checkmarkSize / 2;
 
-			page.drawText('✓', {
-				x: checkmarkX,
-				y: checkmarkY,
-				size: checkmarkSize,
-				font: boldFont,
+			// Draw checkmark as two lines forming a "check" shape
+			// First line: bottom-left to center
+			page.drawLine({
+				start: { x: checkmarkCenterX - checkmarkHalfSize * 0.6, y: checkmarkCenterY - checkmarkHalfSize * 0.2 },
+				end: { x: checkmarkCenterX - checkmarkHalfSize * 0.1, y: checkmarkCenterY - checkmarkHalfSize * 0.6 },
+				thickness: 3,
+				color: borderColor,
+			});
+			// Second line: center to top-right
+			page.drawLine({
+				start: { x: checkmarkCenterX - checkmarkHalfSize * 0.1, y: checkmarkCenterY - checkmarkHalfSize * 0.6 },
+				end: { x: checkmarkCenterX + checkmarkHalfSize * 0.6, y: checkmarkCenterY + checkmarkHalfSize * 0.4 },
+				thickness: 3,
 				color: borderColor,
 			});
 			break;
@@ -237,12 +257,12 @@ async function drawComponentOnPage(
 		case ComponentType.STAMP:
 			// Draw stamp circle
 			const radius = Math.min(width, height) / 2;
-			const centerX = x + width / 2;
-			const centerY = y + height / 2;
+			const stampCenterX = x + width / 2;
+			const stampCenterY = y + height / 2;
 
 			page.drawCircle({
-				x: centerX,
-				y: centerY,
+				x: stampCenterX,
+				y: stampCenterY,
 				size: radius,
 				borderColor,
 				borderWidth: 3,
@@ -252,8 +272,8 @@ async function drawComponentOnPage(
 			const stampText = 'APPROVED';
 			const stampFontSize = radius * 0.4;
 			const stampTextWidth = boldFont.widthOfTextAtSize(stampText, stampFontSize);
-			const stampX = centerX - stampTextWidth / 2;
-			const stampY = centerY - stampFontSize / 2;
+			const stampX = stampCenterX - stampTextWidth / 2;
+			const stampY = stampCenterY - stampFontSize / 2;
 
 			page.drawText(stampText, {
 				x: stampX,

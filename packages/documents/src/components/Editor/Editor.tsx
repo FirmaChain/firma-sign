@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, forwardRef, type ComponentProps } from 'react';
 import { Document, Page as ReactPdfPage, pdfjs } from 'react-pdf';
 import { cn } from '../../utils/cn';
 import { DocumentLayer } from './DocumentLayer';
@@ -20,7 +20,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 // DocumentArea component with Tailwind styling
-const DocumentArea = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+const DocumentArea = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 	({ className, ...props }, ref) => (
 		<div ref={ref} className={cn('relative w-full h-full', className)} {...props} />
 	),
@@ -42,7 +42,7 @@ export interface EditorProps {
 	onComponentsChange?: (components: DocumentComponent[]) => void;
 }
 
-const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
+const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 	(
 		{
 			viewMode = 'editor',
@@ -436,7 +436,7 @@ const EditorInner = React.forwardRef<HTMLDivElement, EditorProps>(
 EditorInner.displayName = 'EditorInner';
 
 // Main Editor component wrapped with PanelManagerProvider
-export const Editor = React.forwardRef<HTMLDivElement, EditorProps>((props, ref) => {
+export const Editor = forwardRef<HTMLDivElement, EditorProps>((props, ref) => {
 	return (
 		<PanelManagerProvider>
 			<EditorInner {...props} ref={ref} />

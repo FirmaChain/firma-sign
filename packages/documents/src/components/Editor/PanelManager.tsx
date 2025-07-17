@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useState, type FC, type ReactNode } from 'react';
 import { FloatingPanelPosition, PanelPosition } from './FloatingPanel';
 
 // Calculate smart default positions that work within typical container sizes
@@ -79,11 +79,11 @@ export const usePanelManager = (): PanelManagerContextType => {
 };
 
 export interface PanelManagerProviderProps {
-	children: React.ReactNode;
+	children: ReactNode;
 	initialState?: Partial<PanelManagerState>;
 }
 
-export const PanelManagerProvider: React.FC<PanelManagerProviderProps> = ({
+export const PanelManagerProvider: FC<PanelManagerProviderProps> = ({
 	children,
 	initialState,
 }) => {

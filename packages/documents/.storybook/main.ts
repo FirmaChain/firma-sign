@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
+import path from 'path';
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -17,6 +18,14 @@ const config: StorybookConfig = {
 	viteFinal: async (config) => {
 		return {
 			...config,
+			resolve: {
+				...config.resolve,
+				alias: {
+					...config.resolve?.alias,
+					react: path.resolve(__dirname, '../node_modules/react'),
+					'react-dom': path.resolve(__dirname, '../node_modules/react-dom'),
+				},
+			},
 			server: {
 				proxy: {
 					'/wcoomd': {
