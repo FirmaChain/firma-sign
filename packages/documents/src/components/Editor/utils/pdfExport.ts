@@ -67,7 +67,7 @@ export async function exportPDFWithComponents(
 
 			// Draw each component on the page
 			for (const component of sortedComponents) {
-				await drawComponentOnPage(page, component, font, boldFont, pageWidth, pageHeight, quality);
+				await drawComponentOnPage(page, component, font, boldFont, pageWidth, pageHeight);
 			}
 		}
 
@@ -101,7 +101,6 @@ async function drawComponentOnPage(
 	boldFont: any,
 	pageWidth: number,
 	pageHeight: number,
-	quality: 'low' | 'medium' | 'high',
 ) {
 	const { position, size, type, value, config, assigned } = component;
 

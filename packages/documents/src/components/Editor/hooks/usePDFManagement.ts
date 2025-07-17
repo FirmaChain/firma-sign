@@ -32,22 +32,46 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 
 	const renderScale = useMemo(() => displayScale * renderRatio, [displayScale, renderRatio]);
 
-	// Helper function to calculate optimal scale
+	// Helper function to calculate optimal scale - prioritizes PDF aspect ratio over container fitting
+	// NOTE: This approach maintains the original PDF file's aspect ratio by scaling based on width only.
+	// The PDF height will be determined by its natural aspect ratio, which may require vertical scrolling.
+	// This prevents distortion that would occur if we tried to fit both width AND height constraints.
 	const calculateOptimalScale = useCallback(
 		(pdfWidth: number, pdfHeight: number, containerWidth: number, containerHeight: number) => {
-			// Calculate available space (considering padding and max-width constraint)
-			const maxWidth = Math.min(containerWidth * 0.9, 1024); // max-w-4xl ≈ 1024px, with some padding
-			const maxHeight = containerHeight * 0.8; // Leave some space for UI elements
+			// Use width-based scaling to maintain PDF aspect ratio
+			// This ensures the PDF keeps its original proportions regardless of container shape
+			const availableWidth = containerWidth * 0.85; // Leave some margin for UI elements
 
-			// Calculate scale factors for both width and height
-			const scaleX = maxWidth / pdfWidth;
-			const scaleY = maxHeight / pdfHeight;
+			// Scale based on width - let height be determined by PDF's aspect ratio
+			const widthBasedScale = availableWidth / pdfWidth;
 
-			// Use the smaller scale to ensure the PDF fits within the container while maintaining aspect ratio
-			const optimalScale = Math.min(scaleX, scaleY, 2); // Cap at 2x to prevent oversized rendering
+			// Apply reasonable bounds for usability
+			const minScale = 0.25; // Minimum for readability
+			const maxScale = 2.5; // Maximum to prevent excessive size
 
-			// Ensure minimum scale for readability
-			return Math.max(optimalScale, 0.3);
+			const optimalScale = Math.max(minScale, Math.min(widthBasedScale, maxScale));
+
+			// Calculate resulting height to check if scrolling will be needed
+			const resultingHeight = pdfHeight * optimalScale;
+			const availableHeight = containerHeight * 0.8;
+
+			console.log('PDF scaling (aspect ratio preserved):', {
+				pdfWidth,
+				pdfHeight,
+				pdfAspectRatio: (pdfWidth / pdfHeight).toFixed(2),
+				containerWidth,
+				containerHeight,
+				containerAspectRatio: (containerWidth / containerHeight).toFixed(2),
+				availableWidth,
+				availableHeight,
+				widthBasedScale: widthBasedScale.toFixed(3),
+				optimalScale: optimalScale.toFixed(3),
+				resultingWidth: (pdfWidth * optimalScale).toFixed(0),
+				resultingHeight: resultingHeight.toFixed(0),
+				willNeedVerticalScroll: resultingHeight > availableHeight,
+			});
+
+			return optimalScale;
 		},
 		[],
 	);
@@ -108,9 +132,10 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 							containerRect.height,
 						);
 
-						console.log('PDF loaded, calculated scale:', {
+						console.log('PDF loaded, maintaining original aspect ratio:', {
 							originalWidth: vp.width,
 							originalHeight: vp.height,
+							aspectRatio: (vp.width / vp.height).toFixed(2),
 							containerWidth: containerRect.width,
 							containerHeight: containerRect.height,
 							finalScale,

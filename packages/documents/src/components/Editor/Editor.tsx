@@ -261,7 +261,7 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 							<div className="h-full overflow-auto" ref={pdfManager.$Scrollbar}>
 								{/* Centering container for document pages */}
 								<div className="min-h-full flex items-center justify-center p-4">
-									<div className="max-w-4xl w-full">
+									<div className="w-full">
 										{/* Document Pages */}
 										<div className="space-y-5 py-10">
 											{Array.from({ length: pdfManager.numPages || 1 }, (_, i) => (
@@ -279,12 +279,12 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 														pageNumber={i + 1}
 														scale={pdfManager.renderScale}
 														loading={
-															<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
+															<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
 																<div className="text-gray-400">Loading page {i + 1}...</div>
 															</div>
 														}
 														error={
-															<div className="w-full aspect-[8.5/11] bg-gray-50 flex items-center justify-center">
+															<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
 																<div className="text-red-400">Error loading page {i + 1}</div>
 															</div>
 														}
