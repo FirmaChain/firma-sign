@@ -6,7 +6,7 @@ import { EnhancedPalette } from './EnhancedPalette';
 import { ComponentsPanel } from './ComponentsPanel';
 import { FloatingPanel, PanelPosition, FloatingPanelPosition } from './FloatingPanel';
 import { PanelManagerProvider, usePanelManager } from './PanelManager';
-import { DocumentComponent, ViewMode, AssignedUser } from './types';
+import { DocumentComponent, ViewMode, AssignedUser, ComponentType } from './types';
 import { getViewModeFromString } from './utils/editorUtils';
 import { useComponentManagement } from './hooks/useComponentManagement';
 import { usePDFManagement } from './hooks/usePDFManagement';
@@ -72,6 +72,43 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 			selectedPage: pdfManager.selectedPage,
 			onComponentsChange,
 		});
+
+		// Handle drag and drop for tool components
+		const handleDragStart = useCallback((toolType: ComponentType, signer?: AssignedUser) => {
+			console.log('Drag started for tool:', toolType, signer);
+		}, []);
+
+		const handleDragOver = useCallback((e: React.DragEvent) => {
+			e.preventDefault();
+			e.dataTransfer.dropEffect = 'copy';
+		}, []);
+
+		const handleDrop = useCallback((e: React.DragEvent) => {
+			e.preventDefault();
+			
+			try {
+				const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+				const { toolType, signer } = dragData;
+				
+				// Find which page the drop occurred on
+				const target = e.target as HTMLElement;
+				const pageElement = target.closest('[data-page-number]');
+				
+				if (pageElement) {
+					const pageNumber = parseInt(pageElement.getAttribute('data-page-number') || '1') - 1;
+					const pageRect = pageElement.getBoundingClientRect();
+					
+					// Calculate position relative to the page
+					const x = (e.clientX - pageRect.left) / pdfManager.renderScale;
+					const y = (e.clientY - pageRect.top) / pdfManager.renderScale;
+					
+					// Create component at drop position
+					componentManager.handleComponentDrop(toolType, { x, y }, pageNumber, signer);
+				}
+			} catch (error) {
+				console.error('Error handling drop:', error);
+			}
+		}, [componentManager, pdfManager.renderScale]);
 
 		const editorViewMode = getViewModeFromString(viewMode);
 
@@ -212,6 +249,8 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 							ref={pdfManager.$DocumentArea}
 							id="editor-document-area"
 							className="w-full h-full"
+							onDragOver={handleDragOver}
+							onDrop={handleDrop}
 						>
 							{/* Ribbon Menu */}
 							<div
@@ -360,6 +399,7 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 							selectedTool={componentManager.selectedTool}
 							onToolSelect={componentManager.handleToolSelect}
 							onUserSelect={componentManager.handleUserSelect}
+							onDragStart={handleDragStart}
 							viewMode={editorViewMode}
 							numPages={pdfManager.numPages}
 							selectedPage={pdfManager.selectedPage}

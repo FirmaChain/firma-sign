@@ -68,28 +68,38 @@ export const useComponentManagement = ({
 		(tool: ComponentType) => {
 			setSelectedTool(tool);
 			setSelectedComponentId('');
-
-			// If this tool doesn't need assignment, create it immediately
-			if (!toolNeedsAssignment(tool)) {
-				const newComponent = createNewComponent(tool, selectedPage, createSystemAssignment());
-				const updatedComponents = [...documentComponents, newComponent];
-				updateComponents(updatedComponents);
-				setSelectedTool(null);
-			}
+			// Note: Components are now only created via drag and drop, not on click
 		},
-		[selectedPage, documentComponents, updateComponents],
+		[],
 	);
 
 	const handleUserSelect = useCallback(
 		(user: AssignedUser) => {
-			if (selectedTool && toolNeedsAssignment(selectedTool)) {
-				const newComponent = createNewComponent(selectedTool, selectedPage, user);
-				const updatedComponents = [...documentComponents, newComponent];
-				updateComponents(updatedComponents);
-				setSelectedTool(null);
-			}
+			// Store the selected user for the currently selected tool
+			// Components are now only created via drag and drop, not on user selection
+			console.log('User selected for tool:', selectedTool, user);
 		},
-		[selectedTool, selectedPage, documentComponents, updateComponents],
+		[selectedTool],
+	);
+
+	const handleComponentDrop = useCallback(
+		(toolType: ComponentType, position: Position, pageNumber: number, signer?: AssignedUser) => {
+			const assignment = signer || createSystemAssignment();
+			const newComponent = createNewComponent(toolType, pageNumber, assignment);
+			
+			// Update component position to drop location
+			const updatedComponent = {
+				...newComponent,
+				position: position,
+			};
+			
+			const updatedComponents = [...documentComponents, updatedComponent];
+			updateComponents(updatedComponents);
+			
+			// Clear selected tool if any
+			setSelectedTool(null);
+		},
+		[documentComponents, updateComponents],
 	);
 
 	const handleComponentUpdate = useCallback(
@@ -209,6 +219,7 @@ export const useComponentManagement = ({
 		handleComponentSelect,
 		handleComponentHover,
 		handleStartResize,
+		handleComponentDrop,
 		handleStartDrag: useCallback((componentId: string, _startPosition: Position) => {
 			console.log('Drag started for component:', componentId);
 		}, []),

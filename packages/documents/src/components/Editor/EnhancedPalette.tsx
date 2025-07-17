@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { cn } from '../../utils/cn';
 import { ComponentType, ViewMode, AssignedUser } from './types';
 import { TOOLS_INFO } from './constants';
@@ -9,6 +9,7 @@ interface PaletteProps {
 	selectedTool?: ComponentType | null;
 	onToolSelect?: (tool: ComponentType) => void;
 	onUserSelect?: (user: AssignedUser) => void;
+	onDragStart?: (toolType: ComponentType, signer?: AssignedUser) => void;
 	viewMode?: ViewMode;
 	className?: string;
 	numPages?: number;
@@ -24,8 +25,15 @@ interface MenuBoxProps {
 	title: string;
 	tooltip: string;
 	onClick: (evt: React.MouseEvent) => void;
+	onDragStart?: (toolType: ComponentType, signer?: AssignedUser) => void;
 	iconKey: string;
 	disabled?: boolean;
+	isPopoverActive: boolean;
+	onPopoverShow: () => void;
+	onPopoverHide: () => void;
+	onPopoverKeep: () => void;
+	onPopoverClose: () => void;
+	isCompact: boolean;
 }
 
 const ToolIcons: Record<string, React.ReactNode> = {
@@ -54,18 +62,81 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 	title,
 	tooltip,
 	onClick,
+	onDragStart,
 	iconKey,
 	disabled = false,
+	isPopoverActive,
+	onPopoverShow,
+	onPopoverHide,
+	onPopoverKeep,
+	onPopoverClose,
+	isCompact,
 }) => {
 	const isSelected = selectedTool === toolType;
 	const toolInfo = TOOLS_INFO[toolType];
 	const dimensions = usePanelDimensions();
 
+	const handleDragStart = (e: React.DragEvent) => {
+		if (disabled) return;
+		
+		// Set drag data
+		e.dataTransfer.setData('text/plain', JSON.stringify({
+			toolType,
+			needsAssignment: toolInfo.needsAssignment,
+		}));
+		
+		// Set drag effect
+		e.dataTransfer.effectAllowed = 'copy';
+		
+		// Call the drag start handler
+		if (onDragStart) {
+			if (toolInfo.needsAssignment) {
+				// For tools that need assignment, we'll handle this differently
+				// For now, we'll just pass the tool type
+				onDragStart(toolType);
+			} else {
+				// For tools that don't need assignment, start drag immediately
+				onDragStart(toolType);
+			}
+		}
+	};
+
+	const handleSignerDragStart = (e: React.DragEvent, signer: AssignedUser) => {
+		e.stopPropagation();
+		
+		// Set drag data with signer info
+		e.dataTransfer.setData('text/plain', JSON.stringify({
+			toolType,
+			signer,
+			needsAssignment: true,
+		}));
+		
+		e.dataTransfer.effectAllowed = 'copy';
+		
+		if (onDragStart) {
+			onDragStart(toolType, signer);
+		}
+	};
+
 	return (
-		<div className="relative w-full">
+		<div 
+			className="relative w-full"
+			onMouseEnter={onPopoverShow}
+			onMouseLeave={onPopoverHide}
+		>
+			{/* Extended hover area that covers the gap */}
+			{isPopoverActive && !isCompact && (
+				<div
+					className="absolute top-full left-0 w-full h-3 bg-transparent z-40"
+					onMouseEnter={onPopoverKeep}
+					onMouseLeave={onPopoverClose}
+				/>
+			)}
 			<button
 				onClick={onClick}
 				disabled={disabled}
+				draggable={!disabled}
+				onDragStart={handleDragStart}
 				className={cn(
 					'w-full rounded-lg border transition-all duration-200',
 					'flex items-center justify-center',
@@ -77,8 +148,9 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 						? 'bg-blue-50 border-blue-200 text-blue-700'
 						: 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50',
 					disabled && 'opacity-50 cursor-not-allowed',
+					!disabled && 'cursor-grab active:cursor-grabbing',
 				)}
-				title={tooltip}
+				title={`${tooltip} (Drag to place on document)`}
 			>
 				<div
 					className={cn(
@@ -105,13 +177,17 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 				)}
 			</button>
 
-			{/* Dropdown/Popover for tool options */}
-			{isSelected && !dimensions.isCompact && (
+			{/* Hover Popover for tool options */}
+			{isPopoverActive && !isCompact && (
 				<div
 					className={cn(
-						'absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50',
+						'absolute top-full left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50',
 						dimensions.isNarrow ? 'w-48' : 'w-64',
+						// Position it very close to the button
+						'mt-0.5',
 					)}
+					onMouseEnter={onPopoverKeep}
+					onMouseLeave={onPopoverClose}
 				>
 					<div className="p-3">
 						<h4 className="font-medium text-gray-900 mb-2">{title}</h4>
@@ -124,11 +200,14 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 									<button
 										key={signer.email}
 										onClick={() => handleSelect?.(signer)}
+										draggable={true}
+										onDragStart={(e) => handleSignerDragStart(e, signer)}
 										className={cn(
 											'w-full p-2 text-left rounded border transition-colors',
 											'flex items-center gap-2',
-											'hover:bg-gray-50',
+											'hover:bg-gray-50 cursor-grab active:cursor-grabbing',
 										)}
+										title={`Drag to place ${title} for ${signer.name}`}
 									>
 										<div
 											className="w-3 h-3 rounded-full"
@@ -166,14 +245,16 @@ export const EnhancedPalette: React.FC<PaletteProps> = ({
 	selectedTool: _selectedTool,
 	onToolSelect,
 	onUserSelect,
+	onDragStart,
 	viewMode = ViewMode.EDITOR,
 	className,
 	numPages = 1,
 	selectedPage = 0,
 	onPageSelect,
 }) => {
-	const [expandedTool, setExpandedTool] = useState<ComponentType | null>(null);
 	const dimensions = usePanelDimensions();
+	const [activePopover, setActivePopover] = useState<ComponentType | null>(null);
+	const popoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const tools = useMemo(() => {
 		if (viewMode !== ViewMode.EDITOR) return [];
@@ -198,9 +279,9 @@ export const EnhancedPalette: React.FC<PaletteProps> = ({
 			if (onToolSelect) {
 				onToolSelect(toolType);
 			}
-			setExpandedTool(expandedTool === toolType ? null : toolType);
+			// No need to manage expanded state since we use hover now
 		},
-		[onToolSelect, expandedTool],
+		[onToolSelect],
 	);
 
 	const handleSignerSelect = useCallback(
@@ -208,10 +289,49 @@ export const EnhancedPalette: React.FC<PaletteProps> = ({
 			if (onUserSelect) {
 				onUserSelect(signer);
 			}
-			setExpandedTool(null);
+			// No need to close expanded state since we use hover now
 		},
 		[onUserSelect],
 	);
+
+	// Global popover handlers
+	const handlePopoverShow = useCallback((toolType: ComponentType) => {
+		// Clear any existing timeout
+		if (popoverTimeoutRef.current) {
+			clearTimeout(popoverTimeoutRef.current);
+			popoverTimeoutRef.current = null;
+		}
+		setActivePopover(toolType);
+	}, []);
+
+	const handlePopoverHide = useCallback(() => {
+		// Add a delay before hiding the popover
+		popoverTimeoutRef.current = setTimeout(() => {
+			setActivePopover(null);
+		}, 200); // 200ms delay
+	}, []);
+
+	const handlePopoverKeep = useCallback(() => {
+		// Clear the timeout when mouse enters popover area
+		if (popoverTimeoutRef.current) {
+			clearTimeout(popoverTimeoutRef.current);
+			popoverTimeoutRef.current = null;
+		}
+	}, []);
+
+	const handlePopoverClose = useCallback(() => {
+		// Hide popover immediately when mouse leaves popover
+		setActivePopover(null);
+	}, []);
+
+	// Cleanup timeout on unmount
+	React.useEffect(() => {
+		return () => {
+			if (popoverTimeoutRef.current) {
+				clearTimeout(popoverTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	if (viewMode !== ViewMode.EDITOR) {
 		return null;
@@ -267,14 +387,21 @@ export const EnhancedPalette: React.FC<PaletteProps> = ({
 						{tools.map((tool) => (
 							<MenuBox
 								key={tool.type}
-								selectedTool={expandedTool}
+								selectedTool={_selectedTool}
 								toolType={tool.type}
 								signers={tool.needsAssignment ? signers : undefined}
 								handleSelect={handleSignerSelect}
 								title={showCompactUI ? tool.name.split(' ')[0] : tool.name} // Shorten names in compact mode
 								tooltip={tool.name}
 								onClick={() => handleToolClick(tool.type)}
+								onDragStart={onDragStart}
 								iconKey={tool.icon}
+								isPopoverActive={activePopover === tool.type}
+								onPopoverShow={() => handlePopoverShow(tool.type)}
+								onPopoverHide={handlePopoverHide}
+								onPopoverKeep={handlePopoverKeep}
+								onPopoverClose={handlePopoverClose}
+								isCompact={showCompactUI}
 							/>
 						))}
 					</div>
