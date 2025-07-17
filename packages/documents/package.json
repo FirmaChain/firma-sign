@@ -21,6 +21,8 @@
 		"clsx": "^2.1.0",
 		"pdf-lib": "^1.17.1",
 		"pdfjs-dist": "^4.0.379",
+		"react": "catalog:frontend",
+		"react-dom": "catalog:frontend",
 		"react-pdf": "^7.7.0",
 		"tailwind-merge": "^2.2.0"
 	},
@@ -43,8 +45,6 @@
 		"jsdom": "catalog:",
 		"postcss": "catalog:frontend",
 		"prettier": "catalog:",
-		"react": "catalog:frontend",
-		"react-dom": "catalog:frontend",
 		"storybook": "catalog:frontend",
 		"tailwindcss": "catalog:frontend",
 		"typescript": "catalog:",

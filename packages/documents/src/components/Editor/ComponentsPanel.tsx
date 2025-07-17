@@ -209,12 +209,12 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 					<label className="flex items-center gap-2 text-xs cursor-pointer">
 						<input
 							type="checkbox"
-							checked={component.value === 'true' || component.value === true}
+							checked={component.value === 'true'}
 							onChange={(e) => {
 								e.stopPropagation();
 								onUpdate({
 									...component,
-									value: e.target.checked,
+									value: e.target.checked.toString(),
 								});
 							}}
 							className="rounded"
@@ -254,6 +254,9 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 	const [filterPage, setFilterPage] = useState<number | 'all'>('all');
 	const [filterAssignee, setFilterAssignee] = useState<string | 'all'>('all');
 	const [isImporting, setIsImporting] = useState(false);
+	const [showHeader, setShowHeader] = useState(false);
+	const [showFooter, setShowFooter] = useState(false);
+	const [showCode, setShowCode] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const dimensions = usePanelDimensions();
 
@@ -456,70 +459,106 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 
 	return (
 		<div className={cn('w-full h-full bg-gray-50 flex flex-col', className)}>
-			{/* Header */}
+			{/* Panel Title */}
+			{!showCompactUI && (
+				<div className="p-4 border-b border-gray-200">
+					<div className="flex justify-between items-start">
+						<div>
+							<h1 className="text-lg font-bold text-gray-900">Components</h1>
+							<p className="text-xs text-gray-500 mt-1">
+								{stats.total} total • {stats.required} required • {stats.completed} completed
+							</p>
+						</div>
+						<button
+							onClick={() => setShowCode(!showCode)}
+							className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+							title={showCode ? 'Close code' : 'Show code'}
+						>
+							{showCode ? 'Close code' : 'Show code'}
+						</button>
+					</div>
+				</div>
+			)}
+
+			{/* 1. Components Header */}
 			<div className={cn('border-b border-gray-200', showCompactUI ? 'p-2' : 'p-4')}>
-				<h2
-					className={cn(
-						'font-semibold text-gray-900',
-						showCompactUI ? 'text-sm mb-2' : 'text-base mb-3',
-					)}
-				>
-					{showCompactUI ? 'Items' : 'Components'}
-				</h2>
+				{/* Header Toggle */}
+				{!showCompactUI ? (
+					<div className="flex justify-between items-center mb-3">
+						<h2 className={cn('font-semibold text-gray-900', 'text-base')}>Filters & Search</h2>
+						<button
+							onClick={() => setShowHeader(!showHeader)}
+							className="text-gray-600 hover:text-gray-800 text-sm"
+							title={showHeader ? 'Hide filters' : 'Show filters'}
+						>
+							{showHeader ? '▼' : '▶'}
+						</button>
+					</div>
+				) : (
+					<h2 className="text-sm mb-2 font-semibold text-gray-900">Items</h2>
+				)}
 
 				{/* Statistics */}
-				<div
-					className={cn(
-						'grid gap-1 mb-3',
-						showCompactUI ? 'grid-cols-1' : 'grid-cols-3 gap-2 mb-4',
-					)}
-				>
-					{showCompactUI ? (
-						// Compact single line stats
-						<div className="flex justify-between text-xs">
-							<span>
-								<span className="font-bold text-blue-600">{stats.total}</span> Total
-							</span>
-							<span>
-								<span className="font-bold text-red-600">{stats.required}</span> Required
-							</span>
-							<span>
-								<span className="font-bold text-green-600">{stats.completed}</span> Filled
-							</span>
-						</div>
-					) : (
-						// Normal grid stats
-						<>
-							<div className="text-center">
-								<div
-									className={cn('font-bold text-blue-600', showNarrowUI ? 'text-base' : 'text-lg')}
-								>
-									{stats.total}
-								</div>
-								<div className="text-xs text-gray-500">Total</div>
+				{(showHeader || showCompactUI) && (
+					<div
+						className={cn(
+							'grid gap-1 mb-3',
+							showCompactUI ? 'grid-cols-1' : 'grid-cols-3 gap-2 mb-4',
+						)}
+					>
+						{showCompactUI ? (
+							// Compact single line stats
+							<div className="flex justify-between text-xs">
+								<span>
+									<span className="font-bold text-blue-600">{stats.total}</span> Total
+								</span>
+								<span>
+									<span className="font-bold text-red-600">{stats.required}</span> Required
+								</span>
+								<span>
+									<span className="font-bold text-green-600">{stats.completed}</span> Filled
+								</span>
 							</div>
-							<div className="text-center">
-								<div
-									className={cn('font-bold text-red-600', showNarrowUI ? 'text-base' : 'text-lg')}
-								>
-									{stats.required}
+						) : (
+							// Normal grid stats
+							<>
+								<div className="text-center">
+									<div
+										className={cn(
+											'font-bold text-blue-600',
+											showNarrowUI ? 'text-base' : 'text-lg',
+										)}
+									>
+										{stats.total}
+									</div>
+									<div className="text-xs text-gray-500">Total</div>
 								</div>
-								<div className="text-xs text-gray-500">Required</div>
-							</div>
-							<div className="text-center">
-								<div
-									className={cn('font-bold text-green-600', showNarrowUI ? 'text-base' : 'text-lg')}
-								>
-									{stats.completed}
+								<div className="text-center">
+									<div
+										className={cn('font-bold text-red-600', showNarrowUI ? 'text-base' : 'text-lg')}
+									>
+										{stats.required}
+									</div>
+									<div className="text-xs text-gray-500">Required</div>
 								</div>
-								<div className="text-xs text-gray-500">Filled</div>
-							</div>
-						</>
-					)}
-				</div>
+								<div className="text-center">
+									<div
+										className={cn(
+											'font-bold text-green-600',
+											showNarrowUI ? 'text-base' : 'text-lg',
+										)}
+									>
+										{stats.completed}
+									</div>
+									<div className="text-xs text-gray-500">Filled</div>
+								</div>
+							</>
+						)}
+					</div>
+				)}
 
-				{/* Search */}
-				{!showCompactUI && (
+				{/* Search Bar */}
+				{!showCompactUI && showHeader && (
 					<div className="mb-3">
 						<input
 							type="text"
@@ -534,115 +573,111 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 					</div>
 				)}
 
-				{/* Filters */}
-				<div className={cn('space-y-1', !showCompactUI && 'space-y-2')}>
-					{!showCompactUI && (
-						<>
-							<select
-								value={filterType}
-								onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
-								className={cn(
-									'w-full px-2 border border-gray-300 rounded',
-									showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
-								)}
-							>
-								<option value="all">{showNarrowUI ? 'All' : 'All Types'}</option>
-								{Object.values(ComponentType).map((type) => (
-									<option key={type} value={type}>
-										{showNarrowUI ? type.split('_')[0] : TOOLS_INFO[type]?.name || type}
-									</option>
-								))}
-							</select>
+				{/* Filter Dropdowns */}
+				{!showCompactUI && showHeader && (
+					<div className={cn('space-y-1', !showCompactUI && 'space-y-2')}>
+						<select
+							value={filterType}
+							onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
+							className={cn(
+								'w-full px-2 border border-gray-300 rounded',
+								showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
+							)}
+						>
+							<option value="all">{showNarrowUI ? 'All' : 'All Types'}</option>
+							{Object.values(ComponentType).map((type) => (
+								<option key={type} value={type}>
+									{showNarrowUI ? type.split('_')[0] : TOOLS_INFO[type]?.name || type}
+								</option>
+							))}
+						</select>
 
+						<select
+							value={filterPage}
+							onChange={(e) =>
+								setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
+							}
+							className={cn(
+								'w-full px-2 border border-gray-300 rounded',
+								showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
+							)}
+						>
+							<option value="all">{showNarrowUI ? 'All' : 'All Pages'}</option>
+							{Array.from({ length: numPages }, (_, i) => (
+								<option key={i} value={i}>
+									{showNarrowUI ? `P${i + 1}` : `Page ${i + 1}`} ({stats.byPage.get(i) || 0})
+								</option>
+							))}
+						</select>
+
+						<select
+							value={filterAssignee}
+							onChange={(e) => setFilterAssignee(e.target.value)}
+							className={cn(
+								'w-full px-2 border border-gray-300 rounded',
+								showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
+							)}
+						>
+							<option value="all">{showNarrowUI ? 'All' : 'All Assignees'}</option>
+							{assignees.map((assignee) => (
+								<option key={assignee.email} value={assignee.email}>
+									{showNarrowUI ? assignee.name.split(' ')[0] : assignee.name}
+								</option>
+							))}
+						</select>
+					</div>
+				)}
+
+				{/* Compact filters - minimal interface */}
+				{showCompactUI && (
+					<div className="flex gap-1">
+						<select
+							value={filterType}
+							onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
+							className="flex-1 px-1 py-1 text-xs border border-gray-300 rounded"
+						>
+							<option value="all">All</option>
+							{Object.values(ComponentType).map((type) => (
+								<option key={type} value={type}>
+									{type.split('_')[0]}
+								</option>
+							))}
+						</select>
+						{numPages > 1 && (
 							<select
 								value={filterPage}
 								onChange={(e) =>
 									setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
 								}
-								className={cn(
-									'w-full px-2 border border-gray-300 rounded',
-									showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
-								)}
-							>
-								<option value="all">{showNarrowUI ? 'All' : 'All Pages'}</option>
-								{Array.from({ length: numPages }, (_, i) => (
-									<option key={i} value={i}>
-										{showNarrowUI ? `P${i + 1}` : `Page ${i + 1}`} ({stats.byPage.get(i) || 0})
-									</option>
-								))}
-							</select>
-
-							<select
-								value={filterAssignee}
-								onChange={(e) => setFilterAssignee(e.target.value)}
-								className={cn(
-									'w-full px-2 border border-gray-300 rounded',
-									showNarrowUI ? 'py-1 text-xs' : 'py-1 text-sm',
-								)}
-							>
-								<option value="all">{showNarrowUI ? 'All' : 'All Assignees'}</option>
-								{assignees.map((assignee) => (
-									<option key={assignee.email} value={assignee.email}>
-										{showNarrowUI ? assignee.name.split(' ')[0] : assignee.name}
-									</option>
-								))}
-							</select>
-						</>
-					)}
-
-					{/* Compact filters - minimal interface */}
-					{showCompactUI && (
-						<div className="flex gap-1">
-							<select
-								value={filterType}
-								onChange={(e) => setFilterType(e.target.value as ComponentType | 'all')}
 								className="flex-1 px-1 py-1 text-xs border border-gray-300 rounded"
 							>
 								<option value="all">All</option>
-								{Object.values(ComponentType).map((type) => (
-									<option key={type} value={type}>
-										{type.split('_')[0]}
+								{Array.from({ length: numPages }, (_, i) => (
+									<option key={i} value={i}>
+										P{i + 1}
 									</option>
 								))}
 							</select>
-							{numPages > 1 && (
-								<select
-									value={filterPage}
-									onChange={(e) =>
-										setFilterPage(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
-									}
-									className="flex-1 px-1 py-1 text-xs border border-gray-300 rounded"
-								>
-									<option value="all">All</option>
-									{Array.from({ length: numPages }, (_, i) => (
-										<option key={i} value={i}>
-											P{i + 1}
-										</option>
-									))}
-								</select>
-							)}
-						</div>
-					)}
-				</div>
+						)}
+					</div>
+				)}
 
 				{/* Clear filters */}
-				{(searchTerm ||
-					filterType !== 'all' ||
-					filterPage !== 'all' ||
-					filterAssignee !== 'all') && (
-					<button
-						onClick={clearAllFilters}
-						className={cn(
-							'w-full mt-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300',
-							showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs',
-						)}
-					>
-						{showCompactUI ? 'Clear' : 'Clear Filters'}
-					</button>
-				)}
+				{(searchTerm || filterType !== 'all' || filterPage !== 'all' || filterAssignee !== 'all') &&
+					(showHeader || showCompactUI) && (
+						<button
+							onClick={clearAllFilters}
+							className={cn(
+								'w-full mt-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300',
+								showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs',
+							)}
+						>
+							{showCompactUI ? 'Clear' : 'Clear Filters'}
+						</button>
+					)}
 			</div>
 
-			{/* Components List */}
+			{/* 2. Components List */}
 			<div className={cn('flex-1 overflow-y-auto', showCompactUI ? 'p-2' : 'p-4')}>
 				{sortedComponents.length === 0 ? (
 					<div className="text-center text-gray-500 text-sm py-8">
@@ -677,73 +712,120 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 				)}
 			</div>
 
-			{/* Footer with bulk actions */}
-			<div className={cn('border-t border-gray-200', showCompactUI ? 'p-2' : 'p-4')}>
-				{/* Hidden file input for import */}
-				<input
-					ref={fileInputRef}
-					type="file"
-					accept=".json"
-					onChange={handleFileImport}
-					className="hidden"
-				/>
+			{/* 3. Components Footer */}
+			{!showCompactUI && (
+				<div className="flex justify-between items-center p-4 border-b border-gray-200">
+					<h3 className="text-sm font-medium text-gray-900">Tools & Export</h3>
+					<button
+						onClick={() => setShowFooter(!showFooter)}
+						className="text-gray-600 hover:text-gray-800 text-sm"
+						title={showFooter ? 'Hide tools' : 'Show tools'}
+					>
+						{showFooter ? '▼' : '▶'}
+					</button>
+				</div>
+			)}
+			{(showFooter || showCompactUI) && (
+				<div className={cn('border-t border-gray-200', showCompactUI ? 'p-2' : 'p-4')}>
+					{/* Import/Export Tools */}
+					<div className="mb-4">
+						{/* Hidden file input for import */}
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".json"
+							onChange={handleFileImport}
+							className="hidden"
+						/>
 
-				<div className={cn(showCompactUI ? 'space-y-1' : 'space-y-2')}>
-					{/* Import/Export row */}
-					<div className={cn('flex', showCompactUI ? 'gap-1' : 'gap-2')}>
-						<button
-							onClick={handleImportClick}
-							disabled={isImporting}
-							className={cn(
-								'flex-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed',
-								showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
+						<div className={cn(showCompactUI ? 'space-y-1' : 'space-y-2')}>
+							{/* Import/Export row */}
+							<div className={cn('flex', showCompactUI ? 'gap-1' : 'gap-2')}>
+								<button
+									onClick={handleImportClick}
+									disabled={isImporting}
+									className={cn(
+										'flex-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed',
+										showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
+									)}
+								>
+									{isImporting ? (showCompactUI ? '...' : 'Importing...') : 'Import'}
+								</button>
+								<button
+									onClick={() => {
+										// Export component data as JSON
+										const dataStr = JSON.stringify(components, null, 2);
+										const dataBlob = new Blob([dataStr], { type: 'application/json' });
+										const url = URL.createObjectURL(dataBlob);
+										const link = document.createElement('a');
+										link.href = url;
+										link.download = `document-components-${new Date().toISOString().split('T')[0]}.json`;
+										link.click();
+										URL.revokeObjectURL(url);
+									}}
+									disabled={components.length === 0}
+									className={cn(
+										'flex-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed',
+										showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
+									)}
+								>
+									Export
+								</button>
+							</div>
+
+							{/* Clear all row (only show if there are components) */}
+							{components.length > 0 && (
+								<button
+									onClick={() => {
+										if (confirm('Delete all components? This action cannot be undone.')) {
+											onComponentsChange?.([]);
+										}
+									}}
+									className={cn(
+										'w-full bg-red-500 text-white rounded hover:bg-red-600',
+										showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
+									)}
+								>
+									{showCompactUI ? 'Clear' : 'Clear All'}
+								</button>
 							)}
-						>
-							{isImporting ? (showCompactUI ? '...' : 'Importing...') : 'Import'}
-						</button>
-						<button
-							onClick={() => {
-								// Export component data as JSON
-								const dataStr = JSON.stringify(components, null, 2);
-								const dataBlob = new Blob([dataStr], { type: 'application/json' });
-								const url = URL.createObjectURL(dataBlob);
-								const link = document.createElement('a');
-								link.href = url;
-								link.download = `document-components-${new Date().toISOString().split('T')[0]}.json`;
-								link.click();
-								URL.revokeObjectURL(url);
-							}}
-							disabled={components.length === 0}
-							className={cn(
-								'flex-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed',
-								showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
-							)}
-						>
-							Export
-						</button>
+						</div>
 					</div>
 
-					{/* Clear all row (only show if there are components) */}
-					{components.length > 0 && (
+					{/* Preview/PDF Generator (with Export Status) */}
+					<ExportPanel components={components} pdfUrl={pdfUrl} fileName={fileName} />
+				</div>
+			)}
+
+			{/* Collapsed Indicator */}
+			{!showCompactUI && !showHeader && !showFooter && components.length === 0 && (
+				<div className="text-center p-4 text-gray-400 text-xs">
+					<div>Use "Filters & Search ▶" and "Tools & Export ▶" to access controls</div>
+				</div>
+			)}
+
+			{/* Inline Code Display */}
+			{showCode && (
+				<div className="border-t border-gray-200 bg-gray-50 p-4 max-h-96 overflow-auto">
+					<div className="flex justify-between items-center mb-2">
+						<h3 className="text-sm font-semibold text-gray-900">Components JSON</h3>
 						<button
 							onClick={() => {
-								if (confirm('Delete all components? This action cannot be undone.')) {
-									onComponentsChange?.([]);
-								}
+								const codeStr = JSON.stringify(components, null, 2);
+								navigator.clipboard.writeText(codeStr).then(() => {
+									alert('JSON copied to clipboard!');
+								});
 							}}
-							className={cn(
-								'w-full bg-red-500 text-white rounded hover:bg-red-600',
-								showCompactUI ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm',
-							)}
+							className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
 						>
-							{showCompactUI ? 'Clear' : 'Clear All'}
+							Copy
 						</button>
-					)}
+					</div>
+					<pre className="text-xs text-gray-800 whitespace-pre-wrap bg-white p-3 rounded border">
+						{JSON.stringify(components, null, 2)}
+					</pre>
 				</div>
-			</div>
-
-			{/* Export Panel */}
-			<ExportPanel components={components} pdfUrl={pdfUrl} fileName={fileName} />
+			)}
 		</div>
 	);
 };
