@@ -5,7 +5,7 @@ import PDFUploader from './PDFUploader';
 
 const DocumentsModule: React.FC = () => {
 	const [uploadedPDF, setUploadedPDF] = useState<string | null>(null);
-	const [isUploadSectionVisible, setIsUploadSectionVisible] = useState(true);
+	const [isUploadSectionVisible, setIsUploadSectionVisible] = useState(false);
 
 	const handlePDFUpload = (pdfDataUrl: string) => {
 		setUploadedPDF(pdfDataUrl);
@@ -57,7 +57,7 @@ const DocumentsModule: React.FC = () => {
 						>
 							<svg
 								className={`w-4 h-4 transition-transform duration-200 ${
-									isUploadSectionVisible ? 'rotate-180' : 'rotate-0'
+									isUploadSectionVisible ? 'rotate-0' : 'rotate-180'
 								}`}
 								fill="none"
 								stroke="currentColor"

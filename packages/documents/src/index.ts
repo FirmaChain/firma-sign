@@ -6,7 +6,6 @@ export type { EditorProps } from './components/Editor';
 export { default as Page } from './components/Editor/Page';
 export { default as Palette } from './components/Editor/Palette';
 export { EnhancedPalette } from './components/Editor/EnhancedPalette';
-export { default as ZoomBar } from './components/Editor/ZoomBar';
 export { default as RibbonMenu } from './components/Editor/RibbonMenu';
 export { DocumentLayer } from './components/Editor/DocumentLayer';
 export { DocumentComponentWrapper } from './components/Editor/DocumentComponent';
@@ -38,3 +37,4 @@ export {
 
 // Export individual component types
 export * from './components/Editor/Components';
+export { ZoomBar } from './components/Editor/Components/ZoomBar';
