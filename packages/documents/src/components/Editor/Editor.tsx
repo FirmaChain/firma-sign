@@ -258,61 +258,68 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 							)}
 
 							{/* Scrollable Document */}
-							<div className="h-full overflow-auto" ref={pdfManager.$Scrollbar}>
+							<div
+								className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+								ref={pdfManager.$Scrollbar}
+							>
 								{/* Centering container for document pages */}
-								<div className="min-h-full flex items-center justify-center p-4">
-									<div className="w-full">
-										{/* Document Pages */}
-										<div className="space-y-5 py-10">
-											{Array.from({ length: pdfManager.numPages || 1 }, (_, i) => (
-												<div
-													key={i}
-													className={cn(
-														'relative block mx-auto',
-														'border border-gray-400 shadow-lg',
-														'bg-white select-none text-center',
-														'mt-12 first:mt-5',
-													)}
-													data-page-number={i + 1}
-												>
-													<ReactPdfPage
-														pageNumber={i + 1}
-														scale={pdfManager.renderScale}
-														loading={
-															<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
-																<div className="text-gray-400">Loading page {i + 1}...</div>
-															</div>
-														}
-														error={
-															<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
-																<div className="text-red-400">Error loading page {i + 1}</div>
-															</div>
-														}
-														onLoadSuccess={(page: any) => {
-															pdfManager.onVisible(i, true);
-															pdfManager.handlePagePosition(i, { top: 0, height: page.height });
-														}}
-														className="pdf-page"
-													/>
+								<div className="min-h-full flex flex-col items-center justify-center p-4">
+									{/* Document Pages Container - adapts to content width */}
+									<div className="flex flex-col items-center space-y-5 py-10">
+										{Array.from({ length: pdfManager.numPages || 1 }, (_, i) => (
+											<div
+												key={i}
+												className={cn(
+													'relative flex-shrink-0',
+													'border border-gray-400 shadow-lg',
+													'bg-white select-none',
+													'mt-12 first:mt-5',
+												)}
+												data-page-number={i + 1}
+											>
+												<ReactPdfPage
+													pageNumber={i + 1}
+													scale={pdfManager.renderScale}
+													width={pdfManager.pdfPageDimensions?.width}
+													height={pdfManager.pdfPageDimensions?.height}
+													loading={
+														<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
+															<div className="text-gray-400">Loading page {i + 1}...</div>
+														</div>
+													}
+													error={
+														<div className="w-full min-h-[600px] bg-gray-50 flex items-center justify-center">
+															<div className="text-red-400">Error loading page {i + 1}</div>
+														</div>
+													}
+													onLoadSuccess={(page: any) => {
+														pdfManager.onVisible(i, true);
+														pdfManager.handlePagePosition(i, {
+															top: 0,
+															height: page.height,
+															width: page.width,
+														});
+													}}
+													className="pdf-page block"
+												/>
 
-													{/* Document components layer */}
-													<DocumentLayer
-														pageNumber={i}
-														components={componentManager.documentComponents}
-														selectedComponentId={componentManager.selectedComponentId}
-														hoveredComponentId={componentManager.hoveredComponentId}
-														viewMode={editorViewMode}
-														scale={pdfManager.renderScale}
-														onComponentUpdate={componentManager.handleComponentUpdate}
-														onComponentSelect={componentManager.handleComponentSelect}
-														onComponentDelete={componentManager.handleComponentDelete}
-														onComponentHover={componentManager.handleComponentHover}
-														onStartDrag={componentManager.handleStartDrag}
-														onStartResize={componentManager.handleStartResize}
-													/>
-												</div>
-											))}
-										</div>
+												{/* Document components layer */}
+												<DocumentLayer
+													pageNumber={i}
+													components={componentManager.documentComponents}
+													selectedComponentId={componentManager.selectedComponentId}
+													hoveredComponentId={componentManager.hoveredComponentId}
+													viewMode={editorViewMode}
+													scale={pdfManager.renderScale}
+													onComponentUpdate={componentManager.handleComponentUpdate}
+													onComponentSelect={componentManager.handleComponentSelect}
+													onComponentDelete={componentManager.handleComponentDelete}
+													onComponentHover={componentManager.handleComponentHover}
+													onStartDrag={componentManager.handleStartDrag}
+													onStartResize={componentManager.handleStartResize}
+												/>
+											</div>
+										))}
 									</div>
 								</div>
 							</div>
