@@ -123,7 +123,7 @@ export const WithComponents: Story = {
 		selectedComponentId: 'comp-1',
 		viewMode: ViewMode.EDITOR,
 		numPages: 2,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'sample-document.pdf',
 		onComponentSelect: (id: string) => {
 			console.log('Component selected:', id);
@@ -145,7 +145,7 @@ export const EmptyPanel: Story = {
 		components: [],
 		viewMode: ViewMode.EDITOR,
 		numPages: 1,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'empty-document.pdf',
 		onComponentSelect: (id: string) => {
 			console.log('Component selected:', id);
@@ -167,7 +167,7 @@ export const FormMode: Story = {
 		components: sampleComponents,
 		viewMode: ViewMode.FORM,
 		numPages: 2,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'form-document.pdf',
 		onComponentSelect: (id: string) => {
 			console.log('Component selected:', id);
@@ -189,7 +189,7 @@ export const PreviewMode: Story = {
 		components: sampleComponents,
 		viewMode: ViewMode.PREVIEW,
 		numPages: 2,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'preview-document.pdf',
 		onComponentSelect: (id: string) => {
 			console.log('Component selected:', id);
@@ -417,7 +417,7 @@ export const ResponsiveLayout: Story = {
 		components: sampleComponents,
 		viewMode: ViewMode.EDITOR,
 		numPages: 2,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'responsive-document.pdf',
 		onComponentSelect: (id: string) => {
 			console.log('Component selected:', id);

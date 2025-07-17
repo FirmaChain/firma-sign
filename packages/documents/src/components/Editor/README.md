@@ -14,9 +14,11 @@ The Editor component is a comprehensive document editor that has been ported fro
 ## Components
 
 ### Editor (Main Component)
+
 The main editor component that orchestrates all functionality.
 
 **Props:**
+
 - `viewMode`: 'editor' | 'input' | 'sign' | 'preview' | 'viewer'
 - `preview`: boolean
 - `hideActionBtn`: boolean
@@ -28,9 +30,11 @@ The main editor component that orchestrates all functionality.
 - `contractId`: string - Contract ID for the document
 
 ### Page
+
 Individual page renderer for PDF documents.
 
 **Props:**
+
 - `fileId`: string
 - `page`: number
 - `scale`: number
@@ -39,23 +43,29 @@ Individual page renderer for PDF documents.
 - `onPosition`: (page: number, position: any) => void
 
 ### Palette
+
 Tool palette for editor mode with various document tools.
 
 **Props:**
+
 - `signers`: MemberInfo[]
 
 ### ZoomBar
+
 Zoom controls for document scaling.
 
 **Props:**
+
 - `scale`: number
 - `onScaleChange`: (scale: number) => void
 - `viewMode`: string
 
 ### RibbonMenu
+
 Context-aware menu bar with actions.
 
 **Props:**
+
 - `contractName`: string
 - `viewMode`: string
 - `btnDisabled`: boolean
@@ -70,21 +80,22 @@ Context-aware menu bar with actions.
 import { Editor } from '@firma-sign/documents';
 
 function App() {
-  return (
-    <Editor
-      viewMode="editor"
-      fileUrl="https://example.com/document.pdf"
-      fileId="doc-123"
-      contractId="contract-456"
-      onEnableNext={(enabled) => console.log('Next enabled:', enabled)}
-    />
-  );
+	return (
+		<Editor
+			viewMode="editor"
+			fileUrl="/wcoomd/uploads/2018/05/blank.pdf"
+			fileId="doc-123"
+			contractId="contract-456"
+			onEnableNext={(enabled) => console.log('Next enabled:', enabled)}
+		/>
+	);
 }
 ```
 
 ## Styling
 
 The component uses Tailwind CSS for styling and includes:
+
 - Responsive design with mobile-first approach
 - Consistent spacing and typography
 - Accessible color schemes
@@ -95,6 +106,7 @@ The component uses Tailwind CSS for styling and includes:
 This component has been migrated from styled-components to Tailwind CSS while maintaining the same functionality and visual design. The component structure has been simplified and made more maintainable.
 
 ### Key Changes:
+
 - Converted from styled-components to Tailwind CSS
 - Simplified component structure
 - Improved TypeScript types

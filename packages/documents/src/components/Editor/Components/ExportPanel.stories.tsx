@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
 import { ExportPanel } from './ExportPanel';
 import { ComponentType } from '../types';
 import { USER_COLORS } from '../constants';
+import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
 
 const meta: Meta<typeof ExportPanel> = {
 	title: 'Components/Editor/Components/ExportPanel',
@@ -89,7 +91,7 @@ const sampleComponents = [
 export const WithComponents: Story = {
 	args: {
 		components: sampleComponents,
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'completed-document.pdf',
 	},
 };
@@ -97,7 +99,7 @@ export const WithComponents: Story = {
 export const EmptyComponents: Story = {
 	args: {
 		components: [],
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'empty-document.pdf',
 	},
 };
@@ -121,7 +123,7 @@ export const MissingRequiredFields: Story = {
 				value: '', // Missing required input
 			},
 		],
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'incomplete-document.pdf',
 	},
 };
@@ -132,7 +134,7 @@ export const AllFieldsFilled: Story = {
 			...comp,
 			value: comp.value || 'Sample value',
 		})),
-		pdfUrl: 'https://example.com/document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'completed-document.pdf',
 	},
 };
@@ -157,7 +159,7 @@ export const LargeDocument: Story = {
 				created: Date.now() - i * 100,
 			})),
 		],
-		pdfUrl: 'https://example.com/large-document.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'large-document.pdf',
 	},
 };
@@ -165,7 +167,7 @@ export const LargeDocument: Story = {
 export const SinglePageDocument: Story = {
 	args: {
 		components: sampleComponents.filter((comp) => comp.pageNumber === 0),
-		pdfUrl: 'https://example.com/single-page.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'single-page.pdf',
 	},
 };
@@ -190,7 +192,306 @@ export const MultiPageDocument: Story = {
 				created: Date.now(),
 			},
 		],
-		pdfUrl: 'https://example.com/multi-page.pdf',
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'multi-page-document.pdf',
+	},
+};
+
+export const WithPDFExport: Story = {
+	args: {
+		components: sampleComponents,
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
+		fileName: 'exported-document.pdf',
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'ExportPanel with PDF export functionality. Use the buttons to export and view the PDF with components.',
+			},
+		},
+	},
+	render: (args) => {
+		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
+
+		return (
+			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+				<div style={{ display: 'flex', gap: '10px' }}>
+					<button
+						onClick={async () => {
+							try {
+								const result = await exportPDFWithComponents(
+									'/wcoomd/uploads/2018/05/blank.pdf',
+									args.components,
+									{ fileName: args.fileName, quality: 'high' },
+								);
+								if (result.success && result.pdfBytes) {
+									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+									const url = URL.createObjectURL(blob);
+									setPdfUrl(url);
+								}
+							} catch (error) {
+								console.error('Export error:', error);
+							}
+						}}
+						style={{
+							padding: '10px 20px',
+							background: '#3b82f6',
+							color: 'white',
+							border: 'none',
+							borderRadius: '5px',
+							cursor: 'pointer',
+						}}
+					>
+						Export & View PDF
+					</button>
+					<button
+						onClick={async () => {
+							try {
+								const result = await exportPDFWithComponents(
+									'/wcoomd/uploads/2018/05/blank.pdf',
+									args.components,
+									{ quality: 'high' },
+								);
+								if (result.success && result.pdfBytes) {
+									previewPDF(result.pdfBytes);
+								}
+							} catch (error) {
+								console.error('Preview error:', error);
+							}
+						}}
+						style={{
+							padding: '10px 20px',
+							background: '#059669',
+							color: 'white',
+							border: 'none',
+							borderRadius: '5px',
+							cursor: 'pointer',
+						}}
+					>
+						Open in New Tab
+					</button>
+				</div>
+
+				<ExportPanel {...args} />
+
+				{pdfUrl && (
+					<div style={{ marginTop: '20px' }}>
+						<h3>Exported PDF:</h3>
+						<iframe
+							src={pdfUrl}
+							width="100%"
+							height="600px"
+							style={{ border: '1px solid #ccc', borderRadius: '5px' }}
+						/>
+					</div>
+				)}
+			</div>
+		);
+	},
+};
+
+export const WithPDFPreview: Story = {
+	args: {
+		components: sampleComponents,
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
+		fileName: 'preview-document.pdf',
+	},
+	parameters: {
+		docs: {
+			description: {
+				story: 'ExportPanel with inline PDF preview. The PDF is rendered directly in Storybook.',
+			},
+		},
+	},
+	render: (args) => {
+		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
+		const [isLoading, setIsLoading] = React.useState(false);
+
+		const generatePDF = async () => {
+			setIsLoading(true);
+			try {
+				const result = await exportPDFWithComponents(
+					'/wcoomd/uploads/2018/05/blank.pdf',
+					args.components,
+					{ quality: 'medium' },
+				);
+
+				if (result.success && result.pdfBytes) {
+					const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+					const url = URL.createObjectURL(blob);
+					setPdfUrl(url);
+				}
+			} catch (error) {
+				console.error('PDF generation error:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		React.useEffect(() => {
+			generatePDF();
+		}, []);
+
+		return (
+			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+					<button
+						onClick={generatePDF}
+						disabled={isLoading}
+						style={{
+							padding: '10px 20px',
+							background: isLoading ? '#9ca3af' : '#3b82f6',
+							color: 'white',
+							border: 'none',
+							borderRadius: '5px',
+							cursor: isLoading ? 'not-allowed' : 'pointer',
+						}}
+					>
+						{isLoading ? 'Generating...' : 'Regenerate PDF'}
+					</button>
+					{isLoading && <span>Generating PDF with components...</span>}
+				</div>
+
+				<ExportPanel {...args} />
+
+				{pdfUrl && !isLoading && (
+					<div style={{ marginTop: '20px' }}>
+						<h3>Generated PDF Preview:</h3>
+						<iframe
+							src={pdfUrl}
+							width="100%"
+							height="700px"
+							style={{ border: '1px solid #ccc', borderRadius: '5px' }}
+						/>
+					</div>
+				)}
+			</div>
+		);
+	},
+};
+
+export const ExportOptionsDemo: Story = {
+	args: {
+		components: sampleComponents,
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
+		fileName: 'high-quality-export.pdf',
+		onExport: async (components, pdfUrl, fileName) => {
+			console.log('Exporting with custom options');
+
+			// Demonstrate different export options
+			const exportOptions = {
+				fileName,
+				quality: 'high' as const,
+				includeFormFields: false,
+				flattenComponents: true,
+			};
+
+			console.log('Export options:', exportOptions);
+
+			try {
+				const result = await exportPDFWithComponents(pdfUrl, components, exportOptions);
+
+				if (result.success) {
+					console.log('High-quality PDF exported:', result.fileName);
+				} else {
+					console.error('Export failed:', result.error);
+				}
+
+				return result;
+			} catch (error) {
+				console.error('Export error:', error);
+				return { success: false, error: error.message };
+			}
+		},
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'ExportPanel demonstrating custom export options (high quality, flattened components, no form fields).',
+			},
+		},
+	},
+};
+
+export const ExportWithStats: Story = {
+	args: {
+		components: sampleComponents,
+		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
+		fileName: 'stats-export.pdf',
+		onExport: async (components, pdfUrl, fileName) => {
+			// Import getExportStats dynamically to show stats
+			const { getExportStats } = await import('../utils/pdfExport');
+
+			const stats = getExportStats(components);
+			console.log('Export Statistics:', stats);
+			console.log(`Total components: ${stats.totalComponents}`);
+			console.log(`Filled components: ${stats.filledComponents}`);
+			console.log(`Required components: ${stats.requiredComponents}`);
+			console.log('Components by type:', stats.componentsByType);
+			console.log('Components by page:', stats.componentsByPage);
+
+			try {
+				const result = await exportPDFWithComponents(pdfUrl, components, {
+					fileName,
+					quality: 'medium',
+				});
+
+				if (result.success) {
+					console.log('PDF exported with stats tracking');
+				}
+
+				return result;
+			} catch (error) {
+				console.error('Export error:', error);
+				return { success: false, error: error.message };
+			}
+		},
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'ExportPanel with statistics tracking. Check the console to see export statistics before PDF generation.',
+			},
+		},
+	},
+};
+
+export const ExportErrorHandling: Story = {
+	args: {
+		components: sampleComponents,
+		pdfUrl: 'https://invalid-url.com/nonexistent.pdf',
+		fileName: 'error-test.pdf',
+		onExport: async (components, pdfUrl, fileName) => {
+			console.log('Testing error handling with invalid PDF URL');
+
+			try {
+				const result = await exportPDFWithComponents(pdfUrl, components, {
+					fileName,
+				});
+
+				if (result.success) {
+					console.log('Unexpected success');
+				} else {
+					console.error('Expected error occurred:', result.error);
+					alert(`Export failed: ${result.error}`);
+				}
+
+				return result;
+			} catch (error) {
+				console.error('Caught error:', error);
+				return { success: false, error: error.message };
+			}
+		},
+	},
+	parameters: {
+		docs: {
+			description: {
+				story:
+					'ExportPanel demonstrating error handling with invalid PDF URL. This should show an error message.',
+			},
+		},
 	},
 };
