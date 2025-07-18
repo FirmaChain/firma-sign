@@ -1,5 +1,5 @@
 {
-	"name": "@firma-sign/documents",
+	"name": "@firmachain/firma-sign-documents",
 	"version": "0.0.1",
 	"type": "module",
 	"description": "React components for document handling",

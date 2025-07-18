@@ -1,5 +1,5 @@
 {
-	"name": "@firma-sign/frontend",
+	"name": "@firmachain/firma-sign-frontend",
 	"version": "0.0.1",
 	"description": "Frontend package for firma-sign",
 	"main": "index.js",
