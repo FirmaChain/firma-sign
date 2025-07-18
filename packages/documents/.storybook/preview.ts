@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/react";
 import "../src/styles.css";
+import "../src/pdf-worker";
 
 const preview: Preview = {
 	parameters: {

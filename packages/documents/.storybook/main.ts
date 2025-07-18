@@ -1,5 +1,6 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import path from 'path';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 
 const config: StorybookConfig = {
 	stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -36,6 +37,33 @@ const config: StorybookConfig = {
 					},
 				},
 			},
+			optimizeDeps: {
+				...config.optimizeDeps,
+				exclude: [...(config.optimizeDeps?.exclude || []), 'pdfjs-dist'],
+			},
+			assetsInclude: [
+				...(Array.isArray(config.assetsInclude) ? config.assetsInclude : config.assetsInclude ? [config.assetsInclude] : []), 
+				'**/*.worker.js'
+			],
+			plugins: [
+				...(config.plugins || []),
+				// Copy PDF worker to Storybook static assets
+				{
+					name: 'copy-pdf-worker-storybook',
+					configureServer() {
+						const workerPath = path.resolve(__dirname, '../node_modules/pdfjs-dist/build/pdf.worker.min.mjs');
+						const outputDir = path.resolve(__dirname, '../storybook-static');
+						
+						if (!existsSync(outputDir)) {
+							mkdirSync(outputDir, { recursive: true });
+						}
+						
+						if (existsSync(workerPath)) {
+							copyFileSync(workerPath, path.resolve(outputDir, 'pdf.worker.min.js'));
+						}
+					}
+				}
+			],
 		};
 	},
 };

@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, forwardRef, type ComponentProps } from 'react';
-import { Document, Page as ReactPdfPage, pdfjs } from 'react-pdf';
+import { Document, Page as ReactPdfPage } from 'react-pdf';
 import { cn } from '../../utils/cn';
 import { DocumentLayer } from './DocumentLayer';
 import { EnhancedPalette } from './EnhancedPalette';
@@ -15,9 +15,7 @@ import { ErrorComponent } from './Components/ErrorComponent';
 import { ZoomBar } from './Components/ZoomBar';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+import '../../pdf-worker';
 
 // DocumentArea component with Tailwind styling
 const DocumentArea = forwardRef<HTMLDivElement, ComponentProps<'div'>>(

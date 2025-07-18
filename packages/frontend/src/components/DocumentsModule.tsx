@@ -1,4 +1,4 @@
-import { Editor, SAMPLE_PDF_BASE64, USER_COLORS } from '@firma-sign/documents';
+import { Editor, SAMPLE_PDF_BASE64, USER_COLORS } from '@firmachain/firma-sign-documents';
 import type React from 'react';
 import { useState } from 'react';
 import PDFUploader from './PDFUploader';

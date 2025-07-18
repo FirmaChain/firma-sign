@@ -16,7 +16,7 @@
 	"dependencies": {
 		"react": "catalog:frontend",
 		"react-dom": "catalog:frontend",
-		"@firma-sign/documents": "workspace:*"
+		"@firmachain/firma-sign-documents": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/react": "catalog:frontend",
