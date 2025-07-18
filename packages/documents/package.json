@@ -5,6 +5,14 @@
 	"description": "React components for document handling",
 	"main": "dist/index.js",
 	"module": "dist/index.esm.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/firmachain/firma-sign.git",
+		"directory": "packages/documents"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com"
+	},
 	"scripts": {
 		"build": "vite build",
 		"dev": "storybook dev -p 6006",
