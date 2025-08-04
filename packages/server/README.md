@@ -1,6 +1,6 @@
-# @firmachain/firma-sign-core
+# Firma-Sign Server
 
-Core interfaces and utilities for the Firma-Sign transport system.
+Backend server for the Firma-Sign decentralized document signing system.
 
 ## Documentation
 
@@ -10,11 +10,17 @@ For detailed documentation, see the [docs](./docs/) directory:
 - [API Reference](./docs/API.md)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Development Guide](./docs/DEVELOPMENT.md)
+- [Configuration](./docs/CONFIGURATION.md)
+- [Troubleshooting](./docs/TROUBLESHOOTING.md)
 
-## Installation
+## Quick Start
 
 ```bash
-npm install @firmachain/firma-sign-core
+# Install dependencies
+pnpm install
+
+# Run in development
+pnpm dev
 ```
 
 ## License
