@@ -9,10 +9,14 @@ import { generateHash } from '@firmachain/firma-sign-core';
 describe('P2P Transport Scenarios', () => {
   let transports: P2PTransport[] = [];
   
-  const createTransport = async (port: number): Promise<P2PTransport> => {
+  // Generate random ports to avoid conflicts
+  const getRandomPort = () => Math.floor(Math.random() * (65535 - 1024) + 1024);
+  
+  const createTransport = async (port?: number): Promise<P2PTransport> => {
     const transport = new P2PTransport();
+    const portToUse = port || getRandomPort();
     await transport.initialize({
-      port,
+      port: portToUse,
       enableDHT: false, // Disable for test isolation
       enableMDNS: false, // Disable for test isolation  
       maxConnections: 10
@@ -30,8 +34,8 @@ describe('P2P Transport Scenarios', () => {
   describe('Document Signing Workflow', () => {
     it('should simulate complete document signing workflow', async () => {
       // Simulate: Law firm sends contract to client for signature
-      const lawFirm = await createTransport(20001);
-      const client = await createTransport(20002);
+      const lawFirm = await createTransport();
+      const client = await createTransport();
       
       // Set up receivers (for potential future use)
       client.receive({
@@ -157,10 +161,10 @@ Generated: ${new Date().toISOString()}
   describe('Multi-Party Document Review', () => {
     it('should handle document review by multiple parties', async () => {
       // Simulate: Project manager sends document to 3 reviewers
-      const projectManager = await createTransport(20010);
-      await createTransport(20011); // reviewer1
-      await createTransport(20012); // reviewer2
-      await createTransport(20013); // reviewer3
+      const projectManager = await createTransport();
+      await createTransport(); // reviewer1
+      await createTransport(); // reviewer2
+      await createTransport(); // reviewer3
 
       const reviewDocument = Buffer.from(`
 PROJECT PROPOSAL
@@ -227,8 +231,8 @@ Please review and provide feedback.
 
   describe('Large File Transfer', () => {
     it('should handle transfer of large documents', async () => {
-      const sender = await createTransport(20020);
-      await createTransport(20021); // receiver
+      const sender = await createTransport();
+      await createTransport(); // receiver
 
       // Create a 5MB test file
       const largeContent = Buffer.alloc(5 * 1024 * 1024);
@@ -282,7 +286,7 @@ DOCUMENT CONTENT:
     });
 
     it('should reject files exceeding size limits', async () => {
-      const sender = await createTransport(20025);
+      const sender = await createTransport();
       
       // Create content larger than the limit
       const oversizedContent = Buffer.alloc(sender.capabilities.maxFileSize + 1000);
@@ -321,8 +325,8 @@ DOCUMENT CONTENT:
 
   describe('Error Recovery Scenarios', () => {
     it('should handle network interruption gracefully', async () => {
-      const sender = await createTransport(20030);
-      const receiver = await createTransport(20031);
+      const sender = await createTransport();
+      const receiver = await createTransport();
 
       const testDoc = Buffer.from('Test document for network interruption scenario');
 
@@ -366,7 +370,7 @@ DOCUMENT CONTENT:
     });
 
     it('should handle corrupted transfer data', async () => {
-      const sender = await createTransport(20035);
+      const sender = await createTransport();
       
       // Create transfer with invalid data
       const transfer: OutgoingTransfer = {
@@ -404,11 +408,11 @@ DOCUMENT CONTENT:
 
   describe('Concurrent Operations', () => {
     it('should handle multiple simultaneous file transfers', async () => {
-      const hub = await createTransport(20040);
+      const hub = await createTransport();
       const clients = await Promise.all([
-        createTransport(20041),
-        createTransport(20042),
-        createTransport(20043)
+        createTransport(),
+        createTransport(),
+        createTransport()
       ]);
 
       // Create multiple transfers happening simultaneously
@@ -454,8 +458,8 @@ DOCUMENT CONTENT:
     });
 
     it('should handle bidirectional transfers', async () => {
-      const peer1 = await createTransport(20050);
-      const peer2 = await createTransport(20051);
+      const peer1 = await createTransport();
+      const peer2 = await createTransport();
 
       const doc1 = Buffer.from('Document from Peer 1 to Peer 2');
       const doc2 = Buffer.from('Document from Peer 2 to Peer 1');
@@ -525,8 +529,8 @@ DOCUMENT CONTENT:
 
   describe('Transport Lifecycle', () => {
     it('should handle clean startup and shutdown cycles', async () => {
-      const transport1 = await createTransport(20060);
-      const transport2 = await createTransport(20061);
+      const transport1 = await createTransport();
+      const transport2 = await createTransport();
 
       // Verify both are initialized
       expect(transport1.getStatus().isInitialized).toBe(true);

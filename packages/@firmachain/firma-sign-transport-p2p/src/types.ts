@@ -2,6 +2,7 @@ export interface P2PTransportConfig {
   port?: number;
   enableDHT?: boolean;
   enableMDNS?: boolean;
+  enableWebRTC?: boolean;
   bootstrapNodes?: string[];
   announceAddresses?: string[];
   maxConnections?: number;

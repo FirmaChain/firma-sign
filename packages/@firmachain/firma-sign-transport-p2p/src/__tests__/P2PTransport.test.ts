@@ -6,12 +6,21 @@ import { generateHash } from '@firmachain/firma-sign-core';
 describe('P2P Transport Tests', () => {
   let transport1: P2PTransport;
   let transport2: P2PTransport;
-  const testPort1 = 19001;
-  const testPort2 = 19002;
+  let testPort1: number;
+  let testPort2: number;
+
+  // Generate random ports to avoid conflicts
+  const getRandomPort = () => Math.floor(Math.random() * (65535 - 1024) + 1024);
 
   beforeEach(() => {
     transport1 = new P2PTransport();
     transport2 = new P2PTransport();
+    testPort1 = getRandomPort();
+    testPort2 = getRandomPort();
+    // Ensure ports are different
+    while (testPort2 === testPort1) {
+      testPort2 = getRandomPort();
+    }
   });
 
   afterEach(async () => {

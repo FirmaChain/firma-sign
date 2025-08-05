@@ -1,7 +1,7 @@
 import { createLibp2p, Libp2p } from 'libp2p';
 import { tcp } from '@libp2p/tcp';
 import { webSockets } from '@libp2p/websockets';
-import { webRTC } from '@libp2p/webrtc';
+// WebRTC import is conditionally loaded to avoid native dependencies in tests
 import { mplex } from '@libp2p/mplex';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { kadDHT } from '@libp2p/kad-dht';
@@ -86,7 +86,19 @@ export class P2PTransport implements Transport {
 
   async send(transfer: OutgoingTransfer): Promise<TransferResult> {
     if (!this.node) {
-      throw new Error('P2P transport not initialized');
+      // Return failed result instead of throwing for graceful error handling
+      const recipientResults = transfer.recipients.map(recipient => ({
+        recipientId: recipient.id,
+        success: false,
+        status: 'failed' as const,
+        error: 'P2P transport not initialized',
+      }));
+
+      return {
+        success: false,
+        transferId: transfer.transferId,
+        recipientResults,
+      };
     }
 
     const results = await Promise.allSettled(
@@ -147,7 +159,13 @@ export class P2PTransport implements Transport {
 
     const p2pConfig = config as P2PTransportConfig;
     
-    if (p2pConfig.port !== undefined && typeof p2pConfig.port !== 'number') {
+    // Port is required as per capabilities.requiredConfig
+    if (p2pConfig.port === undefined || typeof p2pConfig.port !== 'number') {
+      return false;
+    }
+    
+    // Validate port range
+    if (p2pConfig.port < 1024 || p2pConfig.port > 65535) {
       return false;
     }
 
@@ -157,6 +175,22 @@ export class P2PTransport implements Transport {
   private buildNodeOptions(config: P2PTransportConfig) {
     const port = config.port || DEFAULT_P2P_PORT;
     
+    // Build transports array, conditionally including WebRTC
+    const transports = [tcp(), webSockets()];
+    
+    // Only include WebRTC if explicitly enabled and not in test environment
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+    if (config.enableWebRTC === true && !isTestEnv) {
+      try {
+        // Dynamic import to avoid native dependency in tests
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const webRTCModule = require('@libp2p/webrtc') as { webRTC: () => unknown };
+        transports.push(webRTCModule.webRTC());
+      } catch (error) {
+        console.warn('WebRTC transport not available:', error instanceof Error ? error.message : String(error));
+      }
+    }
+    
     return {
       addresses: {
         listen: [
@@ -164,7 +198,7 @@ export class P2PTransport implements Transport {
           `/ip4/0.0.0.0/tcp/${port + 1}/ws`,
         ],
       },
-      transports: [tcp(), webSockets(), webRTC()],
+      transports,
       streamMuxers: [yamux(), mplex()],
       services: {
         ...(config.enableDHT !== false && { dht: kadDHT() }),

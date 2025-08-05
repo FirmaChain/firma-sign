@@ -10,17 +10,26 @@ import { generateHash } from '@firmachain/firma-sign-core';
 describe('P2P Integration Tests', () => {
   let serverPeer: P2PTransport;
   let clientPeer: P2PTransport;
+  let serverPort: number;
+  let clientPort: number;
   
-  const SERVER_PORT = 19100;
-  const CLIENT_PORT = 19101;
+  // Generate random ports to avoid conflicts
+  const getRandomPort = () => Math.floor(Math.random() * (65535 - 1024) + 1024);
 
   beforeAll(async () => {
     serverPeer = new P2PTransport();
     clientPeer = new P2PTransport();
+    
+    serverPort = getRandomPort();
+    clientPort = getRandomPort();
+    // Ensure ports are different
+    while (clientPort === serverPort) {
+      clientPort = getRandomPort();
+    }
 
     // Initialize server peer first
     await serverPeer.initialize({
-      port: SERVER_PORT,
+      port: serverPort,
       enableDHT: false, // Disable for test isolation
       enableMDNS: true,  // Enable for local discovery
       maxConnections: 10
@@ -28,7 +37,7 @@ describe('P2P Integration Tests', () => {
 
     // Initialize client peer
     await clientPeer.initialize({
-      port: CLIENT_PORT,
+      port: clientPort,
       enableDHT: false,
       enableMDNS: true,
       maxConnections: 10
