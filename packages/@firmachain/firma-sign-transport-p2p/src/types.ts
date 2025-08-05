@@ -7,6 +7,7 @@ export interface P2PTransportConfig {
   announceAddresses?: string[];
   maxConnections?: number;
   connectionTimeout?: number;
+  autoDialPeers?: boolean;
 }
 
 export interface P2PTransportOptions {

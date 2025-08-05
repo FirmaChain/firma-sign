@@ -4,13 +4,17 @@ import { webSockets } from '@libp2p/websockets';
 // WebRTC import is conditionally loaded to avoid native dependencies in tests
 import { mplex } from '@libp2p/mplex';
 import { yamux } from '@chainsafe/libp2p-yamux';
+import { noise } from '@chainsafe/libp2p-noise';
+import { tls } from '@libp2p/tls';
 import { kadDHT } from '@libp2p/kad-dht';
 import { mdns } from '@libp2p/mdns';
+import { identify } from '@libp2p/identify';
 import { pipe } from 'it-pipe';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { nanoid } from 'nanoid';
 import { peerIdFromString } from '@libp2p/peer-id';
+import { multiaddr } from '@multiformats/multiaddr';
 import type {
   Transport,
   TransportCapabilities,
@@ -55,11 +59,17 @@ export class P2PTransport implements Transport {
     }
 
     this.config = config as P2PTransportConfig;
-    const options = this.buildNodeOptions(this.config);
+    const options = await this.buildNodeOptions(this.config);
 
     try {
       this.node = await createLibp2p(options);
       await this.node.start();
+      
+      // Debug: Log actual listening addresses
+      console.log('🔌 P2P Transport listening on:');
+      this.node.getMultiaddrs().forEach(addr => {
+        console.log(`   ${addr.toString()}`);
+      });
       
       this.setupProtocolHandlers();
       this.setupEventHandlers();
@@ -152,6 +162,133 @@ export class P2PTransport implements Transport {
     };
   }
 
+  /**
+   * Get list of connected peers
+   */
+  getConnectedPeers(): Array<{ peerId: string; direction: string; multiaddrs: string[] }> {
+    if (!this.node) return [];
+    
+    const connections = this.node.getConnections();
+    const peersMap = new Map<string, { peerId: string; direction: string; multiaddrs: string[] }>();
+    
+    connections.forEach(conn => {
+      const peerId = conn.remotePeer.toString();
+      if (!peersMap.has(peerId)) {
+        peersMap.set(peerId, {
+          peerId,
+          direction: conn.direction,
+          multiaddrs: [conn.remoteAddr.toString()]
+        });
+      } else {
+        peersMap.get(peerId)!.multiaddrs.push(conn.remoteAddr.toString());
+      }
+    });
+    
+    return Array.from(peersMap.values());
+  }
+
+  /**
+   * Manually connect to a peer
+   */
+  async connectToPeer(multiaddrStr: string): Promise<void> {
+    if (!this.node) throw new Error('Transport not initialized');
+    
+    try {
+      console.log(`🔗 Attempting to connect to: ${multiaddrStr}`);
+      
+      // For debugging: log our own peer info
+      console.log(`📍 Our peer ID: ${this.node.peerId.toString()}`);
+      console.log(`📍 Our addresses:`, this.node.getMultiaddrs().map(ma => ma.toString()));
+      
+      // Check if we're already connected
+      const connections = this.node.getConnections();
+      console.log(`📊 Current connections: ${connections.length}`);
+      
+      // Try to parse the multiaddr to extract peer ID
+      const peerIdMatch = multiaddrStr.match(/\/p2p\/([^/]+)$/);
+      if (peerIdMatch) {
+        const targetPeerId = peerIdMatch[1];
+        const existingConn = connections.find(c => c.remotePeer.toString() === targetPeerId);
+        if (existingConn) {
+          console.log(`✅ Already connected to peer ${targetPeerId}`);
+          return;
+        }
+      }
+      
+      // libp2p dial expects either a PeerId or a properly formatted multiaddr
+      console.log('🔄 Initiating connection...');
+      
+      // If the multiaddr contains a peer ID, we can try different approaches
+      if (peerIdMatch && peerIdMatch[1]) {
+        const targetPeerId = peerIdMatch[1];
+        
+        // First, let's check if we have any existing addresses for this peer
+        const peerStore = (this.node as any).peerStore;
+        if (peerStore) {
+          try {
+            const addresses = await peerStore.addressBook.get(peerIdFromString(targetPeerId));
+            if (addresses && addresses.length > 0) {
+              console.log(`📋 Found ${addresses.length} known addresses for peer ${targetPeerId}`);
+            }
+          } catch (e) {
+            // Peer not in address book yet
+          }
+        }
+        
+        // Try to dial using the peer ID directly
+        // This will work if the peer is already known (via discovery)
+        try {
+          const peerId = peerIdFromString(targetPeerId);
+          const connection = await this.node.dial(peerId);
+          console.log(`✅ Successfully connected using peer ID: ${targetPeerId}`);
+          console.log(`📡 Connection ID: ${connection.id}`);
+          console.log(`🔄 Connection status: ${connection.status}`);
+          return;
+        } catch (e) {
+          console.log('⚠️  Direct peer ID dial failed, trying full multiaddr...');
+        }
+      }
+      
+      // If direct peer ID didn't work, use the full multiaddr
+      // Now we have the proper multiaddr package imported
+      try {
+        console.log('📍 Parsing multiaddr:', multiaddrStr);
+        const ma = multiaddr(multiaddrStr);
+        console.log('✅ Multiaddr parsed successfully');
+        
+        const connection = await this.node.dial(ma);
+        
+        console.log(`✅ Successfully connected to peer: ${connection.remotePeer.toString()}`);
+        console.log(`📡 Connection ID: ${connection.id}`);
+        console.log(`🔄 Connection status: ${connection.status}`);
+      } catch (error) {
+        console.error('❌ Failed to connect with multiaddr:', error);
+        throw new Error(`Unable to connect using multiaddr: ${multiaddrStr}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Connection error:', error);
+      
+      // More detailed error analysis
+      if (error instanceof Error) {
+        if (error.message.includes('ECONNREFUSED')) {
+          console.log('❌ Connection refused - the server is not listening on this address');
+          console.log('💡 Tips:');
+          console.log('   - Verify the server is running: Check the server terminal');
+          console.log('   - Check the IP address: Use the actual IP, not localhost if on different machines');
+          console.log('   - Verify the port: Server uses TWO ports (e.g., 9090 for TCP, 9091 for WebSocket)');
+        } else if (error.message.includes('No transport available')) {
+          console.log('❌ No compatible transport - check the protocol in the multiaddr');
+          console.log('💡 Make sure to use /tcp/ not /ws/ for the primary connection');
+        } else if (error.message.includes('dial to self')) {
+          console.log('❌ Cannot dial to self - you are trying to connect to your own peer ID');
+        }
+      }
+      
+      throw new Error(`Failed to connect to peer: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   validateConfig(config: unknown): config is TransportConfig {
     if (typeof config !== 'object' || config === null) {
       return false;
@@ -172,8 +309,9 @@ export class P2PTransport implements Transport {
     return true;
   }
 
-  private buildNodeOptions(config: P2PTransportConfig) {
+  private async buildNodeOptions(config: P2PTransportConfig) {
     const port = config.port || DEFAULT_P2P_PORT;
+    console.log(`🔧 P2P Transport config - Requested port: ${config.port}, Using port: ${port}`);
     
     // Build transports array, conditionally including WebRTC
     const transports = [tcp(), webSockets()];
@@ -183,9 +321,9 @@ export class P2PTransport implements Transport {
     if (config.enableWebRTC === true && !isTestEnv) {
       try {
         // Dynamic import to avoid native dependency in tests
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const webRTCModule = require('@libp2p/webrtc') as { webRTC: () => unknown };
-        transports.push(webRTCModule.webRTC());
+        const webRTCModule = await import('@libp2p/webrtc');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+        transports.push(webRTCModule.webRTC() as any);
       } catch (error) {
         console.warn('WebRTC transport not available:', error instanceof Error ? error.message : String(error));
       }
@@ -200,7 +338,9 @@ export class P2PTransport implements Transport {
       },
       transports,
       streamMuxers: [yamux(), mplex()],
+      connectionEncrypters: [noise(), tls()],
       services: {
+        identify: identify(), // Required by DHT and other services
         ...(config.enableDHT !== false && { dht: kadDHT() }),
         ...(config.enableMDNS !== false && { mdns: mdns() }),
       },
@@ -279,8 +419,22 @@ export class P2PTransport implements Transport {
   private setupEventHandlers(): void {
     if (!this.node) return;
 
+    // Peer discovery event
+    this.node.addEventListener('peer:discovery', (event) => {
+      const peerInfo = event.detail;
+      console.log(`🔍 Discovered peer: ${peerInfo.id.toString()}`);
+      
+      // Auto-dial discovered peers (optional, can be controlled by config)
+      if (this.config.autoDialPeers !== false) {
+        void this.node!.dial(peerInfo.id).catch(err => {
+          console.log(`⚠️  Could not dial peer ${peerInfo.id.toString()}: ${err.message}`);
+        });
+      }
+    });
+
     this.node.addEventListener('connection:open', (event) => {
       const connection = event.detail;
+      console.log(`✅ Connected to peer: ${connection.remotePeer.toString()}`);
       this.connections.set(connection.id, {
         id: connection.id,
         remotePeer: connection.remotePeer.toString(),
@@ -295,6 +449,7 @@ export class P2PTransport implements Transport {
 
     this.node.addEventListener('connection:close', (event) => {
       const connection = event.detail;
+      console.log(`❌ Disconnected from peer: ${connection.remotePeer.toString()}`);
       this.connections.delete(connection.id);
     });
   }

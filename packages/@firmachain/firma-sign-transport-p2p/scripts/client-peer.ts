@@ -22,6 +22,7 @@ import type { IncomingTransfer, OutgoingTransfer } from '@firmachain/firma-sign-
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -326,22 +327,46 @@ class P2PClientPeer {
   async discoverPeers(): Promise<void> {
     console.log('🔍 Discovering peers...');
     
-    // In a real implementation, this would use DHT queries
-    // For now, we'll just show current connection status
     const status = this.transport.getStatus();
     console.log(`📡 Current connections: ${status.activeTransfers || 0}`);
+    
+    // Get connected peers from transport
+    const connectedPeers = (this.transport as any).getConnectedPeers?.() || [];
+    if (connectedPeers.length > 0) {
+      console.log('🟢 Connected peers:');
+      connectedPeers.forEach((peer: any) => {
+        console.log(`  ${peer.peerId} (${peer.direction})`);
+        peer.multiaddrs.forEach((addr: string) => {
+          console.log(`    ${addr}`);
+        });
+      });
+    }
     
     if (this.knownPeers.size > 0) {
       console.log('📋 Previously known peers:');
       this.printPeers();
-    } else {
-      console.log('💡 No peers discovered yet. Make sure other peers are running on the network.');
+    } else if (connectedPeers.length === 0) {
+      console.log('💡 No peers discovered yet.');
+      console.log('   - For local discovery: Ensure other peers are on the same network');
+      console.log('   - For manual connection: Use "connect <multiaddr>"');
+      console.log('   Example: connect /ip4/192.168.1.100/tcp/9090/p2p/12D3KooW...');
+    }
+  }
+
+  async connectToPeer(multiaddr: string): Promise<void> {
+    try {
+      console.log(`🔗 Connecting to ${multiaddr}...`);
+      await (this.transport as any).connectToPeer(multiaddr);
+      console.log('✅ Connection initiated. Check "peers" command for status.');
+    } catch (error) {
+      console.error('❌ Connection failed:', error);
     }
   }
 
   private printHelp(): void {
     console.log('🔧 AVAILABLE COMMANDS:');
     console.log('  discover          - Discover available peers');
+    console.log('  connect <addr>    - Connect to peer by multiaddr');
     console.log('  peers             - Show known peers');
     console.log('  downloads         - Show downloaded documents');
     console.log('  status            - Show current status');
@@ -350,7 +375,9 @@ class P2PClientPeer {
     console.log('  help              - Show this help');
     console.log('  exit              - Shutdown client');
     console.log('');
-    console.log('💡 TIP: Use short peer IDs (first 12 characters) for commands');
+    console.log('💡 TIPS:');
+    console.log('  - Use short peer IDs (first 12 characters) for commands');
+    console.log('  - Copy multiaddr from server output to connect manually');
     console.log('');
   }
 
@@ -423,7 +450,6 @@ async function main() {
   await client.start();
 
   // Simple command line interface
-  const readline = require('readline');
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -438,6 +464,14 @@ async function main() {
     switch (command) {
       case 'discover':
         client.discoverPeers();
+        break;
+      case 'connect':
+        if (args.length >= 1) {
+          client.connectToPeer(args[0]);
+        } else {
+          console.log('Usage: connect <multiaddr>');
+          console.log('Example: connect /ip4/192.168.1.100/tcp/9090/p2p/12D3KooW...');
+        }
         break;
       case 'peers':
         (client as any).printPeers();

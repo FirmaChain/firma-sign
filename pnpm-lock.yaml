@@ -347,12 +347,18 @@ importers:
 
   packages/@firmachain/firma-sign-transport-p2p:
     dependencies:
+      '@chainsafe/libp2p-noise':
+        specifier: ^16.1.0
+        version: 16.1.4
       '@chainsafe/libp2p-yamux':
         specifier: ^7.0.4
         version: 7.0.4
       '@libp2p/crypto':
         specifier: ^5.0.7
         version: 5.1.7
+      '@libp2p/identify':
+        specifier: ^3.0.38
+        version: 3.0.38
       '@libp2p/interface':
         specifier: ^2.2.1
         version: 2.10.5
@@ -371,9 +377,15 @@ importers:
       '@libp2p/tcp':
         specifier: ^10.1.10
         version: 10.1.18
+      '@libp2p/tls':
+        specifier: ^2.2.2
+        version: 2.2.6
       '@libp2p/websockets':
         specifier: ^9.0.16
         version: 9.2.18
+      '@multiformats/multiaddr':
+        specifier: ^12.3.4
+        version: 12.5.1
       it-pipe:
         specifier: ^3.0.1
         version: 3.0.1
@@ -1410,6 +1422,9 @@ packages:
   '@libp2p/crypto@5.1.7':
     resolution: {integrity: sha512-7DO0piidLEKfCuNfS420BlHG0e2tH7W/zugdsPSiC/1Apa/s1B1dBkaIEgfDkGjrRP4S/8Or86Rtq7zXeEu67g==}
 
+  '@libp2p/identify@3.0.38':
+    resolution: {integrity: sha512-2eCZU5CSTvyt78jtMLQ88m6Rlrcrt7BVccGHsdjx8hguvFYWqBjq19RQ5Zm47bbHlNzjLwrAUi6vfKx2r7fKIg==}
+
   '@libp2p/interface-internal@2.3.18':
     resolution: {integrity: sha512-tnZ20IFASXLbDc2JxeUPZNIXDuN5Ge7be6BU458WLvmquf93NlSqZkWs6xFdi+0yXUrw7GGTgzIP5v+1LnDUmA==}
 
@@ -1451,6 +1466,9 @@ packages:
 
   '@libp2p/tcp@10.1.18':
     resolution: {integrity: sha512-tB7rjETju5UMiYpyzAEOsX7qGVahJwaoBlsMAfpb35a8lH+KU0AaxBMMK8P4cFbKZZQSuDN86Is0mb5EG7npVA==}
+
+  '@libp2p/tls@2.2.6':
+    resolution: {integrity: sha512-dX+BwABEGx+0ab2pUPtgjcHWXg/IYc4hnRSqpvzM3DH9SfhofT0c6gm9nmuUNAXmithbBwe/TvDoXIwbuJoaZg==}
 
   '@libp2p/utils@6.7.1':
     resolution: {integrity: sha512-x3WImvw4unmx1ZeAedj8AkRe4UImUlkw0ZItYAiKiekElMNUXwv+Yt48dI/LmB38JIof8sng29XvUeCVU3F6OA==}
@@ -6502,11 +6520,9 @@ snapshots:
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
 
-  '@chainsafe/as-chacha20poly1305@0.1.0':
-    optional: true
+  '@chainsafe/as-chacha20poly1305@0.1.0': {}
 
-  '@chainsafe/as-sha256@1.2.0':
-    optional: true
+  '@chainsafe/as-sha256@1.2.0': {}
 
   '@chainsafe/is-ip@2.1.0': {}
 
@@ -6529,7 +6545,6 @@ snapshots:
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
       wherearewe: 2.0.1
-    optional: true
 
   '@chainsafe/libp2p-yamux@7.0.4':
     dependencies:
@@ -7024,6 +7039,24 @@ snapshots:
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
 
+  '@libp2p/identify@3.0.38':
+    dependencies:
+      '@libp2p/crypto': 5.1.7
+      '@libp2p/interface': 2.10.5
+      '@libp2p/interface-internal': 2.3.18
+      '@libp2p/peer-id': 5.1.8
+      '@libp2p/peer-record': 8.0.34
+      '@libp2p/utils': 6.7.1
+      '@multiformats/multiaddr': 12.5.1
+      '@multiformats/multiaddr-matcher': 2.0.2
+      it-drain: 3.0.10
+      it-parallel: 3.0.13
+      it-protobuf-stream: 2.0.3
+      main-event: 1.0.1
+      protons-runtime: 5.6.0
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
+
   '@libp2p/interface-internal@2.3.18':
     dependencies:
       '@libp2p/interface': 2.10.5
@@ -7194,6 +7227,22 @@ snapshots:
       progress-events: 1.0.1
       race-event: 1.6.1
       stream-to-it: 1.0.1
+
+  '@libp2p/tls@2.2.6':
+    dependencies:
+      '@libp2p/crypto': 5.1.7
+      '@libp2p/interface': 2.10.5
+      '@libp2p/peer-id': 5.1.8
+      '@peculiar/asn1-schema': 2.4.0
+      '@peculiar/asn1-x509': 2.4.0
+      '@peculiar/webcrypto': 1.5.0
+      '@peculiar/x509': 1.13.0
+      asn1js: 3.0.6
+      it-queueless-pushable: 2.0.2
+      it-stream-types: 2.0.2
+      protons-runtime: 5.6.0
+      uint8arraylist: 2.4.8
+      uint8arrays: 5.1.0
 
   '@libp2p/utils@6.7.1':
     dependencies:
@@ -7394,8 +7443,7 @@ snapshots:
       '@napi-rs/canvas-win32-x64-msvc': 0.1.73
     optional: true
 
-  '@noble/ciphers@1.3.0':
-    optional: true
+  '@noble/ciphers@1.3.0': {}
 
   '@noble/curves@1.9.6':
     dependencies:
@@ -7442,7 +7490,6 @@ snapshots:
       '@peculiar/asn1-x509-attr': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-csr@2.4.0':
     dependencies:
@@ -7450,7 +7497,6 @@ snapshots:
       '@peculiar/asn1-x509': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-ecc@2.4.0':
     dependencies:
@@ -7458,7 +7504,6 @@ snapshots:
       '@peculiar/asn1-x509': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-pfx@2.4.0':
     dependencies:
@@ -7468,7 +7513,6 @@ snapshots:
       '@peculiar/asn1-schema': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-pkcs8@2.4.0':
     dependencies:
@@ -7476,7 +7520,6 @@ snapshots:
       '@peculiar/asn1-x509': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-pkcs9@2.4.0':
     dependencies:
@@ -7488,7 +7531,6 @@ snapshots:
       '@peculiar/asn1-x509-attr': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-rsa@2.4.0':
     dependencies:
@@ -7496,14 +7538,12 @@ snapshots:
       '@peculiar/asn1-x509': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-schema@2.4.0':
     dependencies:
       asn1js: 3.0.6
       pvtsutils: 1.3.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-x509-attr@2.4.0':
     dependencies:
@@ -7511,7 +7551,6 @@ snapshots:
       '@peculiar/asn1-x509': 2.4.0
       asn1js: 3.0.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/asn1-x509@2.4.0':
     dependencies:
@@ -7519,12 +7558,10 @@ snapshots:
       asn1js: 3.0.6
       pvtsutils: 1.3.6
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/json-schema@1.1.12':
     dependencies:
       tslib: 2.8.1
-    optional: true
 
   '@peculiar/webcrypto@1.5.0':
     dependencies:
@@ -7533,7 +7570,6 @@ snapshots:
       pvtsutils: 1.3.6
       tslib: 2.8.1
       webcrypto-core: 1.8.1
-    optional: true
 
   '@peculiar/x509@1.13.0':
     dependencies:
@@ -7548,7 +7584,6 @@ snapshots:
       reflect-metadata: 0.2.2
       tslib: 2.8.1
       tsyringe: 4.10.0
-    optional: true
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -8659,7 +8694,6 @@ snapshots:
       pvtsutils: 1.3.6
       pvutils: 1.1.3
       tslib: 2.8.1
-    optional: true
 
   assertion-error@2.0.1: {}
 
@@ -10134,8 +10168,7 @@ snapshots:
 
   is-docker@2.2.1: {}
 
-  is-electron@2.2.2:
-    optional: true
+  is-electron@2.2.2: {}
 
   is-extglob@2.1.1: {}
 
@@ -10335,7 +10368,6 @@ snapshots:
     dependencies:
       it-stream-types: 2.0.2
       p-defer: 4.0.1
-    optional: true
 
   it-parallel@3.0.13:
     dependencies:
@@ -10361,7 +10393,6 @@ snapshots:
       it-length-prefixed-stream: 2.0.3
       it-stream-types: 2.0.2
       uint8arraylist: 2.4.8
-    optional: true
 
   it-pushable@3.2.3:
     dependencies:
@@ -11775,10 +11806,8 @@ snapshots:
   pvtsutils@1.3.6:
     dependencies:
       tslib: 2.8.1
-    optional: true
 
-  pvutils@1.1.3:
-    optional: true
+  pvutils@1.1.3: {}
 
   qs@6.13.0:
     dependencies:
@@ -11967,8 +11996,7 @@ snapshots:
       indent-string: 4.0.0
       strip-indent: 3.0.0
 
-  reflect-metadata@0.2.2:
-    optional: true
+  reflect-metadata@0.2.2: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:
@@ -12657,7 +12685,6 @@ snapshots:
   tsyringe@4.10.0:
     dependencies:
       tslib: 1.14.1
-    optional: true
 
   tunnel-agent@0.6.0:
     dependencies:
@@ -12974,7 +13001,6 @@ snapshots:
       asn1js: 3.0.6
       pvtsutils: 1.3.6
       tslib: 2.8.1
-    optional: true
 
   webidl-conversions@4.0.2: {}
 
@@ -13005,7 +13031,6 @@ snapshots:
   wherearewe@2.0.1:
     dependencies:
       is-electron: 2.2.2
-    optional: true
 
   which-boxed-primitive@1.1.1:
     dependencies:

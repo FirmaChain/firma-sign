@@ -49,9 +49,16 @@ The tests cover:
 
 ## Demo Scenario: File Sharing Between Peers
 
+### Important: Port Configuration
+The P2P transport uses **TWO consecutive ports**:
+- **Base Port (e.g., 9090)**: TCP connections for direct peer-to-peer
+- **Base Port + 1 (e.g., 9091)**: WebSocket connections for browser compatibility
+
+Make sure both ports are available before starting!
+
 ### 1. Start Server Peer (Terminal 1)
 ```bash
-# Start server on port 9090 with test documents
+# Start server on port 9090 (will also use 9091 for WebSocket)
 pnpm tsx scripts/server-peer.ts 9090 ./test-documents
 
 # Output shows:
@@ -60,6 +67,12 @@ pnpm tsx scripts/server-peer.ts 9090 ./test-documents
 🚀 Starting P2P Server Peer...
 📂 Documents directory: /path/to/test-documents
 🔌 Port: 9090
+🔧 P2P Transport config - Requested port: 9090, Using port: 9090
+🔌 P2P Transport listening on:
+   /ip4/127.0.0.1/tcp/9090/p2p/12D3KooW...     # TCP on port 9090
+   /ip4/192.168.x.x/tcp/9090/p2p/12D3KooW...   # TCP on LAN IP
+   /ip4/127.0.0.1/tcp/9091/ws/p2p/12D3KooW...  # WebSocket on port 9091
+   /ip4/192.168.x.x/tcp/9091/ws/p2p/12D3KooW... # WebSocket on LAN IP
 📚 Loading document catalog...
 📝 Created sample document: sample-contract.pdf
 📝 Created sample document: agreement.txt
@@ -75,32 +88,59 @@ pnpm tsx scripts/server-peer.ts 9090 ./test-documents
 
 ### 2. Start Client Peer (Terminal 2)
 ```bash
-# Start client on port 9091 with downloads directory
-pnpm tsx scripts/client-peer.ts 9091 ./downloads
+# Start client on port 9092 (will also use 9093 for WebSocket)
+# Note: Must use different ports than server to avoid conflicts
+pnpm tsx scripts/client-peer.ts 9092 ./downloads
 
 # Output shows:
 📱 Firma-Sign P2P Client Peer
 ==============================
 🚀 Starting P2P Client Peer...
 📂 Downloads directory: /path/to/downloads
-🔌 Port: 9091
+🔌 Port: 9092
+🔧 P2P Transport config - Requested port: 9092, Using port: 9092
+🔌 P2P Transport listening on:
+   /ip4/127.0.0.1/tcp/9092/p2p/12D3KooW...     # TCP on port 9092
+   /ip4/192.168.x.x/tcp/9092/p2p/12D3KooW...   # TCP on LAN IP
+   /ip4/127.0.0.1/tcp/9093/ws/p2p/12D3KooW...  # WebSocket on port 9093
+   /ip4/192.168.x.x/tcp/9093/ws/p2p/12D3KooW... # WebSocket on LAN IP
 ✅ Client peer started successfully!
 🆔 Peer ID: 12D3KooWBvbH1jEKVA8dhfgKiGuUkXJKxJDfZeB8NjFxHXzQW5xK
 ```
 
 ### 3. Discover and Connect Peers
 
-In the client terminal:
+P2P discovery works in two ways:
+
+#### Automatic Discovery (mDNS - Local Network)
+If both peers are on the same local network, they will automatically discover each other:
 ```bash
 p2p-client> discover
 🔍 Discovering peers...
 📡 Current connections: 1
-📋 Previously known peers:
-  12D3KooWEyoppNCUx... (0 docs, 2m ago)
+🟢 Connected peers:
+  12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp (inbound)
+    /ip4/192.168.1.100/tcp/9090
+```
+
+#### Manual Connection
+If peers are on different networks or mDNS is not working, connect manually:
+
+1. Copy the server's multiaddr from its startup output:
+```
+🔌 P2P Transport listening on:
+   /ip4/192.168.20.101/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+```
+
+2. In the client terminal, connect using the full multiaddr:
+```bash
+p2p-client> connect /ip4/192.168.20.101/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+🔗 Connecting to /ip4/192.168.20.101/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp...
+✅ Connection initiated. Check "peers" command for status.
 
 p2p-client> peers
 👥 KNOWN PEERS
-  12D3KooWEyoppNCUx... (0 docs, 2m ago)
+  12D3KooWEyoppNCUx... (0 docs, just now)
 ```
 
 ### 4. Request Files from Server
@@ -171,22 +211,70 @@ Both peers provide:
 - Document catalogs
 - Peer discovery information
 
+## Connection Diagnostics
+
+### Test Connection Tool
+
+Use the test-connection script to diagnose connection issues:
+
+```bash
+# Test connection to a peer
+pnpm tsx scripts/test-connection.ts /ip4/127.0.0.1/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+
+# Output shows step-by-step connection process:
+🔍 P2P Connection Test
+======================
+
+📍 Target: /ip4/127.0.0.1/tcp/9090/p2p/12D3KooW...
+📊 Parsed: IP=127.0.0.1, Port=9090
+
+1️⃣ Testing network connectivity...
+✅ TCP connection successful
+
+2️⃣ Creating test P2P node...
+✅ Test node created
+📍 Our Peer ID: 12D3KooWBvbH1jEKVA8dhfgKiGuUkXJKxJDfZeB8NjFxHXzQW5xK
+
+3️⃣ Attempting P2P connection...
+🔄 Dialing peer...
+✅ P2P connection established!
+📡 Remote Peer: 12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
+🔗 Connection ID: 1234567890
+📊 Status: open
+📊 Active streams: 2
+✅ Connection closed cleanly
+
+🏁 Test complete
+```
+
+This tool helps identify:
+- Network connectivity issues
+- Incorrect multiaddr format
+- Server not running
+- Firewall blocking connections
+
 ## Advanced Testing
 
 ### Multi-Peer Network
 ```bash
-# Terminal 1 - Server
+# Terminal 1 - Server (uses ports 9090 & 9091)
 pnpm tsx scripts/server-peer.ts 9090
 
-# Terminal 2 - Client 1  
-pnpm tsx scripts/client-peer.ts 9091
-
-# Terminal 3 - Client 2
+# Terminal 2 - Client 1 (uses ports 9092 & 9093)
 pnpm tsx scripts/client-peer.ts 9092
 
-# Terminal 4 - Client 3
-pnpm tsx scripts/client-peer.ts 9093
+# Terminal 3 - Client 2 (uses ports 9094 & 9095)
+pnpm tsx scripts/client-peer.ts 9094
+
+# Terminal 4 - Client 3 (uses ports 9096 & 9097)
+pnpm tsx scripts/client-peer.ts 9096
 ```
+
+**Port Allocation Summary:**
+- Server: 9090 (TCP) + 9091 (WebSocket)
+- Client 1: 9092 (TCP) + 9093 (WebSocket)
+- Client 2: 9094 (TCP) + 9095 (WebSocket)
+- Client 3: 9096 (TCP) + 9097 (WebSocket)
 
 ### Performance Testing
 ```bash
@@ -228,6 +316,7 @@ Both peer scripts support interactive commands:
 
 **Client Commands:**
 - `discover` - Discover available peers
+- `connect <multiaddr>` - Manually connect to a peer
 - `peers` - Show known peers
 - `downloads` - Show downloaded documents
 - `send <file> <peer-id>` - Send file to peer
@@ -235,20 +324,49 @@ Both peer scripts support interactive commands:
 
 ### Network Troubleshooting
 
-1. **Connection Issues:**
-   - Check firewall settings
-   - Verify ports are available
+1. **Port Conflicts:**
+   - Remember: Each peer uses TWO consecutive ports (base + base+1)
+   - Check both ports are free: `lsof -i :9090 && lsof -i :9091`
+   - Kill conflicting processes: `kill -9 <PID>`
+   - Common error: "EADDRINUSE: address already in use"
+
+2. **Connection Issues:**
+   - Check firewall settings for both TCP and WebSocket ports
+   - Verify all required ports are available
    - Enable mDNS for local discovery
 
-2. **Transfer Failures:**
+3. **Transfer Failures:**
    - Verify peer IDs are correct
    - Check file sizes against limits
    - Monitor debug logs for errors
 
-3. **Discovery Problems:**
-   - Ensure peers are on same network (for mDNS)
-   - Add bootstrap nodes for DHT
-   - Check network connectivity
+4. **Discovery Problems:**
+   - **mDNS (Local Discovery)**:
+     - Ensure peers are on same local network/subnet
+     - Check firewall allows multicast (224.0.0.251:5353)
+     - Disable VPN which may block multicast
+     - Wait 5-10 seconds after starting for discovery
+   
+   - **Manual Connection**:
+     - Use the full multiaddr including peer ID
+     - Ensure the IP address is reachable (ping test)
+     - Check both TCP and WebSocket ports are open
+     - Try connecting to localhost first for testing
+   
+   - **Connection Refused**:
+     - Verify the server is running and listening
+     - Check the multiaddr is copied correctly
+     - Ensure no NAT/firewall blocking the connection
+     - Try using the LAN IP instead of localhost
+   
+   - **"All multiaddr dials failed" error**:
+     - **Check server status**: Ensure server peer is actually running
+     - **Verify IP address**: Use the actual IP from server output, not just 127.0.0.1
+     - **Check both ports**: Remember server uses TWO ports (e.g., 9090 and 9091)
+     - **Try WebSocket address**: If TCP fails, try the WebSocket multiaddr ending in /ws
+     - **Test connectivity**: `ping <server-ip>` to verify network connectivity
+     - **Firewall check**: Temporarily disable firewall to test
+     - **Use correct format**: Full multiaddr must include /p2p/<peer-id> at the end
 
 ## Performance Characteristics
 
