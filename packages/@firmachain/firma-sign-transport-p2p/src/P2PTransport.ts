@@ -223,16 +223,15 @@ export class P2PTransport implements Transport {
         const targetPeerId = peerIdMatch[1];
         
         // First, let's check if we have any existing addresses for this peer
-        const peerStore = (this.node as any).peerStore;
-        if (peerStore) {
-          try {
-            const addresses = await peerStore.addressBook.get(peerIdFromString(targetPeerId));
-            if (addresses && addresses.length > 0) {
-              console.log(`📋 Found ${addresses.length} known addresses for peer ${targetPeerId}`);
-            }
-          } catch (e) {
-            // Peer not in address book yet
+        // Using the libp2p node's services to check peer addresses
+        try {
+          const peerId = peerIdFromString(targetPeerId);
+          const addresses = await this.node.peerStore.get(peerId);
+          if (addresses && addresses.addresses && addresses.addresses.length > 0) {
+            console.log(`📋 Found ${addresses.addresses.length} known addresses for peer ${targetPeerId}`);
           }
+        } catch {
+          // Peer not in address book yet
         }
         
         // Try to dial using the peer ID directly
@@ -244,7 +243,7 @@ export class P2PTransport implements Transport {
           console.log(`📡 Connection ID: ${connection.id}`);
           console.log(`🔄 Connection status: ${connection.status}`);
           return;
-        } catch (e) {
+        } catch {
           console.log('⚠️  Direct peer ID dial failed, trying full multiaddr...');
         }
       }
@@ -253,9 +252,11 @@ export class P2PTransport implements Transport {
       // Now we have the proper multiaddr package imported
       try {
         console.log('📍 Parsing multiaddr:', multiaddrStr);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const ma = multiaddr(multiaddrStr);
         console.log('✅ Multiaddr parsed successfully');
         
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         const connection = await this.node.dial(ma);
         
         console.log(`✅ Successfully connected to peer: ${connection.remotePeer.toString()}`);
@@ -338,6 +339,7 @@ export class P2PTransport implements Transport {
       },
       transports,
       streamMuxers: [yamux(), mplex()],
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       connectionEncrypters: [noise(), tls()],
       services: {
         identify: identify(), // Required by DHT and other services
@@ -427,7 +429,7 @@ export class P2PTransport implements Transport {
       // Auto-dial discovered peers (optional, can be controlled by config)
       if (this.config.autoDialPeers !== false) {
         void this.node!.dial(peerInfo.id).catch(err => {
-          console.log(`⚠️  Could not dial peer ${peerInfo.id.toString()}: ${err.message}`);
+          console.log(`⚠️  Could not dial peer ${peerInfo.id.toString()}: ${err instanceof Error ? err.message : String(err)}`);
         });
       }
     });
