@@ -3,16 +3,8 @@ import { ComponentProps, ViewMode } from '../types';
 
 export const CheckboxComponent: React.FC<ComponentProps> = ({
 	component,
-	isSelected,
-	isHovered,
-	isFocused,
 	viewMode,
-	scale,
 	onUpdate,
-	onSelect,
-	onDelete,
-	onStartDrag,
-	onStartResize,
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (onUpdate) {
@@ -23,7 +15,7 @@ export const CheckboxComponent: React.FC<ComponentProps> = ({
 		}
 	};
 
-	const isChecked = component.value === 'true' || component.value === true;
+	const isChecked = component.value === 'true';
 
 	return (
 		<div

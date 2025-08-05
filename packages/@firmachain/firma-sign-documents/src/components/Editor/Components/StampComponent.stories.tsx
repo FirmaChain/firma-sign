@@ -1,9 +1,8 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { StampComponent } from './StampComponent';
-import { ComponentType, ViewMode } from '../types';
-import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof StampComponent> = {
 	title: 'Components/Editor/Components/StampComponent',
@@ -146,7 +145,7 @@ export const StampInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function StampInPDFExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -183,7 +182,7 @@ export const StampInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportStamp}
+						onClick={() => void exportStamp()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -197,7 +196,7 @@ export const StampInPDFExport: Story = {
 						{isLoading ? 'Exporting...' : 'Export Approval Stamp to PDF'}
 					</button>
 					<button
-						onClick={async () => {
+						onClick={() => void (async () => {
 							try {
 								const stampComponent = {
 									...sampleComponent,
@@ -209,12 +208,14 @@ export const StampInPDFExport: Story = {
 									{ quality: 'medium' },
 								);
 								if (result.success && result.pdfBytes) {
-									previewPDF(result.pdfBytes);
+									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+									const url = URL.createObjectURL(blob);
+									window.open(url, '_blank');
 								}
 							} catch (error) {
 								console.error('Preview error:', error);
 							}
-						}}
+						})()}
 						style={{
 							padding: '10px 20px',
 							background: '#059669',
@@ -260,7 +261,7 @@ export const ApprovalWorkflowExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function ApprovalWorkflowExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -360,7 +361,7 @@ export const ApprovalWorkflowExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportApprovalWorkflow}
+						onClick={() => void exportApprovalWorkflow()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',

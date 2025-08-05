@@ -1,7 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { cn } from '../../utils/cn';
 import { ComponentType, ViewMode, AssignedUser } from './types';
-import { TOOLS_INFO } from './constants';
 
 interface PaletteProps {
 	signers: AssignedUser[];
@@ -16,8 +15,8 @@ interface MenuBoxProps {
 	selectedName: string;
 	toolName: string;
 	isTemplate: boolean;
-	signers?: MemberInfo[];
-	handleSelect?: (signerOrIndex: any) => void;
+	signers?: AssignedUser[];
+	handleSelect?: (signerOrIndex: AssignedUser) => void;
 	onOutside?: () => void;
 	// Toolbox props
 	title: string;
@@ -33,11 +32,11 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 	isTemplate,
 	signers,
 	handleSelect,
-	onOutside,
+	onOutside: _onOutside,
 	title,
 	tooltip,
 	onClick,
-	iconKey,
+	iconKey: _iconKey,
 	disabled = false,
 }) => {
 	const isSelected = selectedName === toolName;
@@ -75,7 +74,7 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 						{signers && signers.length > 0 && (
 							<div className="space-y-2">
 								<div className="text-xs text-gray-500 mb-2">Assign to:</div>
-								{signers.map((signer, index) => (
+								{signers.map((signer) => (
 									<button
 										key={signer.email}
 										onClick={() => handleSelect?.(signer)}
@@ -182,7 +181,7 @@ export const Palette: React.FC<PaletteProps> = ({ signers, className }) => {
 		[selectedTool],
 	);
 
-	const handleSignerSelect = useCallback((signer: MemberInfo) => {
+	const handleSignerSelect = useCallback((signer: AssignedUser) => {
 		console.log('Selected signer:', signer);
 		// Handle signer selection logic
 	}, []);

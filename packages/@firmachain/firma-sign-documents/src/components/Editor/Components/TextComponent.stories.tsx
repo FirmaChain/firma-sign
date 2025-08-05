@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { TextComponent } from './TextComponent';
-import { ComponentType, ViewMode } from '../types';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
 import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof TextComponent> = {
 	title: 'Components/Editor/Components/TextComponent',
@@ -165,7 +165,7 @@ export const TextInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function TextInPDFExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -197,7 +197,7 @@ export const TextInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportText}
+						onClick={() => void exportText()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -252,7 +252,7 @@ export const MultipleTextFieldsExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function MultipleTextFieldsExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -337,7 +337,7 @@ export const MultipleTextFieldsExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportFormFields}
+						onClick={() => void exportFormFields()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',

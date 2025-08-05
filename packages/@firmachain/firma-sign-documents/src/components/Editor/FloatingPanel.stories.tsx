@@ -410,7 +410,7 @@ export const ResponsiveWidths: Story = {
 };
 
 export const InteractiveDemo: Story = {
-	render: () => {
+	render: function InteractiveDemoRender() {
 		const [position, setPosition] = React.useState<PanelPosition>('floating');
 		const [floatingPosition, setFloatingPosition] = React.useState({ x: 100, y: 100 });
 		const [isPinned, setIsPinned] = React.useState(false);

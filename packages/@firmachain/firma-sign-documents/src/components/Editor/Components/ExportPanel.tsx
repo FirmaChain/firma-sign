@@ -203,7 +203,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 			<div className="space-y-2">
 				<div className="flex gap-2">
 					<button
-						onClick={handlePreview}
+						onClick={() => void handlePreview()}
 						disabled={!canExport}
 						className="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 					>
@@ -221,7 +221,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 					</button>
 
 					<button
-						onClick={handleExport}
+						onClick={() => void handleExport()}
 						disabled={!canExport}
 						className="flex-1 px-3 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 					>

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
 import { ExportPanel } from './ExportPanel';
-import { ComponentType } from '../types';
+import { ComponentType, DocumentComponent } from '../types';
 import { USER_COLORS } from '../constants';
 import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
 
@@ -25,7 +25,7 @@ const meta: Meta<typeof ExportPanel> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleComponents = [
+const sampleComponents: DocumentComponent[] = [
 	{
 		id: 'comp-1',
 		type: ComponentType.SIGNATURE,
@@ -117,11 +117,11 @@ export const MissingRequiredFields: Story = {
 			{
 				...sampleComponents[0],
 				value: '', // Missing signature
-			},
+			} as DocumentComponent,
 			{
 				...sampleComponents[3],
 				value: '', // Missing required input
-			},
+			} as DocumentComponent,
 		],
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'incomplete-document.pdf',
@@ -133,7 +133,7 @@ export const AllFieldsFilled: Story = {
 		components: sampleComponents.map((comp) => ({
 			...comp,
 			value: comp.value || 'Sample value',
-		})),
+		} as DocumentComponent)),
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'completed-document.pdf',
 	},
@@ -143,7 +143,7 @@ export const LargeDocument: Story = {
 	args: {
 		components: [
 			...sampleComponents,
-			...Array.from({ length: 15 }, (_, i) => ({
+			...Array.from({ length: 15 }, (_, i): DocumentComponent => ({
 				id: `extra-comp-${i}`,
 				type: ComponentType.TEXT,
 				pageNumber: Math.floor(i / 5),
@@ -158,7 +158,7 @@ export const LargeDocument: Story = {
 				value: i % 2 === 0 ? `Value ${i}` : '',
 				created: Date.now() - i * 100,
 			})),
-		],
+		] as DocumentComponent[],
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'large-document.pdf',
 	},
@@ -166,7 +166,7 @@ export const LargeDocument: Story = {
 
 export const SinglePageDocument: Story = {
 	args: {
-		components: sampleComponents.filter((comp) => comp.pageNumber === 0),
+		components: sampleComponents.filter((comp): comp is DocumentComponent => comp.pageNumber === 0),
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'single-page.pdf',
 	},
@@ -190,7 +190,7 @@ export const MultiPageDocument: Story = {
 				config: { required: true },
 				value: 'Manager Signature',
 				created: Date.now(),
-			},
+			} as DocumentComponent,
 		],
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'multi-page-document.pdf',
@@ -211,19 +211,19 @@ export const WithPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function Render(args) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 
 		return (
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px' }}>
 					<button
-						onClick={async () => {
+						onClick={() => void (async () => {
 							try {
 								const result = await exportPDFWithComponents(
 									'/wcoomd/uploads/2018/05/blank.pdf',
-									args.components,
-									{ fileName: args.fileName, quality: 'high' },
+									args.components as DocumentComponent[],
+									{ fileName: args.fileName as string, quality: 'high' },
 								);
 								if (result.success && result.pdfBytes) {
 									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
@@ -233,7 +233,7 @@ export const WithPDFExport: Story = {
 							} catch (error) {
 								console.error('Export error:', error);
 							}
-						}}
+						})()}
 						style={{
 							padding: '10px 20px',
 							background: '#3b82f6',
@@ -246,11 +246,11 @@ export const WithPDFExport: Story = {
 						Export & View PDF
 					</button>
 					<button
-						onClick={async () => {
+						onClick={() => void (async () => {
 							try {
 								const result = await exportPDFWithComponents(
 									'/wcoomd/uploads/2018/05/blank.pdf',
-									args.components,
+									args.components as DocumentComponent[],
 									{ quality: 'high' },
 								);
 								if (result.success && result.pdfBytes) {
@@ -259,7 +259,7 @@ export const WithPDFExport: Story = {
 							} catch (error) {
 								console.error('Preview error:', error);
 							}
-						}}
+						})()}
 						style={{
 							padding: '10px 20px',
 							background: '#059669',
@@ -304,16 +304,16 @@ export const WithPDFPreview: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function Render(args) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
-		const generatePDF = async () => {
+		const generatePDF = React.useCallback(async () => {
 			setIsLoading(true);
 			try {
 				const result = await exportPDFWithComponents(
 					'/wcoomd/uploads/2018/05/blank.pdf',
-					args.components,
+					args.components as DocumentComponent[],
 					{ quality: 'medium' },
 				);
 
@@ -327,17 +327,17 @@ export const WithPDFPreview: Story = {
 			} finally {
 				setIsLoading(false);
 			}
-		};
+		}, [args.components]);
 
 		React.useEffect(() => {
-			generatePDF();
-		}, []);
+			void generatePDF();
+		}, [generatePDF]);
 
 		return (
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={generatePDF}
+						onClick={() => void generatePDF()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -376,34 +376,6 @@ export const ExportOptionsDemo: Story = {
 		components: sampleComponents,
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'high-quality-export.pdf',
-		onExport: async (components, pdfUrl, fileName) => {
-			console.log('Exporting with custom options');
-
-			// Demonstrate different export options
-			const exportOptions = {
-				fileName,
-				quality: 'high' as const,
-				includeFormFields: false,
-				flattenComponents: true,
-			};
-
-			console.log('Export options:', exportOptions);
-
-			try {
-				const result = await exportPDFWithComponents(pdfUrl, components, exportOptions);
-
-				if (result.success) {
-					console.log('High-quality PDF exported:', result.fileName);
-				} else {
-					console.error('Export failed:', result.error);
-				}
-
-				return result;
-			} catch (error) {
-				console.error('Export error:', error);
-				return { success: false, error: error.message };
-			}
-		},
 	},
 	parameters: {
 		docs: {
@@ -420,40 +392,12 @@ export const ExportWithStats: Story = {
 		components: sampleComponents,
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'stats-export.pdf',
-		onExport: async (components, pdfUrl, fileName) => {
-			// Import getExportStats dynamically to show stats
-			const { getExportStats } = await import('../utils/pdfExport');
-
-			const stats = getExportStats(components);
-			console.log('Export Statistics:', stats);
-			console.log(`Total components: ${stats.totalComponents}`);
-			console.log(`Filled components: ${stats.filledComponents}`);
-			console.log(`Required components: ${stats.requiredComponents}`);
-			console.log('Components by type:', stats.componentsByType);
-			console.log('Components by page:', stats.componentsByPage);
-
-			try {
-				const result = await exportPDFWithComponents(pdfUrl, components, {
-					fileName,
-					quality: 'medium',
-				});
-
-				if (result.success) {
-					console.log('PDF exported with stats tracking');
-				}
-
-				return result;
-			} catch (error) {
-				console.error('Export error:', error);
-				return { success: false, error: error.message };
-			}
-		},
 	},
 	parameters: {
 		docs: {
 			description: {
 				story:
-					'ExportPanel with statistics tracking. Check the console to see export statistics before PDF generation.',
+					'ExportPanel with statistics tracking. The panel shows export statistics before PDF generation.',
 			},
 		},
 	},
@@ -464,27 +408,6 @@ export const ExportErrorHandling: Story = {
 		components: sampleComponents,
 		pdfUrl: 'https://invalid-url.com/nonexistent.pdf',
 		fileName: 'error-test.pdf',
-		onExport: async (components, pdfUrl, fileName) => {
-			console.log('Testing error handling with invalid PDF URL');
-
-			try {
-				const result = await exportPDFWithComponents(pdfUrl, components, {
-					fileName,
-				});
-
-				if (result.success) {
-					console.log('Unexpected success');
-				} else {
-					console.error('Expected error occurred:', result.error);
-					alert(`Export failed: ${result.error}`);
-				}
-
-				return result;
-			} catch (error) {
-				console.error('Caught error:', error);
-				return { success: false, error: error.message };
-			}
-		},
 	},
 	parameters: {
 		docs: {

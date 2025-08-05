@@ -47,49 +47,8 @@ const meta: Meta<typeof Page> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Mock PDF page component since we don't have a real PDF
-const MockPdfPage = ({ pageNumber, scale, onLoadSuccess, loading, error, className }: any) => {
-	React.useEffect(() => {
-		// Simulate page load success
-		if (onLoadSuccess) {
-			onLoadSuccess({
-				getViewport: (options: { scale: number }) => ({
-					width: 595 * options.scale,
-					height: 842 * options.scale,
-				}),
-			});
-		}
-	}, [onLoadSuccess, scale]);
-
-	return (
-		<div
-			className={`bg-white border shadow-sm ${className}`}
-			style={{
-				width: 595 * scale,
-				height: 842 * scale,
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				flexDirection: 'column',
-			}}
-		>
-			<div className="text-gray-400 text-xl font-light mb-4">📄 Page {pageNumber}</div>
-			<div className="text-gray-300 text-sm">
-				Mock PDF Page ({Math.round(595 * scale)} × {Math.round(842 * scale)})
-			</div>
-			<div className="text-gray-300 text-xs mt-2">Scale: {scale}x</div>
-		</div>
-	);
-};
-
-// Override react-pdf component for stories
-const originalCreateElement = React.createElement;
-React.createElement = (type: any, props: any, ...children: any[]) => {
-	if (type?.displayName === 'Page' && type !== Page) {
-		return originalCreateElement(MockPdfPage, props, ...children);
-	}
-	return originalCreateElement(type, props, ...children);
-};
+// Note: In a real scenario, you would mock react-pdf properly in the test setup
+// For storybook, the actual Page component will handle PDF rendering
 
 export const Default: Story = {
 	args: {
@@ -327,7 +286,7 @@ export const WithCustomClassName: Story = {
 };
 
 export const InteractiveDemo: Story = {
-	render: () => {
+	render: function InteractiveDemoRender() {
 		const [scale, setScale] = React.useState(1);
 		const [viewMode, setViewMode] = React.useState('editor');
 		const [currentPage, setCurrentPage] = React.useState(0);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Page as ReactPdfPage } from 'react-pdf';
 import { cn } from '../../utils/cn';
 
@@ -9,7 +9,7 @@ interface PageProps {
 	show?: boolean;
 	viewMode?: string;
 	onVisible?: (page: number, visible: boolean) => void;
-	onPosition?: (page: number, position: any) => void;
+	onPosition?: (page: number, position: { x?: number; y?: number; width?: number; height?: number; top?: number }) => void;
 	onFinish?: () => void;
 	previewEmail?: string;
 	totalPage?: number;
@@ -20,21 +20,21 @@ interface PageProps {
 export const Page = React.forwardRef<HTMLDivElement, PageProps>(
 	(
 		{
-			fileId,
+			fileId: _fileId,
 			page = 0,
-			totalPage = 1,
+			totalPage: _totalPage = 1,
 			scale = 1,
 			show = true,
 			viewMode = 'editor',
 			onVisible,
 			onPosition,
-			onFinish,
-			previewEmail,
+			onFinish: _onFinish,
+			previewEmail: _previewEmail,
 			removeScrollGap = false,
 			className,
 			...props
 		},
-		ref,
+		_ref,
 	) => {
 		const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +56,7 @@ export const Page = React.forwardRef<HTMLDivElement, PageProps>(
 			}
 		}, [page, show, onVisible]);
 
-		const handlePageLoadSuccess = (pdfPage: any) => {
+		const handlePageLoadSuccess = (pdfPage: { getViewport: (params: { scale: number }) => { width: number; height: number } }) => {
 			const viewport = pdfPage.getViewport({ scale });
 			setPageWidth(viewport.width);
 			setPageHeight(viewport.height);

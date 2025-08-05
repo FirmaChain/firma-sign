@@ -14,7 +14,6 @@ import {
 import {
 	createNewComponent,
 	createSystemAssignment,
-	toolNeedsAssignment,
 } from '../utils/editorUtils';
 import { calculateResizeTransform, moveComponentWithKeyboard } from '../utils/componentOperations';
 
@@ -26,7 +25,7 @@ interface UseComponentManagementProps {
 
 export const useComponentManagement = ({
 	initialComponents,
-	selectedPage,
+	selectedPage: _selectedPage,
 	onComponentsChange,
 }: UseComponentManagementProps) => {
 	const [documentComponents, setDocumentComponents] =
@@ -38,7 +37,7 @@ export const useComponentManagement = ({
 	// Initialize components from props only on mount
 	useEffect(() => {
 		setDocumentComponents(initialComponents);
-	}, []); // Only run on mount
+	}, [initialComponents]); // Only run on mount
 
 	// Handle prop updates when components array changes externally
 	// Only update if we receive new/different components from parent
@@ -54,7 +53,7 @@ export const useComponentManagement = ({
 		if (hasNewComponents) {
 			setDocumentComponents(initialComponents);
 		}
-	}, [initialComponents]);
+	}, [initialComponents, documentComponents]);
 
 	const updateComponents = useCallback(
 		(newComponents: DocumentComponent[]) => {
@@ -143,11 +142,12 @@ export const useComponentManagement = ({
 				case 'ArrowUp':
 				case 'ArrowDown':
 				case 'ArrowLeft':
-				case 'ArrowRight':
+				case 'ArrowRight': {
 					e.preventDefault();
 					const updatedComponent = moveComponentWithKeyboard(component, e.key, moveDistance);
 					handleComponentUpdate(updatedComponent);
 					break;
+				}
 				case 'Delete':
 				case 'Backspace':
 					e.preventDefault();

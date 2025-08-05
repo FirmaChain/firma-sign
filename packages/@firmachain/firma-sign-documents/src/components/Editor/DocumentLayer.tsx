@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { cn } from '../../utils/cn';
-import { DocumentComponent, ViewMode, ComponentType, Position, Size, ResizeHandle } from './types';
+import { DocumentComponent, ViewMode, Position, Size, ResizeHandle } from './types';
 import { ComponentFactory } from './ComponentFactory';
 import { DocumentComponentWrapper } from './DocumentComponent';
 

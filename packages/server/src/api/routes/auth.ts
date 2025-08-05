@@ -22,9 +22,9 @@ const transferCodes = new Map<string, string>();
 export function createAuthRoutes(): Router {
   const router = Router();
 
-  router.post('/connect', validateRequest(connectSchema), async (req, res) => {
+  router.post('/connect', validateRequest(connectSchema), (req, res) => {
     try {
-      const { code, transport } = req.body;
+      const { code, transport } = req.body as { code: string; transport?: string };
       
       const transferId = transferCodes.get(code);
       if (!transferId) {
@@ -54,7 +54,7 @@ export function createAuthRoutes(): Router {
     }
   });
 
-  router.post('/generate-keypair', async (req, res) => {
+  router.post('/generate-keypair', (req, res) => {
     try {
       const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048 });
       const publicKeyPem = forge.pki.publicKeyToPem(keypair.publicKey);

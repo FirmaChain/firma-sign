@@ -3,16 +3,8 @@ import { ComponentProps, ViewMode } from '../types';
 
 export const InputFieldComponent: React.FC<ComponentProps> = ({
 	component,
-	isSelected,
-	isHovered,
-	isFocused,
 	viewMode,
-	scale,
 	onUpdate,
-	onSelect,
-	onDelete,
-	onStartDrag,
-	onStartResize,
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		if (onUpdate) {

@@ -10,7 +10,7 @@ import { EventEmitter } from 'events';
 import { logger } from '../utils/logger.js';
 
 export interface TransportConfig {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class TransportManager extends EventEmitter {
@@ -18,7 +18,7 @@ export class TransportManager extends EventEmitter {
   private handlers: Map<string, IncomingTransferHandler> = new Map();
   private initialized = false;
 
-  async register(transport: Transport): Promise<void> {
+  register(transport: Transport): void {
     if (this.transports.has(transport.name)) {
       throw new Error(`Transport ${transport.name} is already registered`);
     }
@@ -27,9 +27,10 @@ export class TransportManager extends EventEmitter {
     this.transports.set(transport.name, transport);
 
     const handler: IncomingTransferHandler = {
-      onTransferReceived: async (transfer) => {
+      onTransferReceived: (transfer) => {
         logger.info(`Transfer received via ${transport.name}:`, { transferId: transfer.transferId });
         this.emit('transfer:received', { transport: transport.name, transfer });
+        return Promise.resolve();
       },
       onError: (error: TransportError) => {
         logger.error(`Transport error in ${transport.name}:`, error);

@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { SignatureComponent } from './SignatureComponent';
-import { ComponentType, ViewMode } from '../types';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
 import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof SignatureComponent> = {
 	title: 'Components/Editor/Components/SignatureComponent',
@@ -190,7 +190,7 @@ export const ExportSingleSignature: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function ExportSingleSignatureRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -222,7 +222,7 @@ export const ExportSingleSignature: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportSignature}
+						onClick={() => void exportSignature()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -236,7 +236,7 @@ export const ExportSingleSignature: Story = {
 						{isLoading ? 'Exporting...' : 'Export Signature to PDF'}
 					</button>
 					<button
-						onClick={async () => {
+						onClick={() => void (async () => {
 							try {
 								const result = await exportPDFWithComponents(
 									'/wcoomd/uploads/2018/05/blank.pdf',
@@ -244,12 +244,14 @@ export const ExportSingleSignature: Story = {
 									{ quality: 'medium' },
 								);
 								if (result.success && result.pdfBytes) {
-									previewPDF(result.pdfBytes);
+									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+									const url = URL.createObjectURL(blob);
+									window.open(url, '_blank');
 								}
 							} catch (error) {
 								console.error('Preview error:', error);
 							}
-						}}
+						})()}
 						style={{
 							padding: '10px 20px',
 							background: '#059669',
@@ -302,7 +304,7 @@ export const MultipleSignaturesExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function MultipleSignaturesExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -366,7 +368,7 @@ export const MultipleSignaturesExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportMultipleSignatures}
+						onClick={() => void exportMultipleSignatures()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',

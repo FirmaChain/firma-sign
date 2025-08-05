@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import { DocumentComponent, ComponentType } from '../types';
 
 export interface ExportOptions {
@@ -26,9 +26,6 @@ export async function exportPDFWithComponents(
 	try {
 		const {
 			fileName = `document-${Date.now()}.pdf`,
-			quality = 'medium',
-			includeFormFields = true,
-			flattenComponents = false,
 		} = options;
 
 		// Fetch the original PDF
@@ -60,14 +57,14 @@ export async function exportPDFWithComponents(
 			if (pageIndex >= pages.length) continue;
 
 			const page = pages[pageIndex];
-			const { width: pageWidth, height: pageHeight } = page.getSize();
+			const { height: pageHeight } = page.getSize();
 
 			// Sort components by creation time (z-index)
 			const sortedComponents = pageComponents.sort((a, b) => (a.created || 0) - (b.created || 0));
 
 			// Draw each component on the page
 			for (const component of sortedComponents) {
-				await drawComponentOnPage(page, component, font, boldFont, pageWidth, pageHeight);
+				drawComponentOnPage(page, component, font, boldFont, pageHeight);
 			}
 		}
 
@@ -94,12 +91,11 @@ export async function exportPDFWithComponents(
 /**
  * Draw a component on a PDF page
  */
-async function drawComponentOnPage(
-	page: any,
+function drawComponentOnPage(
+	page: PDFPage,
 	component: DocumentComponent,
-	font: any,
-	boldFont: any,
-	pageWidth: number,
+	font: PDFFont,
+	boldFont: PDFFont,
 	pageHeight: number,
 ) {
 	const { position, size, type, value, config, assigned } = component;
@@ -122,7 +118,7 @@ async function drawComponentOnPage(
 			y,
 			width,
 			height,
-			color: backgroundColor,
+			color: backgroundColor || undefined,
 		});
 	}
 
@@ -208,7 +204,7 @@ async function drawComponentOnPage(
 			}
 			break;
 
-		case ComponentType.CHECKMARK:
+		case ComponentType.CHECKMARK: {
 			// Draw a checkmark using lines
 			const checkmarkSize = Math.min(width, height) * 0.8;
 			const checkmarkCenterX = x + width / 2;
@@ -243,8 +239,9 @@ async function drawComponentOnPage(
 				color: borderColor,
 			});
 			break;
+		}
 
-		case ComponentType.SIGNATURE:
+		case ComponentType.SIGNATURE: {
 			// Draw signature border
 			page.drawRectangle({
 				x,
@@ -273,8 +270,9 @@ async function drawComponentOnPage(
 				});
 			}
 			break;
+		}
 
-		case ComponentType.STAMP:
+		case ComponentType.STAMP: {
 			// Draw stamp circle
 			const radius = Math.min(width, height) / 2;
 			const stampCenterX = x + width / 2;
@@ -303,8 +301,9 @@ async function drawComponentOnPage(
 				color: borderColor,
 			});
 			break;
+		}
 
-		case ComponentType.DATE:
+		case ComponentType.DATE: {
 			if (value) {
 				const dateString = new Date(value).toLocaleDateString();
 				const dateFontSize = Math.min(config?.fontSize || 12, height * 0.8);
@@ -331,6 +330,7 @@ async function drawComponentOnPage(
 				borderWidth: 1,
 			});
 			break;
+		}
 
 		case ComponentType.RECTANGLE:
 			page.drawRectangle({
@@ -338,13 +338,13 @@ async function drawComponentOnPage(
 				y,
 				width,
 				height,
-				color: backgroundColor,
+				color: backgroundColor || undefined,
 				borderColor,
 				borderWidth: config?.borderWidth || 2,
 			});
 			break;
 
-		case ComponentType.CIRCLE:
+		case ComponentType.CIRCLE: {
 			const circleRadius = Math.min(width, height) / 2;
 			const circleCenterX = x + width / 2;
 			const circleCenterY = y + height / 2;
@@ -353,13 +353,14 @@ async function drawComponentOnPage(
 				x: circleCenterX,
 				y: circleCenterY,
 				size: circleRadius,
-				color: backgroundColor,
+				color: backgroundColor || undefined,
 				borderColor,
 				borderWidth: config?.borderWidth || 2,
 			});
 			break;
+		}
 
-		case ComponentType.LINE:
+		case ComponentType.LINE: {
 			const lineY = y + height / 2;
 			page.drawLine({
 				start: { x, y: lineY },
@@ -368,8 +369,9 @@ async function drawComponentOnPage(
 				color: borderColor,
 			});
 			break;
+		}
 
-		case ComponentType.EXTRA:
+		case ComponentType.EXTRA: {
 			// Draw dashed border for extra components
 			page.drawRectangle({
 				x,
@@ -396,6 +398,7 @@ async function drawComponentOnPage(
 				});
 			}
 			break;
+		}
 	}
 }
 

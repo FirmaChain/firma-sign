@@ -61,6 +61,8 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "eslint": "catalog:",
+    "@eslint/js": "catalog:",
+    "typescript-eslint": "catalog:",
     "jest": "catalog:",
     "ts-jest": "catalog:",
     "tsup": "catalog:",

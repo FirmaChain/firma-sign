@@ -35,9 +35,9 @@ let mockBlockNumber = 1000;
 export function createBlockchainRoutes(): Router {
   const router = Router();
 
-  router.post('/store-hash', validateRequest(storeHashSchema), async (req, res) => {
+  router.post('/store-hash', validateRequest(storeHashSchema), (req, res) => {
     try {
-      const { transferId, documentHash, type, metadata } = req.body;
+      const { transferId, documentHash, type } = req.body as { transferId: string; documentHash: string; type: 'original' | 'signed' };
 
       const transactionId = `0x${crypto.randomBytes(32).toString('hex')}`;
       const blockNumber = ++mockBlockNumber;
@@ -73,7 +73,7 @@ export function createBlockchainRoutes(): Router {
     }
   });
 
-  router.get('/verify-hash/:transferId', async (req, res) => {
+  router.get('/verify-hash/:transferId', (req, res) => {
     try {
       const { transferId } = req.params;
       
@@ -95,9 +95,9 @@ export function createBlockchainRoutes(): Router {
     }
   });
 
-  router.post('/compare-hash', validateRequest(compareHashSchema), async (req, res) => {
+  router.post('/compare-hash', validateRequest(compareHashSchema), (req, res) => {
     try {
-      const { documentData, expectedHash, transactionId } = req.body;
+      const { documentData, expectedHash, transactionId } = req.body as { documentData: string; expectedHash: string; transactionId: string };
       
       const documentBuffer = Buffer.from(documentData, 'base64');
       const calculatedHash = crypto
@@ -128,7 +128,7 @@ export function createBlockchainRoutes(): Router {
     }
   });
 
-  router.get('/transaction/:transactionId', async (req, res) => {
+  router.get('/transaction/:transactionId', (req, res) => {
     try {
       const { transactionId } = req.params;
       

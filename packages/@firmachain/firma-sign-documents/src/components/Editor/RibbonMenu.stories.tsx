@@ -214,7 +214,7 @@ export const CustomStyling: Story = {
 };
 
 export const InteractiveDemo: Story = {
-	render: () => {
+	render: function InteractiveDemoRender() {
 		const [viewMode, setViewMode] = React.useState('editor');
 		const [btnDisabled, setBtnDisabled] = React.useState(false);
 		const [hideSave, setHideSave] = React.useState(false);
@@ -315,7 +315,7 @@ export const InteractiveDemo: Story = {
 };
 
 export const WorkflowDemo: Story = {
-	render: () => {
+	render: function WorkflowDemoRender() {
 		const [currentStep, setCurrentStep] = React.useState(0);
 		const [isCompleted, setIsCompleted] = React.useState(false);
 

@@ -32,6 +32,7 @@ export interface AssignedUser {
   email: string;
   name: string;
   color: string;
+  isFilled?: boolean;
 }
 
 export interface DocumentComponent {
@@ -44,7 +45,7 @@ export interface DocumentComponent {
   value?: string;
   config: ComponentConfig;
   groupId?: string;
-  extra?: any;
+  extra?: Record<string, unknown>;
   created?: number;
   modified?: number;
 }

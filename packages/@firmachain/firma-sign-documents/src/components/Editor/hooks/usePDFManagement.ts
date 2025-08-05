@@ -12,13 +12,13 @@ interface UsePDFManagementProps {
 	viewMode: string;
 }
 
-export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagementProps) => {
+export const usePDFManagement = ({ fileUrl, fileId, viewMode: _viewMode }: UsePDFManagementProps) => {
 	const [numPages, setNumPages] = useState(0);
 	const [displayScale, setDisplayScale] = useState(1);
 	const [renderRatio, setRenderRatio] = useState(1);
 	const [currentVisible, setCurrentVisible] = useState(0);
 	const [selectedPage, setSelectedPage] = useState(0);
-	const [pagesPosition, setPagesPosition] = useState<any[]>([]);
+	const [pagesPosition, setPagesPosition] = useState<{ top?: number; height?: number }[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
@@ -29,7 +29,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 	} | null>(null);
 
 	const $DocumentArea = useRef<HTMLDivElement>(null);
-	const $Scrollbar = useRef<any>(null);
+	const $Scrollbar = useRef<HTMLDivElement>(null);
 
 	const renderScale = useMemo(() => displayScale * renderRatio, [displayScale, renderRatio]);
 
@@ -112,7 +112,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 	}, [pdfPageDimensions, calculateOptimalScale]);
 
 	const onDocumentLoadSuccess = useCallback(
-		(pdf: any) => {
+		(pdf: { numPages: number; getPage: (pageNumber: number) => Promise<{ getViewport: (params: { scale: number }) => { width: number; height: number } }> }) => {
 			setNumPages(pdf.numPages);
 			setIsLoading(false);
 			setLoadError(null);
@@ -120,7 +120,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 			// Calculate render ratio based on viewport and PDF dimensions
 			pdf
 				.getPage(1)
-				.then((page: any) => {
+				.then((page) => {
 					const vp = page.getViewport({ scale: 1 }); // Get viewport at scale 1 to get original dimensions
 					setPdfPageDimensions({ width: vp.width, height: vp.height });
 
@@ -148,7 +148,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 						setRenderRatio(1);
 					}
 				})
-				.catch((error: any) => {
+				.catch((error) => {
 					console.error('Error loading PDF page:', error);
 					setLoadError('Failed to load PDF page');
 				});
@@ -157,7 +157,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 	);
 
 	const onDocumentLoadError = useCallback(
-		(error: any) => {
+		(error: Error) => {
 			console.error('Error loading PDF:', error);
 
 			// Try next fallback URL if available
@@ -174,7 +174,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 		[currentUrlIndex, fallbackUrls.length],
 	);
 
-	const onDocumentLoadProgress = useCallback((progress: any) => {
+	const onDocumentLoadProgress = useCallback((progress: { loaded: number; total: number }) => {
 		console.log('Loading progress:', progress);
 	}, []);
 
@@ -182,7 +182,7 @@ export const usePDFManagement = ({ fileUrl, fileId, viewMode }: UsePDFManagement
 		setDisplayScale(parseFloat(scale.toString()));
 	}, []);
 
-	const handlePagePosition = useCallback((page: number, top: any) => {
+	const handlePagePosition = useCallback((page: number, top: { top?: number; height?: number }) => {
 		setPagesPosition((prev) => {
 			const newPos = [...prev];
 			newPos[page] = top;

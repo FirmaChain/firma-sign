@@ -15,7 +15,7 @@ import { logger } from './utils/logger.js';
 const app = express();
 const httpServer = createServer(app);
 
-const PORT = process.env.PORT || 8080;
+const PORT = parseInt(process.env.PORT || '8080', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 const transportManager = new TransportManager();
@@ -59,7 +59,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-transportManager.on('transfer:received', ({ transport, transfer }) => {
+transportManager.on('transfer:received', (data: { transport: string; transfer: { transferId: string } }) => {
+  const { transport, transfer } = data;
   logger.info(`Transfer received via ${transport}:`, { transferId: transfer.transferId });
   wsServer.broadcastToTransfer(transfer.transferId, 'transfer:update', {
     status: 'received',
@@ -67,7 +68,8 @@ transportManager.on('transfer:received', ({ transport, transfer }) => {
   });
 });
 
-transportManager.on('transport:error', ({ transport, error }) => {
+transportManager.on('transport:error', (data: { transport: string; error: Error }) => {
+  const { transport, error } = data;
   logger.error(`Transport error in ${transport}:`, error);
   wsServer.broadcast('transport:error', {
     transport,
@@ -75,14 +77,14 @@ transportManager.on('transport:error', ({ transport, error }) => {
   });
 });
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   
   httpServer.close(() => {
     logger.info('HTTP server closed');
   });
 
-  await transportManager.shutdown();
+  void transportManager.shutdown();
   storageManager.close();
   wsServer.close();
   
@@ -98,7 +100,7 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled rejection at:', promise, 'reason:', reason);
 });
 
-async function initializeTransports() {
+function initializeTransports() {
   try {
     logger.info('Server configuration:');
     logger.info(`- Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -117,10 +119,11 @@ async function initializeTransports() {
   }
 }
 
-initializeTransports().then(() => {
+initializeTransports();
+{
   httpServer.listen(PORT, HOST, () => {
     logger.info(`🚀 Firma-Sign server running at http://${HOST}:${PORT}`);
     logger.info(`📡 WebSocket server ready`);
     logger.info(`💾 Storage initialized at ${process.env.STORAGE_PATH || '~/.firmasign'}`);
   });
-});
+}

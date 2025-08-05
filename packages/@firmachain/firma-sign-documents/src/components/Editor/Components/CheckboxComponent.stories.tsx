@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { CheckboxComponent } from './CheckboxComponent';
-import { ComponentType, ViewMode } from '../types';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
 import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof CheckboxComponent> = {
 	title: 'Components/Editor/Components/CheckboxComponent',
@@ -166,7 +166,7 @@ export const CheckboxInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function RenderCheckboxExport(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -203,7 +203,7 @@ export const CheckboxInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={() => exportCheckbox(true)}
+						onClick={() => void exportCheckbox(true)}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -217,7 +217,7 @@ export const CheckboxInPDFExport: Story = {
 						{isLoading ? 'Exporting...' : 'Export Checked'}
 					</button>
 					<button
-						onClick={() => exportCheckbox(false)}
+						onClick={() => void exportCheckbox(false)}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -234,10 +234,17 @@ export const CheckboxInPDFExport: Story = {
 				</div>
 
 				<CheckboxComponent
-					{...args}
 					component={args.component || sampleComponent}
 					viewMode={args.viewMode || ViewMode.PREVIEW}
 					scale={args.scale || 1}
+					isSelected={args.isSelected || false}
+					isHovered={args.isHovered || false}
+					isFocused={args.isFocused || false}
+					onUpdate={args.onUpdate}
+					onSelect={args.onSelect}
+					onDelete={args.onDelete}
+					onStartDrag={args.onStartDrag}
+					onStartResize={args.onStartResize}
 				/>
 
 				{pdfUrl && (

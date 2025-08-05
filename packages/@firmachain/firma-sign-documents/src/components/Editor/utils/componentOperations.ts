@@ -14,8 +14,8 @@ export const calculateResizeTransform = (
 	deltaY: number,
 	startSize: Size,
 ): { newSize: Size; newPosition: Position } => {
-	let newSize = { ...startSize };
-	let newPosition = { ...component.position };
+	const newSize = { ...startSize };
+	const newPosition = { ...component.position };
 
 	switch (handle) {
 		case ResizeHandle.TOP_LEFT:

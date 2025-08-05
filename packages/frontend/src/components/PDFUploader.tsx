@@ -28,7 +28,7 @@ const PDFUploader: React.FC<PDFUploaderProps> = ({ onUpload, onClear, hasUploade
 	};
 
 	const processFile = useCallback(
-		async (file: File) => {
+		(file: File) => {
 			setIsProcessing(true);
 			setUploadError(null);
 
@@ -52,7 +52,7 @@ const PDFUploader: React.FC<PDFUploaderProps> = ({ onUpload, onClear, hasUploade
 					setUploadError('Failed to read the file. Please try again.');
 				};
 				reader.readAsDataURL(file);
-			} catch (error) {
+			} catch {
 				setUploadError('An error occurred while processing the file.');
 			} finally {
 				setIsProcessing(false);
@@ -65,7 +65,7 @@ const PDFUploader: React.FC<PDFUploaderProps> = ({ onUpload, onClear, hasUploade
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0];
 			if (file) {
-				processFile(file);
+				void processFile(file);
 			}
 		},
 		[processFile],
@@ -78,7 +78,7 @@ const PDFUploader: React.FC<PDFUploaderProps> = ({ onUpload, onClear, hasUploade
 
 			const files = e.dataTransfer.files;
 			if (files.length > 0) {
-				processFile(files[0]);
+				void processFile(files[0]);
 			}
 		},
 		[processFile],

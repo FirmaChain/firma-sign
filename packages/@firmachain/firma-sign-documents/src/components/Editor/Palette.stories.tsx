@@ -206,7 +206,7 @@ export const CustomColors: Story = {
 };
 
 export const InteractiveDemo: Story = {
-	render: () => {
+	render: function InteractiveDemoRender() {
 		const [selectedTool, setSelectedTool] = React.useState(null);
 		const [signers, setSigners] = React.useState(sampleSigners);
 

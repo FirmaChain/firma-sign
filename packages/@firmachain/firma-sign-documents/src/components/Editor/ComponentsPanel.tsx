@@ -252,7 +252,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 	const [searchTerm, setSearchTerm] = useState('');
 	const [filterType, setFilterType] = useState<ComponentType | 'all'>('all');
 	const [filterPage, setFilterPage] = useState<number | 'all'>('all');
-	const [filterAssignee, setFilterAssignee] = useState<string | 'all'>('all');
+	const [filterAssignee, setFilterAssignee] = useState<string>('all');
 	const [isImporting, setIsImporting] = useState(false);
 	const [showHeader, setShowHeader] = useState(false);
 	const [showFooter, setShowFooter] = useState(false);
@@ -361,28 +361,38 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 		fileInputRef.current?.click();
 	}, []);
 
-	const validateComponentData = useCallback((data: any): data is DocumentComponent[] => {
+	const validateComponentData = useCallback((data: unknown): data is DocumentComponent[] => {
 		if (!Array.isArray(data)) {
 			return false;
 		}
 
-		return data.every((item: any) => {
+		return data.every((item: unknown) => {
+			if (typeof item !== 'object' || item === null) {
+				return false;
+			}
+			const obj = item as Record<string, unknown>;
+			const position = obj.position as Record<string, unknown> | null;
+			const size = obj.size as Record<string, unknown> | null;
+			const assigned = obj.assigned as Record<string, unknown> | null | undefined;
+			
 			return (
-				typeof item === 'object' &&
-				typeof item.id === 'string' &&
-				typeof item.type === 'string' &&
-				typeof item.pageNumber === 'number' &&
-				typeof item.position === 'object' &&
-				typeof item.position.x === 'number' &&
-				typeof item.position.y === 'number' &&
-				typeof item.size === 'object' &&
-				typeof item.size.width === 'number' &&
-				typeof item.size.height === 'number' &&
-				(item.assigned === undefined ||
-					(typeof item.assigned === 'object' &&
-						typeof item.assigned.email === 'string' &&
-						typeof item.assigned.name === 'string' &&
-						typeof item.assigned.color === 'string'))
+				typeof obj.id === 'string' &&
+				typeof obj.type === 'string' &&
+				typeof obj.pageNumber === 'number' &&
+				position !== null &&
+				typeof position === 'object' &&
+				typeof position.x === 'number' &&
+				typeof position.y === 'number' &&
+				size !== null &&
+				typeof size === 'object' &&
+				typeof size.width === 'number' &&
+				typeof size.height === 'number' &&
+				(assigned === undefined ||
+					assigned === null ||
+					(typeof assigned === 'object' &&
+						typeof assigned.email === 'string' &&
+						typeof assigned.name === 'string' &&
+						typeof assigned.color === 'string'))
 			);
 		});
 	}, []);
@@ -396,7 +406,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 
 			try {
 				const text = await file.text();
-				const data = JSON.parse(text);
+				const data = JSON.parse(text) as unknown;
 
 				if (!validateComponentData(data)) {
 					alert('Invalid file format. Please select a valid components JSON file.');
@@ -734,7 +744,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 							ref={fileInputRef}
 							type="file"
 							accept=".json"
-							onChange={handleFileImport}
+							onChange={(e) => void handleFileImport(e)}
 							className="hidden"
 						/>
 
@@ -812,7 +822,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 						<button
 							onClick={() => {
 								const codeStr = JSON.stringify(components, null, 2);
-								navigator.clipboard.writeText(codeStr).then(() => {
+								void navigator.clipboard.writeText(codeStr).then(() => {
 									alert('JSON copied to clipboard!');
 								});
 							}}

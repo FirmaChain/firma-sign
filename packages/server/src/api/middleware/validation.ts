@@ -4,7 +4,7 @@ import { z } from 'zod';
 export function validateRequest<T extends z.ZodType>(schema: T) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = schema.parse(req.body);
+      const result = schema.parse(req.body) as z.infer<T>;
       req.body = result;
       next();
     } catch (error) {

@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { DateComponent } from './DateComponent';
-import { ComponentType, ViewMode } from '../types';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
 import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof DateComponent> = {
 	title: 'Components/Editor/Components/DateComponent',
@@ -174,7 +174,7 @@ export const DateInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function DateInPDFExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -206,7 +206,7 @@ export const DateInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportDate}
+						onClick={() => void exportDate()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',

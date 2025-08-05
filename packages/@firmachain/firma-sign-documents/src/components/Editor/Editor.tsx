@@ -44,15 +44,15 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 	(
 		{
 			viewMode = 'editor',
-			preview = false,
-			hideActionBtn = false,
-			hideSave = false,
-			onEnableNext,
-			enableNext = false,
+			preview: _preview = false,
+			hideActionBtn: _hideActionBtn = false,
+			hideSave: _hideSave = false,
+			onEnableNext: _onEnableNext,
+			enableNext: _enableNext = false,
 			className,
 			fileUrl,
 			fileId,
-			contractId,
+			contractId: _contractId,
 			signers = [],
 			components = [],
 			onComponentsChange,
@@ -85,7 +85,7 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 			e.preventDefault();
 			
 			try {
-				const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
+				const dragData = JSON.parse(e.dataTransfer.getData('text/plain')) as { toolType: ComponentType; signer?: AssignedUser };
 				const { toolType, signer } = dragData;
 				
 				// Find which page the drop occurred on
@@ -131,7 +131,7 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 			return () => {
 				clearTimeout(timeoutId);
 			};
-		}, []); // Empty dependency array - runs only once on mount
+		}, [panelManager, pdfManager.$DocumentArea]); // Empty dependency array - runs only once on mount
 
 		// Panel management handlers
 		const handleLeftPanelPositionChange = useCallback(
@@ -329,12 +329,11 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 															<div className="text-red-400">Error loading page {i + 1}</div>
 														</div>
 													}
-													onLoadSuccess={(page: any) => {
+													onLoadSuccess={(page: { height: number; width: number }) => {
 														pdfManager.onVisible(i, true);
 														pdfManager.handlePagePosition(i, {
 															top: 0,
 															height: page.height,
-															width: page.width,
 														});
 													}}
 													className="pdf-page block"

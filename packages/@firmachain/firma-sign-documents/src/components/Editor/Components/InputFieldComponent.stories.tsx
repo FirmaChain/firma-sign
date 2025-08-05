@@ -1,9 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { InputFieldComponent } from './InputFieldComponent';
-import { ComponentType, ViewMode } from '../types';
+import { ComponentType, ViewMode, ComponentProps } from '../types';
 import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof InputFieldComponent> = {
 	title: 'Components/Editor/Components/InputFieldComponent',
@@ -174,7 +174,7 @@ export const InputFieldInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function InputFieldInPDFExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -206,7 +206,7 @@ export const InputFieldInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportInputField}
+						onClick={() => void exportInputField()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
@@ -255,7 +255,7 @@ export const FormWithInputFieldsExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function FormWithInputFieldsExportRender(args: ComponentProps) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -360,7 +360,7 @@ export const FormWithInputFieldsExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportForm}
+						onClick={() => void exportForm()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',

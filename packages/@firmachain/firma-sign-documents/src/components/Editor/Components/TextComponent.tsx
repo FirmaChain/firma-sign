@@ -3,16 +3,16 @@ import { ComponentProps, ViewMode } from '../types';
 
 export const TextComponent: React.FC<ComponentProps> = ({
 	component,
-	isSelected,
-	isHovered,
-	isFocused,
+	isSelected: _isSelected,
+	isHovered: _isHovered,
+	isFocused: _isFocused,
 	viewMode,
-	scale,
+	scale: _scale,
 	onUpdate,
-	onSelect,
-	onDelete,
-	onStartDrag,
-	onStartResize,
+	onSelect: _onSelect,
+	onDelete: _onDelete,
+	onStartDrag: _onStartDrag,
+	onStartResize: _onStartResize,
 }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
 		if (onUpdate) {

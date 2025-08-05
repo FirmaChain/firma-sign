@@ -1,30 +1,41 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import Database from 'better-sqlite3';
 import { logger } from '../utils/logger.js';
-
-export interface Transfer {
-  transferId: string;
-  type: 'incoming' | 'outgoing';
-  documents: any[];
-  recipients?: any[];
-  sender?: any;
-  metadata: any;
-  status: string;
-  createdAt: number;
-  updatedAt: number;
-}
+import { DatabaseConnection } from '../database/Database.js';
+import { TransferRepository } from '../database/repositories/TransferRepository.js';
+import { DocumentRepository } from '../database/repositories/DocumentRepository.js';
+import { RecipientRepository } from '../database/repositories/RecipientRepository.js';
+import { TransactionManager } from '../database/TransactionManager.js';
+import { 
+  Transfer, 
+  Document, 
+  Recipient,
+  TransferType,
+  DocumentStatus,
+  RecipientStatus,
+  SenderInfo
+} from '../types/database.js';
 
 export class StorageManager {
-  private db: Database.Database;
+  private dbConnection: DatabaseConnection;
+  private transferRepo: TransferRepository;
+  private documentRepo: DocumentRepository;
+  private recipientRepo: RecipientRepository;
+  private transactionManager: TransactionManager;
   private storagePath: string;
 
   constructor(storagePath?: string) {
-    this.storagePath = storagePath || path.join(os.homedir(), '.firmasign');
-    this.initializeStorage();
-    this.db = new Database(path.join(this.storagePath, 'firma-sign.db'));
-    this.initializeDatabase();
+    this.storagePath = storagePath || path.join(os.homedir(), '.firma-sign');
+    void this.initializeStorage();
+    
+    const dbPath = path.join(this.storagePath, 'firma-sign.db');
+    this.dbConnection = DatabaseConnection.getInstance(dbPath);
+    
+    this.transferRepo = new TransferRepository(this.dbConnection);
+    this.documentRepo = new DocumentRepository(this.dbConnection);
+    this.recipientRepo = new RecipientRepository(this.dbConnection);
+    this.transactionManager = new TransactionManager(this.dbConnection);
   }
 
   private async initializeStorage() {
@@ -42,175 +53,95 @@ export class StorageManager {
     }
   }
 
-  private initializeDatabase() {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS transfers (
-        transferId TEXT PRIMARY KEY,
-        type TEXT NOT NULL,
-        status TEXT NOT NULL,
-        metadata TEXT NOT NULL,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
-      );
 
-      CREATE TABLE IF NOT EXISTS documents (
-        id TEXT PRIMARY KEY,
-        transferId TEXT NOT NULL,
-        fileName TEXT NOT NULL,
-        fileSize INTEGER,
-        hash TEXT,
-        status TEXT DEFAULT 'pending',
-        FOREIGN KEY (transferId) REFERENCES transfers(transferId)
-      );
-
-      CREATE TABLE IF NOT EXISTS recipients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        transferId TEXT NOT NULL,
-        identifier TEXT NOT NULL,
-        transport TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        preferences TEXT,
-        FOREIGN KEY (transferId) REFERENCES transfers(transferId)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_transfers_type ON transfers(type);
-      CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
-      CREATE INDEX IF NOT EXISTS idx_documents_transfer ON documents(transferId);
-      CREATE INDEX IF NOT EXISTS idx_recipients_transfer ON recipients(transferId);
-    `);
-  }
-
-  async createTransfer(transfer: Partial<Transfer>): Promise<void> {
-    const now = Date.now();
-    const insertTransfer = this.db.prepare(`
-      INSERT INTO transfers (transferId, type, status, metadata, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    const insertDocument = this.db.prepare(`
-      INSERT INTO documents (id, transferId, fileName, fileSize, hash)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    const insertRecipient = this.db.prepare(`
-      INSERT INTO recipients (transferId, identifier, transport, preferences)
-      VALUES (?, ?, ?, ?)
-    `);
-
-    this.db.transaction(() => {
-      insertTransfer.run(
-        transfer.transferId,
-        transfer.type,
-        'created',
-        JSON.stringify(transfer.metadata || {}),
-        now,
-        now
-      );
-
-      if (transfer.documents) {
-        for (const doc of transfer.documents) {
-          insertDocument.run(
-            doc.id,
-            transfer.transferId,
-            doc.fileName,
-            doc.fileSize || 0,
-            doc.hash || null
-          );
-        }
-      }
-
-      if (transfer.recipients) {
-        for (const recipient of transfer.recipients) {
-          insertRecipient.run(
-            transfer.transferId,
-            recipient.identifier,
-            recipient.transport,
-            JSON.stringify(recipient.preferences || {})
-          );
-        }
-      }
-    })();
+  async createTransfer(transferData: {
+    transferId: string;
+    type: TransferType;
+    documents?: Array<{
+      id: string;
+      fileName: string;
+      fileSize?: number;
+      fileHash?: string;
+    }>;
+    recipients?: Array<{
+      identifier: string;
+      transport: string;
+      preferences?: Record<string, unknown>;
+    }>;
+    sender?: SenderInfo;
+    metadata?: Record<string, unknown>;
+  }): Promise<Transfer> {
+    const result = this.transactionManager.createTransferWithDocuments(transferData);
 
     const transferDir = path.join(
       this.storagePath,
       'transfers',
-      transfer.type!,
-      transfer.transferId!
+      transferData.type,
+      transferData.transferId
     );
 
     await fs.mkdir(path.join(transferDir, 'documents'), { recursive: true });
     await fs.mkdir(path.join(transferDir, 'signed'), { recursive: true });
     
-    if (transfer.metadata) {
+    if (transferData.metadata) {
       await fs.writeFile(
         path.join(transferDir, 'metadata.json'),
-        JSON.stringify(transfer.metadata, null, 2)
+        JSON.stringify(transferData.metadata, null, 2)
       );
     }
 
-    logger.info(`Transfer created: ${transfer.transferId}`);
+    return result.transfer;
   }
 
-  async getTransfer(transferId: string): Promise<Transfer | null> {
-    const transfer = this.db.prepare(`
-      SELECT * FROM transfers WHERE transferId = ?
-    `).get(transferId) as any;
-
+  getTransfer(transferId: string): Transfer | null {
+    const transfer = this.transferRepo.findById(transferId);
     if (!transfer) {
       return null;
     }
-
-    const documents = this.db.prepare(`
-      SELECT * FROM documents WHERE transferId = ?
-    `).all(transferId);
-
-    const recipients = this.db.prepare(`
-      SELECT * FROM recipients WHERE transferId = ?
-    `).all(transferId);
-
+    return transfer;
+  }
+  
+  getTransferWithDetails(transferId: string): {
+    transfer: Transfer;
+    documents: Document[];
+    recipients: Recipient[];
+  } | null {
+    const transfer = this.transferRepo.findById(transferId);
+    if (!transfer) {
+      return null;
+    }
+    
+    const documents = this.documentRepo.findByTransferId(transferId);
+    const recipients = this.recipientRepo.findByTransferId(transferId);
+    
     return {
-      ...transfer,
-      metadata: JSON.parse(transfer.metadata),
+      transfer,
       documents,
-      recipients: recipients.map((r: any) => ({
-        ...r,
-        preferences: JSON.parse(r.preferences)
-      }))
+      recipients
     };
   }
 
-  async listTransfers(): Promise<Transfer[]> {
-    const transfers = this.db.prepare(`
-      SELECT * FROM transfers ORDER BY createdAt DESC LIMIT 100
-    `).all() as any[];
-
-    return transfers.map(t => ({
-      ...t,
-      metadata: JSON.parse(t.metadata)
-    }));
+  listTransfers(type?: TransferType, limit: number = 100): Transfer[] {
+    if (type) {
+      return this.transferRepo.findByType(type);
+    }
+    return this.transferRepo.findRecent(limit);
   }
 
-  async updateTransferSignatures(transferId: string, signatures: any[]): Promise<void> {
-    const updateDocument = this.db.prepare(`
-      UPDATE documents SET status = ? WHERE transferId = ? AND id = ?
-    `);
-
-    const updateTransfer = this.db.prepare(`
-      UPDATE transfers SET status = ?, updatedAt = ? WHERE transferId = ?
-    `);
-
-    this.db.transaction(() => {
-      for (const sig of signatures) {
-        updateDocument.run(sig.status, transferId, sig.documentId);
-      }
-      updateTransfer.run('partially-signed', Date.now(), transferId);
-    })();
-
-    logger.info(`Updated signatures for transfer: ${transferId}`);
+  updateTransferSignatures(transferId: string, signatures: Array<{
+    documentId: string;
+    status: DocumentStatus;
+    signedBy?: string;
+    blockchainTxSigned?: string;
+  }>): void {
+    this.transactionManager.signDocumentsAndUpdateTransfer({
+      transferId,
+      signatures
+    });
   }
 
   async saveDocument(transferId: string, fileName: string, data: Buffer): Promise<void> {
-    const transfer = await this.getTransfer(transferId);
+    const transfer = this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
@@ -229,7 +160,7 @@ export class StorageManager {
   }
 
   async getDocument(transferId: string, fileName: string): Promise<Buffer> {
-    const transfer = await this.getTransfer(transferId);
+    const transfer = this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
@@ -246,7 +177,39 @@ export class StorageManager {
     return await fs.readFile(filePath);
   }
 
+  updateRecipientStatus(recipientId: string, status: RecipientStatus): void {
+    if (status === 'notified') {
+      this.recipientRepo.markAsNotified(recipientId);
+    } else if (status === 'viewed') {
+      this.recipientRepo.markAsViewed(recipientId);
+    } else if (status === 'signed') {
+      this.recipientRepo.markAsSigned(recipientId);
+    } else {
+      this.recipientRepo.updateStatus(recipientId, status);
+    }
+  }
+  
+  storeBlockchainHash(documentId: string, type: 'original' | 'signed', txHash: string): void {
+    this.documentRepo.updateBlockchainHash(documentId, type, txHash);
+  }
+  
+  getDocumentsByTransferId(transferId: string): Document[] {
+    return this.documentRepo.findByTransferId(transferId);
+  }
+  
+  getRecipientsByTransferId(transferId: string): Recipient[] {
+    return this.recipientRepo.findByTransferId(transferId);
+  }
+  
+  getDocumentById(documentId: string): Document | null {
+    return this.documentRepo.findById(documentId);
+  }
+  
+  getRecipientById(recipientId: string): Recipient | null {
+    return this.recipientRepo.findById(recipientId);
+  }
+  
   close(): void {
-    this.db.close();
+    this.dbConnection.close();
   }
 }

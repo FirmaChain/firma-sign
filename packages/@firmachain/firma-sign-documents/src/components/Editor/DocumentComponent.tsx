@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '../../utils/cn';
-import { ComponentProps, ViewMode, ResizeHandle, Position, Size } from './types';
+import { ComponentProps, ViewMode, ResizeHandle, Position } from './types';
 import { Z_INDEX, GRID, TOOLS_INFO } from './constants';
 
 interface DocumentComponentWrapperProps extends ComponentProps {
@@ -123,7 +123,7 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 			setIsDragging(true);
 			onStartDrag?.(component.id, { x: e.clientX, y: e.clientY });
 		},
-		[canInteract, isResizing, onSelect, component.id, onStartDrag],
+		[canInteract, isResizing, onSelect, component.id, onStartDrag, component.size.width, component.size.height],
 	);
 
 	// Handle resize start

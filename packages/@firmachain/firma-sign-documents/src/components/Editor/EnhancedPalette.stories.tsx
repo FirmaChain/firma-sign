@@ -245,7 +245,7 @@ export const ResponsiveCompact: Story = {
 };
 
 export const InteractiveDemo: Story = {
-	render: () => {
+	render: function InteractiveDemoRender() {
 		const [selectedTool, setSelectedTool] = React.useState<ComponentType | null>(null);
 		const [selectedPage, setSelectedPage] = React.useState(0);
 

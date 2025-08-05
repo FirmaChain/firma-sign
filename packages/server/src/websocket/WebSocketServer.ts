@@ -36,7 +36,7 @@ export class WebSocketServer extends EventEmitter {
 
       ws.on('message', (data: Buffer) => {
         try {
-          const message = JSON.parse(data.toString());
+          const message = JSON.parse(data.toString()) as { type: string; [key: string]: unknown };
           this.handleMessage(client, message);
         } catch (error) {
           logger.error('Invalid WebSocket message:', error);
@@ -60,7 +60,7 @@ export class WebSocketServer extends EventEmitter {
     });
   }
 
-  private handleMessage(client: Client, message: any) {
+  private handleMessage(client: Client, message: { type: string; [key: string]: unknown }) {
     switch (message.type) {
       case 'auth':
         this.handleAuth(client, message);
@@ -76,20 +76,20 @@ export class WebSocketServer extends EventEmitter {
     }
   }
 
-  private handleAuth(client: Client, message: any) {
+  private handleAuth(client: Client, _message: { type: string; [key: string]: unknown }) {
     client.authenticated = true;
     this.sendMessage(client, {
       type: 'auth:success'
     });
   }
 
-  private handleSubscribe(client: Client, message: any) {
+  private handleSubscribe(client: Client, message: { type: string; [key: string]: unknown }) {
     if (!client.authenticated) {
       this.sendError(client, 'Not authenticated');
       return;
     }
 
-    const { transferId } = message;
+    const transferId = message.transferId as string;
     if (transferId) {
       client.transferIds.add(transferId);
       this.sendMessage(client, {
@@ -99,8 +99,8 @@ export class WebSocketServer extends EventEmitter {
     }
   }
 
-  private handleUnsubscribe(client: Client, message: any) {
-    const { transferId } = message;
+  private handleUnsubscribe(client: Client, message: { type: string; [key: string]: unknown }) {
+    const transferId = message.transferId as string;
     if (transferId) {
       client.transferIds.delete(transferId);
       this.sendMessage(client, {
@@ -110,7 +110,7 @@ export class WebSocketServer extends EventEmitter {
     }
   }
 
-  broadcastToTransfer(transferId: string, event: string, data: any) {
+  broadcastToTransfer(transferId: string, event: string, data: unknown) {
     const message = {
       type: 'event',
       event,
@@ -130,7 +130,7 @@ export class WebSocketServer extends EventEmitter {
     logger.debug(`Broadcast to ${count} clients for transfer ${transferId}`);
   }
 
-  broadcast(event: string, data: any) {
+  broadcast(event: string, data: unknown) {
     const message = {
       type: 'broadcast',
       event,
@@ -145,7 +145,7 @@ export class WebSocketServer extends EventEmitter {
     });
   }
 
-  private sendMessage(client: Client, message: any) {
+  private sendMessage(client: Client, message: unknown) {
     if (client.ws.readyState === WebSocket.OPEN) {
       client.ws.send(JSON.stringify(message));
     }

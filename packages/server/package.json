@@ -10,9 +10,17 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "test:db": "vitest run src/__tests__/database",
+    "test:storage": "vitest run src/__tests__/storage",
+    "test:integration": "vitest run src/__tests__/storage/StorageManager.test.ts",
     "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist coverage .vitest",
+    "pretest": "npm run type-check"
   },
   "dependencies": {
     "@firmachain/firma-sign-core": "workspace:*",
@@ -42,6 +50,8 @@
     "tsx": "catalog:",
     "vitest": "catalog:",
     "eslint": "catalog:",
+    "@eslint/js": "catalog:",
+    "typescript-eslint": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:"
   },

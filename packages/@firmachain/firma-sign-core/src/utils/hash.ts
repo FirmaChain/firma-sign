@@ -22,7 +22,7 @@ export function generateHash(data: string | Uint8Array): string {
 /**
  * Generate hash from file content
  */
-export async function generateFileHash(content: Uint8Array): Promise<string> {
+export function generateFileHash(content: Uint8Array): string {
   return generateHash(content);
 }
 

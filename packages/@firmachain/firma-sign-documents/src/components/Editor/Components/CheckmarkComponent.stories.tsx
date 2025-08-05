@@ -1,9 +1,8 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { CheckmarkComponent } from './CheckmarkComponent';
-import { ComponentType, ViewMode } from '../types';
-import { USER_COLORS } from '../constants';
-import { exportPDFWithComponents, previewPDF } from '../utils/pdfExport';
+import { ComponentType, ViewMode, DocumentComponent } from '../types';
+import { exportPDFWithComponents } from '../utils/pdfExport';
 
 const meta: Meta<typeof CheckmarkComponent> = {
 	title: 'Components/Editor/Components/CheckmarkComponent',
@@ -145,7 +144,7 @@ export const CheckmarkInPDFExport: Story = {
 			},
 		},
 	},
-	render: (args) => {
+	render: function RenderCheckmarkExport(args) {
 		const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
 		const [isLoading, setIsLoading] = React.useState(false);
 
@@ -154,7 +153,7 @@ export const CheckmarkInPDFExport: Story = {
 			try {
 				const result = await exportPDFWithComponents(
 					'/wcoomd/uploads/2018/05/blank.pdf',
-					[args.component],
+					[args.component as DocumentComponent],
 					{
 						fileName: 'checkmark-export.pdf',
 						quality: 'high',
@@ -177,7 +176,7 @@ export const CheckmarkInPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 					<button
-						onClick={exportCheckmark}
+						onClick={() => void exportCheckmark()}
 						disabled={isLoading}
 						style={{
 							padding: '10px 20px',
