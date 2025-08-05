@@ -123,7 +123,15 @@ export const DocumentComponentWrapper: React.FC<DocumentComponentWrapperProps> =
 			setIsDragging(true);
 			onStartDrag?.(component.id, { x: e.clientX, y: e.clientY });
 		},
-		[canInteract, isResizing, onSelect, component.id, onStartDrag, component.size.width, component.size.height],
+		[
+			canInteract,
+			isResizing,
+			onSelect,
+			component.id,
+			onStartDrag,
+			component.size.width,
+			component.size.height,
+		],
 	);
 
 	// Handle resize start

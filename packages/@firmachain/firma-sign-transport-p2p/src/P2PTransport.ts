@@ -217,15 +217,14 @@ export class P2PTransport implements Transport {
           options?: unknown;
         }
         const transferData = JSON.parse(uint8ArrayToString(Buffer.concat(data))) as TransferDataType;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-        const incomingTransfer = this.mapToIncomingTransfer(transferData, String((connection as any).remotePeer));
+        const remotePeer = connection.remotePeer.toString();
+        const incomingTransfer = this.mapToIncomingTransfer(transferData, remotePeer);
         
         for (const handler of this.handlers.values()) {
           await handler.onTransferReceived(incomingTransfer);
         }
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await pipe([uint8ArrayFromString(JSON.stringify({ success: true }))], stream.sink as any);
+          await pipe([uint8ArrayFromString(JSON.stringify({ success: true }))], stream.sink);
         } catch (error) {
           const transportError: TransportError = {
             name: 'TransportError',
@@ -247,19 +246,13 @@ export class P2PTransport implements Transport {
     if (!this.node) return;
 
     this.node.addEventListener('connection:open', (event) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const connection = (event as any).detail;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      this.connections.set(String(connection.id), {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        id: String(connection.id),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        remotePeer: String(connection.remotePeer),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const connection = event.detail;
+      this.connections.set(connection.id, {
+        id: connection.id,
+        remotePeer: connection.remotePeer.toString(),
         remoteAddr: connection.remoteAddr,
         status: 'open',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        direction: String(connection.direction) as 'inbound' | 'outbound',
+        direction: connection.direction,
         timeline: {
           open: Date.now(),
         },
@@ -267,10 +260,8 @@ export class P2PTransport implements Transport {
     });
 
     this.node.addEventListener('connection:close', (event) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-      const connection = (event as any).detail;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      this.connections.delete(String(connection.id));
+      const connection = event.detail;
+      this.connections.delete(connection.id);
     });
   }
 

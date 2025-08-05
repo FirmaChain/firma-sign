@@ -83,10 +83,7 @@ export interface PanelManagerProviderProps {
 	initialState?: Partial<PanelManagerState>;
 }
 
-export const PanelManagerProvider: FC<PanelManagerProviderProps> = ({
-	children,
-	initialState,
-}) => {
+export const PanelManagerProvider: FC<PanelManagerProviderProps> = ({ children, initialState }) => {
 	const [state, setState] = useState<PanelManagerState>(() => ({
 		...getDefaultPanelState(),
 		...initialState,

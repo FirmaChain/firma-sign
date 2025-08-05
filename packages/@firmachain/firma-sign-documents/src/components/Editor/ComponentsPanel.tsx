@@ -374,7 +374,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
 			const position = obj.position as Record<string, unknown> | null;
 			const size = obj.size as Record<string, unknown> | null;
 			const assigned = obj.assigned as Record<string, unknown> | null | undefined;
-			
+
 			return (
 				typeof obj.id === 'string' &&
 				typeof obj.type === 'string' &&

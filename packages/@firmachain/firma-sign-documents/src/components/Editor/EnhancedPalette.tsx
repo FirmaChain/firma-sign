@@ -78,16 +78,19 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 
 	const handleDragStart = (e: React.DragEvent) => {
 		if (disabled) return;
-		
+
 		// Set drag data
-		e.dataTransfer.setData('text/plain', JSON.stringify({
-			toolType,
-			needsAssignment: toolInfo.needsAssignment,
-		}));
-		
+		e.dataTransfer.setData(
+			'text/plain',
+			JSON.stringify({
+				toolType,
+				needsAssignment: toolInfo.needsAssignment,
+			}),
+		);
+
 		// Set drag effect
 		e.dataTransfer.effectAllowed = 'copy';
-		
+
 		// Call the drag start handler
 		if (onDragStart) {
 			if (toolInfo.needsAssignment) {
@@ -103,27 +106,26 @@ const MenuBox: React.FC<MenuBoxProps> = ({
 
 	const handleSignerDragStart = (e: React.DragEvent, signer: AssignedUser) => {
 		e.stopPropagation();
-		
+
 		// Set drag data with signer info
-		e.dataTransfer.setData('text/plain', JSON.stringify({
-			toolType,
-			signer,
-			needsAssignment: true,
-		}));
-		
+		e.dataTransfer.setData(
+			'text/plain',
+			JSON.stringify({
+				toolType,
+				signer,
+				needsAssignment: true,
+			}),
+		);
+
 		e.dataTransfer.effectAllowed = 'copy';
-		
+
 		if (onDragStart) {
 			onDragStart(toolType, signer);
 		}
 	};
 
 	return (
-		<div 
-			className="relative w-full"
-			onMouseEnter={onPopoverShow}
-			onMouseLeave={onPopoverHide}
-		>
+		<div className="relative w-full" onMouseEnter={onPopoverShow} onMouseLeave={onPopoverHide}>
 			{/* Extended hover area that covers the gap */}
 			{isPopoverActive && !isCompact && (
 				<div

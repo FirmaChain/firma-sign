@@ -140,7 +140,8 @@ export const CheckmarkInPDFExport: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: 'Checkmark component as it would appear in a PDF export. Click the button to export and view the PDF.',
+				story:
+					'Checkmark component as it would appear in a PDF export. Click the button to export and view the PDF.',
 			},
 		},
 	},

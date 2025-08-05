@@ -81,32 +81,38 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 			e.dataTransfer.dropEffect = 'copy';
 		}, []);
 
-		const handleDrop = useCallback((e: React.DragEvent) => {
-			e.preventDefault();
-			
-			try {
-				const dragData = JSON.parse(e.dataTransfer.getData('text/plain')) as { toolType: ComponentType; signer?: AssignedUser };
-				const { toolType, signer } = dragData;
-				
-				// Find which page the drop occurred on
-				const target = e.target as HTMLElement;
-				const pageElement = target.closest('[data-page-number]');
-				
-				if (pageElement) {
-					const pageNumber = parseInt(pageElement.getAttribute('data-page-number') || '1') - 1;
-					const pageRect = pageElement.getBoundingClientRect();
-					
-					// Calculate position relative to the page
-					const x = (e.clientX - pageRect.left) / pdfManager.renderScale;
-					const y = (e.clientY - pageRect.top) / pdfManager.renderScale;
-					
-					// Create component at drop position
-					componentManager.handleComponentDrop(toolType, { x, y }, pageNumber, signer);
+		const handleDrop = useCallback(
+			(e: React.DragEvent) => {
+				e.preventDefault();
+
+				try {
+					const dragData = JSON.parse(e.dataTransfer.getData('text/plain')) as {
+						toolType: ComponentType;
+						signer?: AssignedUser;
+					};
+					const { toolType, signer } = dragData;
+
+					// Find which page the drop occurred on
+					const target = e.target as HTMLElement;
+					const pageElement = target.closest('[data-page-number]');
+
+					if (pageElement) {
+						const pageNumber = parseInt(pageElement.getAttribute('data-page-number') || '1') - 1;
+						const pageRect = pageElement.getBoundingClientRect();
+
+						// Calculate position relative to the page
+						const x = (e.clientX - pageRect.left) / pdfManager.renderScale;
+						const y = (e.clientY - pageRect.top) / pdfManager.renderScale;
+
+						// Create component at drop position
+						componentManager.handleComponentDrop(toolType, { x, y }, pageNumber, signer);
+					}
+				} catch (error) {
+					console.error('Error handling drop:', error);
 				}
-			} catch (error) {
-				console.error('Error handling drop:', error);
-			}
-		}, [componentManager, pdfManager.renderScale]);
+			},
+			[componentManager, pdfManager.renderScale],
+		);
 
 		const editorViewMode = getViewModeFromString(viewMode);
 

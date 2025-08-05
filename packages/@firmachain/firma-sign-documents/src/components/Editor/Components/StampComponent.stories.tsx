@@ -196,26 +196,28 @@ export const StampInPDFExport: Story = {
 						{isLoading ? 'Exporting...' : 'Export Approval Stamp to PDF'}
 					</button>
 					<button
-						onClick={() => void (async () => {
-							try {
-								const stampComponent = {
-									...sampleComponent,
-									value: 'APPROVED',
-								};
-								const result = await exportPDFWithComponents(
-									'/wcoomd/uploads/2018/05/blank.pdf',
-									[stampComponent],
-									{ quality: 'medium' },
-								);
-								if (result.success && result.pdfBytes) {
-									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
-									const url = URL.createObjectURL(blob);
-									window.open(url, '_blank');
+						onClick={() =>
+							void (async () => {
+								try {
+									const stampComponent = {
+										...sampleComponent,
+										value: 'APPROVED',
+									};
+									const result = await exportPDFWithComponents(
+										'/wcoomd/uploads/2018/05/blank.pdf',
+										[stampComponent],
+										{ quality: 'medium' },
+									);
+									if (result.success && result.pdfBytes) {
+										const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+										const url = URL.createObjectURL(blob);
+										window.open(url, '_blank');
+									}
+								} catch (error) {
+									console.error('Preview error:', error);
 								}
-							} catch (error) {
-								console.error('Preview error:', error);
-							}
-						})()}
+							})()
+						}
 						style={{
 							padding: '10px 20px',
 							background: '#059669',

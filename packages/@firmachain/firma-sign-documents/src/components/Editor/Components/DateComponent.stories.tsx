@@ -170,7 +170,8 @@ export const DateInPDFExport: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: 'Date component as it would appear in a PDF export. Click the button to export and view the PDF.',
+				story:
+					'Date component as it would appear in a PDF export. Click the button to export and view the PDF.',
 			},
 		},
 	},

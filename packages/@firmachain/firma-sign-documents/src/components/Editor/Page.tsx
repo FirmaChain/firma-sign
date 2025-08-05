@@ -9,7 +9,10 @@ interface PageProps {
 	show?: boolean;
 	viewMode?: string;
 	onVisible?: (page: number, visible: boolean) => void;
-	onPosition?: (page: number, position: { x?: number; y?: number; width?: number; height?: number; top?: number }) => void;
+	onPosition?: (
+		page: number,
+		position: { x?: number; y?: number; width?: number; height?: number; top?: number },
+	) => void;
 	onFinish?: () => void;
 	previewEmail?: string;
 	totalPage?: number;
@@ -56,7 +59,9 @@ export const Page = React.forwardRef<HTMLDivElement, PageProps>(
 			}
 		}, [page, show, onVisible]);
 
-		const handlePageLoadSuccess = (pdfPage: { getViewport: (params: { scale: number }) => { width: number; height: number } }) => {
+		const handlePageLoadSuccess = (pdfPage: {
+			getViewport: (params: { scale: number }) => { width: number; height: number };
+		}) => {
 			const viewport = pdfPage.getViewport({ scale });
 			setPageWidth(viewport.width);
 			setPageHeight(viewport.height);

@@ -170,7 +170,8 @@ export const InputFieldInPDFExport: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: 'Input field component as it would appear in a PDF export. Click the button to export and view the PDF.',
+				story:
+					'Input field component as it would appear in a PDF export. Click the button to export and view the PDF.',
 			},
 		},
 	},

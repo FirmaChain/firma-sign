@@ -130,10 +130,13 @@ export const MissingRequiredFields: Story = {
 
 export const AllFieldsFilled: Story = {
 	args: {
-		components: sampleComponents.map((comp) => ({
-			...comp,
-			value: comp.value || 'Sample value',
-		} as DocumentComponent)),
+		components: sampleComponents.map(
+			(comp) =>
+				({
+					...comp,
+					value: comp.value || 'Sample value',
+				}) as DocumentComponent,
+		),
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'completed-document.pdf',
 	},
@@ -143,21 +146,24 @@ export const LargeDocument: Story = {
 	args: {
 		components: [
 			...sampleComponents,
-			...Array.from({ length: 15 }, (_, i): DocumentComponent => ({
-				id: `extra-comp-${i}`,
-				type: ComponentType.TEXT,
-				pageNumber: Math.floor(i / 5),
-				position: { x: 50 + (i % 3) * 100, y: 100 + Math.floor(i / 3) * 50 },
-				size: { width: 80, height: 25 },
-				assigned: {
-					email: `user${i}@example.com`,
-					name: `User ${i}`,
-					color: USER_COLORS[i % USER_COLORS.length],
-				},
-				config: { fontSize: 12 },
-				value: i % 2 === 0 ? `Value ${i}` : '',
-				created: Date.now() - i * 100,
-			})),
+			...Array.from(
+				{ length: 15 },
+				(_, i): DocumentComponent => ({
+					id: `extra-comp-${i}`,
+					type: ComponentType.TEXT,
+					pageNumber: Math.floor(i / 5),
+					position: { x: 50 + (i % 3) * 100, y: 100 + Math.floor(i / 3) * 50 },
+					size: { width: 80, height: 25 },
+					assigned: {
+						email: `user${i}@example.com`,
+						name: `User ${i}`,
+						color: USER_COLORS[i % USER_COLORS.length],
+					},
+					config: { fontSize: 12 },
+					value: i % 2 === 0 ? `Value ${i}` : '',
+					created: Date.now() - i * 100,
+				}),
+			),
 		] as DocumentComponent[],
 		pdfUrl: '/wcoomd/uploads/2018/05/blank.pdf',
 		fileName: 'large-document.pdf',
@@ -218,22 +224,24 @@ export const WithPDFExport: Story = {
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 				<div style={{ display: 'flex', gap: '10px' }}>
 					<button
-						onClick={() => void (async () => {
-							try {
-								const result = await exportPDFWithComponents(
-									'/wcoomd/uploads/2018/05/blank.pdf',
-									args.components as DocumentComponent[],
-									{ fileName: args.fileName as string, quality: 'high' },
-								);
-								if (result.success && result.pdfBytes) {
-									const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
-									const url = URL.createObjectURL(blob);
-									setPdfUrl(url);
+						onClick={() =>
+							void (async () => {
+								try {
+									const result = await exportPDFWithComponents(
+										'/wcoomd/uploads/2018/05/blank.pdf',
+										args.components as DocumentComponent[],
+										{ fileName: args.fileName as string, quality: 'high' },
+									);
+									if (result.success && result.pdfBytes) {
+										const blob = new Blob([result.pdfBytes], { type: 'application/pdf' });
+										const url = URL.createObjectURL(blob);
+										setPdfUrl(url);
+									}
+								} catch (error) {
+									console.error('Export error:', error);
 								}
-							} catch (error) {
-								console.error('Export error:', error);
-							}
-						})()}
+							})()
+						}
 						style={{
 							padding: '10px 20px',
 							background: '#3b82f6',
@@ -246,20 +254,22 @@ export const WithPDFExport: Story = {
 						Export & View PDF
 					</button>
 					<button
-						onClick={() => void (async () => {
-							try {
-								const result = await exportPDFWithComponents(
-									'/wcoomd/uploads/2018/05/blank.pdf',
-									args.components as DocumentComponent[],
-									{ quality: 'high' },
-								);
-								if (result.success && result.pdfBytes) {
-									previewPDF(result.pdfBytes);
+						onClick={() =>
+							void (async () => {
+								try {
+									const result = await exportPDFWithComponents(
+										'/wcoomd/uploads/2018/05/blank.pdf',
+										args.components as DocumentComponent[],
+										{ quality: 'high' },
+									);
+									if (result.success && result.pdfBytes) {
+										previewPDF(result.pdfBytes);
+									}
+								} catch (error) {
+									console.error('Preview error:', error);
 								}
-							} catch (error) {
-								console.error('Preview error:', error);
-							}
-						})()}
+							})()
+						}
 						style={{
 							padding: '10px 20px',
 							background: '#059669',

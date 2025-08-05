@@ -7,11 +7,11 @@ interface ZoomBarProps {
 	onFitHeight?: () => void;
 }
 
-export const ZoomBar: React.FC<ZoomBarProps> = ({ 
-	displayScale, 
-	onScaleChange, 
-	onFitWidth, 
-	onFitHeight 
+export const ZoomBar: React.FC<ZoomBarProps> = ({
+	displayScale,
+	onScaleChange,
+	onFitWidth,
+	onFitHeight,
 }) => (
 	<div className="absolute bottom-4 left-4 z-10">
 		<div className="bg-white rounded-lg shadow-lg p-2 border border-gray-200">

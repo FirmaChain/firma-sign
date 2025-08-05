@@ -1,11 +1,7 @@
 import React from 'react';
 import { ComponentProps, ViewMode } from '../types';
 
-export const CheckboxComponent: React.FC<ComponentProps> = ({
-	component,
-	viewMode,
-	onUpdate,
-}) => {
+export const CheckboxComponent: React.FC<ComponentProps> = ({ component, viewMode, onUpdate }) => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (onUpdate) {
 			onUpdate({
