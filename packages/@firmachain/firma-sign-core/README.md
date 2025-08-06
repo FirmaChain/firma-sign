@@ -10,7 +10,7 @@ npm install @firmachain/firma-sign-core
 
 ## Overview
 
-This package provides the core interfaces and utilities that all Firma-Sign transport implementations must use. It ensures consistency across different transport methods (P2P, email, Discord, etc.) and provides common utilities for document handling.
+This package provides the core interfaces and utilities that all Firma-Sign transport and storage implementations must use. It ensures consistency across different transport methods (P2P, email, Discord, etc.) and storage backends (local, S3, Azure, IPFS, etc.), while providing common utilities for document handling.
 
 ## Key Interfaces
 
@@ -193,6 +193,33 @@ if (!validation.valid) {
 }
 ```
 
+### Storage
+
+The main interface that all storage implementations must follow:
+
+```typescript
+import { Storage } from '@firmachain/firma-sign-core';
+
+class MyStorage implements Storage {
+  name = 'my-storage';
+  version = '1.0.0';
+  
+  async initialize(config: StorageConfig): Promise<void> {
+    // Initialize your storage backend
+  }
+  
+  async save(path: string, data: Buffer): Promise<StorageResult> {
+    // Implement save logic
+  }
+  
+  async read(path: string): Promise<Buffer> {
+    // Implement read logic
+  }
+  
+  // ... other required methods
+}
+```
+
 ## Creating a Custom Transport
 
 To create your own transport implementation:
@@ -241,6 +268,63 @@ export class CustomTransport implements Transport {
 ```
 
 3. Publish your transport package
+
+## Creating a Custom Storage
+
+To create your own storage implementation:
+
+1. Install the core package:
+```bash
+npm install @firmachain/firma-sign-core
+```
+
+2. Implement the Storage interface:
+```typescript
+import { 
+  Storage, 
+  StorageCapabilities,
+  StorageResult,
+  StorageEntry 
+} from '@firmachain/firma-sign-core';
+
+export class CustomStorage implements Storage {
+  name = 'custom';
+  version = '1.0.0';
+  
+  capabilities: StorageCapabilities = {
+    maxFileSize: 1024 * 1024 * 1024, // 1GB
+    supportsStreaming: true,
+    supportsMetadata: true,
+    supportsVersioning: false,
+    supportsEncryption: true,
+    supportsConcurrentAccess: true,
+    supportsDirectoryListing: true,
+    requiredConfig: ['endpoint', 'apiKey']
+  };
+
+  async initialize(config: any): Promise<void> {
+    // Your initialization logic
+  }
+
+  async save(path: string, data: Buffer | Readable): Promise<StorageResult> {
+    // Your save logic
+    return {
+      success: true,
+      path: path,
+      size: data.length,
+      timestamp: Date.now()
+    };
+  }
+
+  async read(path: string): Promise<Buffer> {
+    // Your read logic
+  }
+
+  // Implement other required methods...
+}
+```
+
+3. Publish your storage package
 
 ## Development
 

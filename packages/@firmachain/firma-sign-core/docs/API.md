@@ -112,6 +112,85 @@ interface TransportError extends Error {
 }
 ```
 
+### Storage
+Base interface that all storage implementations must implement.
+
+```typescript
+interface Storage {
+  readonly name: string;
+  readonly version: string;
+  readonly capabilities: StorageCapabilities;
+  
+  initialize(config: StorageConfig): Promise<void>;
+  shutdown(): Promise<void>;
+  
+  save(path: string, data: Buffer | Readable): Promise<StorageResult>;
+  read(path: string): Promise<Buffer>;
+  readStream(path: string): Promise<Readable>;
+  exists(path: string): Promise<boolean>;
+  delete(path: string): Promise<void>;
+  list(prefix: string): Promise<StorageEntry[]>;
+  
+  getStatus(): StorageStatus;
+  validateConfig(config: unknown): config is StorageConfig;
+}
+```
+
+### StorageCapabilities
+Describes what a storage backend can do.
+
+```typescript
+interface StorageCapabilities {
+  maxFileSize: number;
+  supportsStreaming: boolean;
+  supportsMetadata: boolean;
+  supportsVersioning: boolean;
+  supportsEncryption: boolean;
+  supportsConcurrentAccess: boolean;
+  supportsDirectoryListing: boolean;
+  requiredConfig: string[];
+}
+```
+
+### StorageResult
+Result of a storage operation.
+
+```typescript
+interface StorageResult {
+  success: boolean;
+  path: string;
+  size: number;
+  hash?: string;
+  versionId?: string;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+```
+
+### StorageEntry
+Entry in a storage listing.
+
+```typescript
+interface StorageEntry {
+  path: string;
+  type: 'file' | 'directory';
+  size: number;
+  lastModified: number;
+  metadata?: Record<string, unknown>;
+}
+```
+
+### StorageError
+Error type for storage operations.
+
+```typescript
+class StorageError extends Error {
+  code: string;
+  storage: string;
+  details?: unknown;
+}
+```
+
 ## Utilities
 
 ### Hash Functions
