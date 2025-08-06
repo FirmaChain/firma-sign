@@ -17,7 +17,7 @@ describe('StorageManager', () => {
   });
 
   afterEach(async () => {
-    storageManager.close();
+    await storageManager.close();
     
     try {
       await fs.rm(testStoragePath, { recursive: true, force: true });
@@ -49,12 +49,12 @@ describe('StorageManager', () => {
       expect(exists).toBe(true);
     });
 
-    it('should use default home directory if no path provided', () => {
+    it('should use default home directory if no path provided', async () => {
       const defaultManager = new StorageManager();
       expect((defaultManager as unknown as { storagePath: string }).storagePath).toBe(
         path.join(os.homedir(), '.firma-sign')
       );
-      defaultManager.close();
+      await defaultManager.close();
     });
   });
 
@@ -198,16 +198,16 @@ describe('StorageManager', () => {
       });
     });
 
-    it('should retrieve existing transfer', () => {
-      const transfer = storageManager.getTransfer('get-test-1');
+    it('should retrieve existing transfer', async () => {
+      const transfer = await storageManager.getTransfer('get-test-1');
 
       expect(transfer).toBeDefined();
       expect(transfer?.id).toBe('get-test-1');
       expect(transfer?.type).toBe('outgoing');
     });
 
-    it('should return null for non-existent transfer', () => {
-      const transfer = storageManager.getTransfer('non-existent');
+    it('should return null for non-existent transfer', async () => {
+      const transfer = await storageManager.getTransfer('non-existent');
       expect(transfer).toBeNull();
     });
   });
@@ -240,8 +240,8 @@ describe('StorageManager', () => {
       });
     });
 
-    it('should retrieve transfer with all related data', () => {
-      const result = storageManager.getTransferWithDetails('details-test-1');
+    it('should retrieve transfer with all related data', async () => {
+      const result = await storageManager.getTransferWithDetails('details-test-1');
 
       expect(result).toBeDefined();
       expect(result?.transfer.id).toBe('details-test-1');
@@ -249,8 +249,8 @@ describe('StorageManager', () => {
       expect(result?.recipients).toHaveLength(1);
     });
 
-    it('should return null for non-existent transfer', () => {
-      const result = storageManager.getTransferWithDetails('non-existent');
+    it('should return null for non-existent transfer', async () => {
+      const result = await storageManager.getTransferWithDetails('non-existent');
       expect(result).toBeNull();
     });
   });
@@ -273,23 +273,23 @@ describe('StorageManager', () => {
       });
     });
 
-    it('should list all transfers', () => {
-      const transfers = storageManager.listTransfers();
+    it('should list all transfers', async () => {
+      const transfers = await storageManager.listTransfers();
       expect(transfers.length).toBeGreaterThanOrEqual(3);
     });
 
-    it('should filter by type', () => {
-      const outgoing = storageManager.listTransfers('outgoing');
+    it('should filter by type', async () => {
+      const outgoing = await storageManager.listTransfers('outgoing');
       expect(outgoing.every(t => t.type === 'outgoing')).toBe(true);
       expect(outgoing.length).toBeGreaterThanOrEqual(2);
 
-      const incoming = storageManager.listTransfers('incoming');
+      const incoming = await storageManager.listTransfers('incoming');
       expect(incoming.every(t => t.type === 'incoming')).toBe(true);
       expect(incoming.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should respect limit parameter', () => {
-      const limited = storageManager.listTransfers(undefined, 2);
+    it('should respect limit parameter', async () => {
+      const limited = await storageManager.listTransfers(undefined, 2);
       expect(limited.length).toBeLessThanOrEqual(2);
     });
   });
@@ -319,8 +319,8 @@ describe('StorageManager', () => {
       transferId = transfer.id;
     });
 
-    it('should update document signatures', () => {
-      storageManager.updateTransferSignatures(transferId, [
+    it('should update document signatures', async () => {
+      await storageManager.updateTransferSignatures(transferId, [
         {
           documentId: 'doc-sig-1',
           status: 'signed' as DocumentStatus,
@@ -329,7 +329,7 @@ describe('StorageManager', () => {
         }
       ]);
 
-      const details = storageManager.getTransferWithDetails(transferId);
+      const details = await storageManager.getTransferWithDetails(transferId);
       expect(details?.transfer.status).toBe('partially-signed');
 
       const signedDoc = details?.documents.find(d => d.id === 'doc-sig-1');
@@ -337,8 +337,8 @@ describe('StorageManager', () => {
       expect(signedDoc?.signedBy).toBe('user-123');
     });
 
-    it('should update transfer status based on signatures', () => {
-      storageManager.updateTransferSignatures(transferId, [
+    it('should update transfer status based on signatures', async () => {
+      await storageManager.updateTransferSignatures(transferId, [
         {
           documentId: 'doc-sig-1',
           status: 'signed' as DocumentStatus,
@@ -351,7 +351,7 @@ describe('StorageManager', () => {
         }
       ]);
 
-      const transfer = storageManager.getTransfer(transferId);
+      const transfer = await storageManager.getTransfer(transferId);
       expect(transfer?.status).toBe('completed');
     });
   });
@@ -428,30 +428,30 @@ describe('StorageManager', () => {
         ]
       });
 
-      const recipients = storageManager.getRecipientsByTransferId(result.id);
+      const recipients = await storageManager.getRecipientsByTransferId(result.id);
       recipientId = recipients[0].id;
     });
 
-    it('should update recipient status to notified', () => {
-      storageManager.updateRecipientStatus(recipientId, 'notified');
+    it('should update recipient status to notified', async () => {
+      await storageManager.updateRecipientStatus(recipientId, 'notified');
 
-      const recipient = storageManager.getRecipientById(recipientId);
+      const recipient = await storageManager.getRecipientById(recipientId);
       expect(recipient?.status).toBe('notified');
       expect(recipient?.notifiedAt).toBeInstanceOf(Date);
     });
 
-    it('should update recipient status to viewed', () => {
-      storageManager.updateRecipientStatus(recipientId, 'viewed');
+    it('should update recipient status to viewed', async () => {
+      await storageManager.updateRecipientStatus(recipientId, 'viewed');
 
-      const recipient = storageManager.getRecipientById(recipientId);
+      const recipient = await storageManager.getRecipientById(recipientId);
       expect(recipient?.status).toBe('viewed');
       expect(recipient?.viewedAt).toBeInstanceOf(Date);
     });
 
-    it('should update recipient status to signed', () => {
-      storageManager.updateRecipientStatus(recipientId, 'signed');
+    it('should update recipient status to signed', async () => {
+      await storageManager.updateRecipientStatus(recipientId, 'signed');
 
-      const recipient = storageManager.getRecipientById(recipientId);
+      const recipient = await storageManager.getRecipientById(recipientId);
       expect(recipient?.status).toBe('signed');
       expect(recipient?.signedAt).toBeInstanceOf(Date);
     });
@@ -477,17 +477,17 @@ describe('StorageManager', () => {
       documentId = 'doc-blockchain-1';
     });
 
-    it('should store original blockchain hash', () => {
-      storageManager.storeBlockchainHash(documentId, 'original', 'tx-original-123');
+    it('should store original blockchain hash', async () => {
+      await storageManager.storeBlockchainHash(documentId, 'original', 'tx-original-123');
 
-      const document = storageManager.getDocumentById(documentId);
+      const document = await storageManager.getDocumentById(documentId);
       expect(document?.blockchainTxOriginal).toBe('tx-original-123');
     });
 
-    it('should store signed blockchain hash', () => {
-      storageManager.storeBlockchainHash(documentId, 'signed', 'tx-signed-456');
+    it('should store signed blockchain hash', async () => {
+      await storageManager.storeBlockchainHash(documentId, 'signed', 'tx-signed-456');
 
-      const document = storageManager.getDocumentById(documentId);
+      const document = await storageManager.getDocumentById(documentId);
       expect(document?.blockchainTxSigned).toBe('tx-signed-456');
     });
   });
@@ -527,29 +527,29 @@ describe('StorageManager', () => {
       transferId = result.id;
     });
 
-    it('should get documents by transfer ID', () => {
-      const documents = storageManager.getDocumentsByTransferId(transferId);
+    it('should get documents by transfer ID', async () => {
+      const documents = await storageManager.getDocumentsByTransferId(transferId);
       expect(documents).toHaveLength(2);
       expect(documents[0].fileName).toBe('helper1.pdf');
       expect(documents[1].fileName).toBe('helper2.pdf');
     });
 
-    it('should get recipients by transfer ID', () => {
-      const recipients = storageManager.getRecipientsByTransferId(transferId);
+    it('should get recipients by transfer ID', async () => {
+      const recipients = await storageManager.getRecipientsByTransferId(transferId);
       expect(recipients).toHaveLength(2);
       expect(recipients[0].identifier).toBe('helper1@example.com');
       expect(recipients[1].identifier).toBe('helper2@example.com');
     });
 
-    it('should get document by ID', () => {
-      const document = storageManager.getDocumentById('doc-helper-1');
+    it('should get document by ID', async () => {
+      const document = await storageManager.getDocumentById('doc-helper-1');
       expect(document).toBeDefined();
       expect(document?.fileName).toBe('helper1.pdf');
     });
 
-    it('should get recipient by ID', () => {
-      const recipients = storageManager.getRecipientsByTransferId(transferId);
-      const recipient = storageManager.getRecipientById(recipients[0].id);
+    it('should get recipient by ID', async () => {
+      const recipients = await storageManager.getRecipientsByTransferId(transferId);
+      const recipient = await storageManager.getRecipientById(recipients[0].id);
       expect(recipient).toBeDefined();
       expect(recipient?.identifier).toBe('helper1@example.com');
     });
@@ -557,7 +557,7 @@ describe('StorageManager', () => {
 
   describe('error handling', () => {
     it('should handle database errors gracefully', async () => {
-      storageManager.close();
+      await storageManager.close();
 
       await expect(
         storageManager.createTransfer({

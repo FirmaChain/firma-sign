@@ -85,7 +85,7 @@ process.on('SIGTERM', () => {
   });
 
   void transportManager.shutdown();
-  storageManager.close();
+  void storageManager.close();
   wsServer.close();
   
   process.exit(0);
@@ -120,10 +120,9 @@ function initializeTransports() {
 }
 
 initializeTransports();
-{
-  httpServer.listen(PORT, HOST, () => {
-    logger.info(`🚀 Firma-Sign server running at http://${HOST}:${PORT}`);
-    logger.info(`📡 WebSocket server ready`);
-    logger.info(`💾 Storage initialized at ${process.env.STORAGE_PATH || '~/.firmasign'}`);
-  });
-}
+
+httpServer.listen(PORT, HOST, () => {
+  logger.info(`🚀 Firma-Sign server running at http://${HOST}:${PORT}`);
+  logger.info(`📡 WebSocket server ready`);
+  logger.info(`💾 Storage initialized at ${process.env.STORAGE_PATH || '~/.firmasign'}`);
+});

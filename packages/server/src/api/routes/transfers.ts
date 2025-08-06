@@ -91,10 +91,10 @@ export function createTransferRoutes(
     }
   });
 
-  router.get('/:transferId', (req, res) => {
+  router.get('/:transferId', (req, res) => void (async () => {
     try {
       const { transferId } = req.params;
-      const transfer = storageManager.getTransfer(transferId);
+      const transfer = await storageManager.getTransfer(transferId);
       
       if (!transfer) {
         return res.status(404).json({ error: 'Transfer not found' });
@@ -105,9 +105,9 @@ export function createTransferRoutes(
       logger.error('Error getting transfer:', error);
       res.status(500).json({ error: 'Failed to get transfer' });
     }
-  });
+  })());
 
-  router.post('/:transferId/sign', validateRequest(signDocumentsSchema), (req, res) => {
+  router.post('/:transferId/sign', validateRequest(signDocumentsSchema), (req, res) => void (async () => {
     try {
       const { transferId } = req.params;
       const body = req.body as {
@@ -116,12 +116,12 @@ export function createTransferRoutes(
       };
       const { signatures, returnTransport } = body;
 
-      const transfer = storageManager.getTransfer(transferId);
+      const transfer = await storageManager.getTransfer(transferId);
       if (!transfer) {
         return res.status(404).json({ error: 'Transfer not found' });
       }
 
-      storageManager.updateTransferSignatures(transferId, signatures);
+      await storageManager.updateTransferSignatures(transferId, signatures);
 
       if (returnTransport && transfer.type === 'incoming' && transfer.sender) {
         // For now, we'll just emit an event for the return transport
@@ -139,7 +139,7 @@ export function createTransferRoutes(
       logger.error('Error signing documents:', error);
       res.status(500).json({ error: 'Failed to sign documents' });
     }
-  });
+  })());
 
   return router;
 }

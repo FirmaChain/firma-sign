@@ -1,0 +1,66 @@
+{
+	"name": "@firmachain/firma-sign-database-sqlite",
+	"version": "1.0.0",
+	"description": "SQLite database implementation for Firma-Sign document signing system",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsup src/index.ts --format cjs,esm --dts --clean",
+		"dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"lint": "eslint src",
+		"type-check": "tsc --noEmit"
+	},
+	"keywords": [
+		"firma-sign",
+		"database",
+		"sqlite",
+		"storage",
+		"firmachain"
+	],
+	"license": "MIT",
+	"peerDependencies": {
+		"@firmachain/firma-sign-core": "^1.0.0"
+	},
+	"dependencies": {
+		"better-sqlite3": "catalog:",
+		"nanoid": "catalog:"
+	},
+	"devDependencies": {
+		"@firmachain/firma-sign-core": "workspace:*",
+		"@types/better-sqlite3": "catalog:",
+		"@types/node": "catalog:",
+		"eslint": "catalog:",
+		"@eslint/js": "catalog:",
+		"typescript-eslint": "catalog:",
+		"@typescript-eslint/eslint-plugin": "catalog:",
+		"@typescript-eslint/parser": "catalog:",
+		"tsup": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:",
+		"vitest-mock-extended": "catalog:",
+		"@vitest/coverage-v8": "catalog:"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/firmachain/firma-sign.git",
+		"directory": "packages/@firmachain/firma-sign-database-sqlite"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

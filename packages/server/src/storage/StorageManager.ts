@@ -2,11 +2,14 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { logger } from '../utils/logger.js';
-import { DatabaseConnection } from '../database/Database.js';
-import { TransferRepository } from '../database/repositories/TransferRepository.js';
-import { DocumentRepository } from '../database/repositories/DocumentRepository.js';
-import { RecipientRepository } from '../database/repositories/RecipientRepository.js';
-import { TransactionManager } from '../database/TransactionManager.js';
+import { 
+  Database,
+  Repository,
+  TransferEntity,
+  DocumentEntity,
+  RecipientEntity
+} from '@firmachain/firma-sign-core';
+import { SQLiteDatabase } from '@firmachain/firma-sign-database-sqlite';
 import { 
   Transfer, 
   Document, 
@@ -18,24 +21,36 @@ import {
 } from '../types/database.js';
 
 export class StorageManager {
-  private dbConnection: DatabaseConnection;
-  private transferRepo: TransferRepository;
-  private documentRepo: DocumentRepository;
-  private recipientRepo: RecipientRepository;
-  private transactionManager: TransactionManager;
+  private database: Database;
+  private transferRepo!: Repository<TransferEntity>;
+  private documentRepo!: Repository<DocumentEntity>;
+  private recipientRepo!: Repository<RecipientEntity>;
   private storagePath: string;
+  private isInitialized = false;
 
-  constructor(storagePath?: string) {
+  constructor(storagePath?: string, database?: Database) {
     this.storagePath = storagePath || path.join(os.homedir(), '.firma-sign');
-    void this.initializeStorage();
+    this.database = database || new SQLiteDatabase();
+    
+    // Initialize database and storage asynchronously
+    void this.initialize();
+  }
+
+  private async initialize() {
+    if (this.isInitialized) return;
+    
+    await this.initializeStorage();
     
     const dbPath = path.join(this.storagePath, 'firma-sign.db');
-    this.dbConnection = DatabaseConnection.getInstance(dbPath);
+    await this.database.initialize({
+      database: dbPath
+    });
     
-    this.transferRepo = new TransferRepository(this.dbConnection);
-    this.documentRepo = new DocumentRepository(this.dbConnection);
-    this.recipientRepo = new RecipientRepository(this.dbConnection);
-    this.transactionManager = new TransactionManager(this.dbConnection);
+    this.transferRepo = this.database.getRepository<TransferEntity>('Transfer');
+    this.documentRepo = this.database.getRepository<DocumentEntity>('Document');
+    this.recipientRepo = this.database.getRepository<RecipientEntity>('Recipient');
+    
+    this.isInitialized = true;
   }
 
   private async initializeStorage() {
@@ -71,7 +86,64 @@ export class StorageManager {
     sender?: SenderInfo;
     metadata?: Record<string, unknown>;
   }): Promise<Transfer> {
-    const result = this.transactionManager.createTransferWithDocuments(transferData);
+    await this.ensureInitialized();
+    
+    // Use transaction to create transfer with documents and recipients
+    const result = await this.database.transaction(async (tx) => {
+      const transferRepo = tx.getRepository<TransferEntity>('Transfer');
+      const documentRepo = tx.getRepository<DocumentEntity>('Document');
+      const recipientRepo = tx.getRepository<RecipientEntity>('Recipient');
+      
+      // Create transfer
+      const transfer = await transferRepo.create({
+        id: transferData.transferId,
+        type: transferData.type as 'incoming' | 'outgoing',
+        status: 'pending',
+        senderId: transferData.sender?.senderId,
+        senderName: transferData.sender?.name,
+        senderEmail: transferData.sender?.email,
+        senderPublicKey: transferData.sender?.publicKey,
+        transportType: transferData.sender?.transport || 'p2p',
+        metadata: transferData.metadata,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      // Create documents if provided
+      const documents: DocumentEntity[] = [];
+      if (transferData.documents) {
+        for (const doc of transferData.documents) {
+          const document = await documentRepo.create({
+            id: doc.id,
+            transferId: transferData.transferId,
+            fileName: doc.fileName,
+            fileSize: doc.fileSize || 0,
+            fileHash: doc.fileHash || '',
+            status: 'pending',
+            createdAt: new Date()
+          });
+          documents.push(document);
+        }
+      }
+      
+      // Create recipients if provided
+      const recipients: RecipientEntity[] = [];
+      if (transferData.recipients) {
+        for (const rec of transferData.recipients) {
+          const recipient = await recipientRepo.create({
+            transferId: transferData.transferId,
+            identifier: rec.identifier,
+            transport: rec.transport,
+            status: 'pending',
+            preferences: rec.preferences,
+            createdAt: new Date()
+          });
+          recipients.push(recipient);
+        }
+      }
+      
+      return { transfer, documents, recipients };
+    });
 
     const transferDir = path.join(
       this.storagePath,
@@ -90,58 +162,88 @@ export class StorageManager {
       );
     }
 
-    return result.transfer;
+    return this.mapTransferEntityToTransfer(result.transfer);
   }
 
-  getTransfer(transferId: string): Transfer | null {
-    const transfer = this.transferRepo.findById(transferId);
+  async getTransfer(transferId: string): Promise<Transfer | null> {
+    await this.ensureInitialized();
+    const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) {
       return null;
     }
-    return transfer;
+    return this.mapTransferEntityToTransfer(transfer);
   }
   
-  getTransferWithDetails(transferId: string): {
+  async getTransferWithDetails(transferId: string): Promise<{
     transfer: Transfer;
     documents: Document[];
     recipients: Recipient[];
-  } | null {
-    const transfer = this.transferRepo.findById(transferId);
+  } | null> {
+    await this.ensureInitialized();
+    const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) {
       return null;
     }
     
-    const documents = this.documentRepo.findByTransferId(transferId);
-    const recipients = this.recipientRepo.findByTransferId(transferId);
+    const documents = await this.documentRepo.find({ transferId });
+    const recipients = await this.recipientRepo.find({ transferId });
     
     return {
-      transfer,
-      documents,
-      recipients
+      transfer: this.mapTransferEntityToTransfer(transfer),
+      documents: documents.map(d => this.mapDocumentEntityToDocument(d)),
+      recipients: recipients.map(r => this.mapRecipientEntityToRecipient(r))
     };
   }
 
-  listTransfers(type?: TransferType, limit: number = 100): Transfer[] {
+  async listTransfers(type?: TransferType, limit: number = 100): Promise<Transfer[]> {
+    await this.ensureInitialized();
+    let transfers: TransferEntity[];
+    
     if (type) {
-      return this.transferRepo.findByType(type);
+      transfers = await this.transferRepo.find({ type: type as 'incoming' | 'outgoing' }, { limit });
+    } else {
+      transfers = await this.transferRepo.findAll({ limit, orderBy: { createdAt: 'desc' } });
     }
-    return this.transferRepo.findRecent(limit);
+    
+    return transfers.map(t => this.mapTransferEntityToTransfer(t));
   }
 
-  updateTransferSignatures(transferId: string, signatures: Array<{
+  async updateTransferSignatures(transferId: string, signatures: Array<{
     documentId: string;
     status: DocumentStatus;
     signedBy?: string;
     blockchainTxSigned?: string;
-  }>): void {
-    this.transactionManager.signDocumentsAndUpdateTransfer({
-      transferId,
-      signatures
+  }>): Promise<void> {
+    await this.ensureInitialized();
+    
+    await this.database.transaction(async (tx) => {
+      const documentRepo = tx.getRepository<DocumentEntity>('Document');
+      const transferRepo = tx.getRepository<TransferEntity>('Transfer');
+      
+      for (const sig of signatures) {
+        await documentRepo.update(sig.documentId, {
+          status: sig.status,
+          signedBy: sig.signedBy,
+          signedAt: sig.status === 'signed' ? new Date() : undefined,
+          blockchainTxSigned: sig.blockchainTxSigned
+        });
+      }
+      
+      // Update transfer status if all documents are signed
+      const allDocs = await documentRepo.find({ transferId });
+      const allSigned = allDocs.every(d => d.status === 'signed');
+      
+      if (allSigned) {
+        await transferRepo.update(transferId, {
+          status: 'completed',
+          updatedAt: new Date()
+        });
+      }
     });
   }
 
   async saveDocument(transferId: string, fileName: string, data: Buffer): Promise<void> {
-    const transfer = this.getTransfer(transferId);
+    const transfer = await this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
@@ -160,7 +262,7 @@ export class StorageManager {
   }
 
   async getDocument(transferId: string, fileName: string): Promise<Buffer> {
-    const transfer = this.getTransfer(transferId);
+    const transfer = await this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
@@ -177,39 +279,125 @@ export class StorageManager {
     return await fs.readFile(filePath);
   }
 
-  updateRecipientStatus(recipientId: string, status: RecipientStatus): void {
+  async updateRecipientStatus(recipientId: string, status: RecipientStatus): Promise<void> {
+    await this.ensureInitialized();
+    
+    const updates: Partial<RecipientEntity> = {
+      status
+    };
+    
     if (status === 'notified') {
-      this.recipientRepo.markAsNotified(recipientId);
+      updates.notifiedAt = new Date();
     } else if (status === 'viewed') {
-      this.recipientRepo.markAsViewed(recipientId);
+      updates.viewedAt = new Date();
     } else if (status === 'signed') {
-      this.recipientRepo.markAsSigned(recipientId);
+      updates.signedAt = new Date();
+    }
+    
+    await this.recipientRepo.update(recipientId, updates);
+  }
+  
+  async storeBlockchainHash(documentId: string, type: 'original' | 'signed', txHash: string): Promise<void> {
+    await this.ensureInitialized();
+    
+    const updates: Partial<DocumentEntity> = {};
+    if (type === 'original') {
+      updates.blockchainTxOriginal = txHash;
     } else {
-      this.recipientRepo.updateStatus(recipientId, status);
+      updates.blockchainTxSigned = txHash;
+    }
+    
+    await this.documentRepo.update(documentId, updates);
+  }
+  
+  async getDocumentsByTransferId(transferId: string): Promise<Document[]> {
+    await this.ensureInitialized();
+    const documents = await this.documentRepo.find({ transferId });
+    return documents.map(d => this.mapDocumentEntityToDocument(d));
+  }
+  
+  async getRecipientsByTransferId(transferId: string): Promise<Recipient[]> {
+    await this.ensureInitialized();
+    const recipients = await this.recipientRepo.find({ transferId });
+    return recipients.map(r => this.mapRecipientEntityToRecipient(r));
+  }
+  
+  async getDocumentById(documentId: string): Promise<Document | null> {
+    await this.ensureInitialized();
+    const document = await this.documentRepo.findById(documentId);
+    return document ? this.mapDocumentEntityToDocument(document) : null;
+  }
+  
+  async getRecipientById(recipientId: string): Promise<Recipient | null> {
+    await this.ensureInitialized();
+    const recipient = await this.recipientRepo.findById(recipientId);
+    return recipient ? this.mapRecipientEntityToRecipient(recipient) : null;
+  }
+  
+  async close(): Promise<void> {
+    if (this.isInitialized) {
+      await this.database.shutdown();
+      this.isInitialized = false;
     }
   }
   
-  storeBlockchainHash(documentId: string, type: 'original' | 'signed', txHash: string): void {
-    this.documentRepo.updateBlockchainHash(documentId, type, txHash);
+  private async ensureInitialized(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
   }
   
-  getDocumentsByTransferId(transferId: string): Document[] {
-    return this.documentRepo.findByTransferId(transferId);
+  // Mapping functions to convert between entity and domain types
+  private mapTransferEntityToTransfer(entity: TransferEntity): Transfer {
+    return {
+      id: entity.id,
+      type: entity.type as TransferType,
+      status: entity.status as 'pending' | 'ready' | 'partially-signed' | 'completed',
+      sender: entity.senderId ? {
+        senderId: entity.senderId,
+        name: entity.senderName || '',
+        email: entity.senderEmail,
+        publicKey: entity.senderPublicKey || '',
+        transport: entity.transportType,
+        timestamp: entity.createdAt.getTime(),
+        verificationStatus: 'unverified' as const
+      } : undefined,
+      transportType: entity.transportType,
+      transportConfig: entity.transportConfig,
+      metadata: entity.metadata,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt
+    };
   }
   
-  getRecipientsByTransferId(transferId: string): Recipient[] {
-    return this.recipientRepo.findByTransferId(transferId);
+  private mapDocumentEntityToDocument(entity: DocumentEntity): Document {
+    return {
+      id: entity.id,
+      transferId: entity.transferId,
+      fileName: entity.fileName,
+      fileSize: entity.fileSize,
+      fileHash: entity.fileHash,
+      status: entity.status as DocumentStatus,
+      signedAt: entity.signedAt,
+      signedBy: entity.signedBy,
+      blockchainTxOriginal: entity.blockchainTxOriginal,
+      blockchainTxSigned: entity.blockchainTxSigned,
+      createdAt: entity.createdAt
+    };
   }
   
-  getDocumentById(documentId: string): Document | null {
-    return this.documentRepo.findById(documentId);
-  }
-  
-  getRecipientById(recipientId: string): Recipient | null {
-    return this.recipientRepo.findById(recipientId);
-  }
-  
-  close(): void {
-    this.dbConnection.close();
+  private mapRecipientEntityToRecipient(entity: RecipientEntity): Recipient {
+    return {
+      id: entity.id,
+      transferId: entity.transferId,
+      identifier: entity.identifier,
+      transport: entity.transport,
+      status: entity.status as RecipientStatus,
+      preferences: entity.preferences,
+      notifiedAt: entity.notifiedAt,
+      viewedAt: entity.viewedAt,
+      signedAt: entity.signedAt,
+      createdAt: entity.createdAt
+    };
   }
 }
