@@ -12,7 +12,8 @@
 		"format": "turbo run format && node scripts/format.mjs",
 		"format:check": "turbo run format:check",
 		"lint": "turbo run lint",
-		"lintfix": "turbo run lintfix"
+		"lintfix": "turbo run lintfix",
+		"prepare": "husky"
 	},
 	"keywords": [],
 	"author": "cto@firmachain.com",
@@ -21,6 +22,8 @@
 	"private": true,
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.1.4",
 		"prettier": "^3.6.2",
 		"turbo": "^2.5.5",
 		"vite-plugin-lib-inject-css": "^2.2.2"

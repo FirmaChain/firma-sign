@@ -252,11 +252,11 @@ export class P2PTransport implements Transport {
       // Now we have the proper multiaddr package imported
       try {
         console.log('📍 Parsing multiaddr:', multiaddrStr);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+         
         const ma = multiaddr(multiaddrStr);
         console.log('✅ Multiaddr parsed successfully');
         
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+         
         const connection = await this.node.dial(ma);
         
         console.log(`✅ Successfully connected to peer: ${connection.remotePeer.toString()}`);
@@ -339,7 +339,7 @@ export class P2PTransport implements Transport {
       },
       transports,
       streamMuxers: [yamux(), mplex()],
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+       
       connectionEncrypters: [noise(), tls()],
       services: {
         identify: identify(), // Required by DHT and other services

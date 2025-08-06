@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Run lint-staged to check and fix linting issues on staged files
+pnpm lint-staged
