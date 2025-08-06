@@ -16,6 +16,11 @@
       "import": "./dist/interfaces/index.mjs",
       "types": "./dist/interfaces/index.d.ts"
     },
+    "./interfaces/storage": {
+      "require": "./dist/interfaces/storage.js",
+      "import": "./dist/interfaces/storage.mjs",
+      "types": "./dist/interfaces/storage.d.ts"
+    },
     "./utils": {
       "require": "./dist/utils/index.js",
       "import": "./dist/utils/index.mjs",

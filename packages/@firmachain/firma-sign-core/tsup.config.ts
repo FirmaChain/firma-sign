@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     'interfaces/index': 'src/interfaces/index.ts',
+    'interfaces/storage': 'src/interfaces/storage.ts',
     'utils/index': 'src/utils/index.ts',
   },
   format: ['cjs', 'esm'],
