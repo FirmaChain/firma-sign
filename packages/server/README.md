@@ -5,6 +5,7 @@ The backend server for the Firma-Sign decentralized document signing system.
 ## Overview
 
 This server implements:
+
 - Multi-protocol transport management (P2P, Email, Discord, Telegram, Web)
 - Local document storage with SQLite metadata
 - WebSocket real-time updates
@@ -52,6 +53,7 @@ pnpm start
 ## Architecture
 
 ### Directory Structure
+
 ```
 src/
 ├── api/          # REST API routes and middleware
@@ -69,30 +71,45 @@ src/
 3. **WebSocketServer**: Provides real-time updates to clients
 4. **API Routes**: RESTful endpoints for document operations
 
+## Documentation
+
+- [API Reference](./docs/API.md) - Detailed API documentation
+- [API Flowchart](./docs/API-FLOWCHART.md) - Visual API flow documentation
+- [Architecture](./docs/ARCHITECTURE.md) - System architecture details
+- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
+- [Configuration](./docs/CONFIGURATION.md) - Configuration options
+- [Testing](./docs/TESTING.md) - Testing guide
+- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues and solutions
+
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/connect` - Connect with transfer code
 - `POST /api/auth/generate-keypair` - Generate RSA keypair
 
 ### Transfers
+
 - `POST /api/transfers/create` - Create new transfer
 - `GET /api/transfers` - List transfers
 - `GET /api/transfers/:transferId` - Get transfer details
 - `POST /api/transfers/:transferId/sign` - Sign documents
 
 ### System
+
 - `GET /api/transports/available` - List available transports
 - `GET /health` - Health check
 
 ## WebSocket Events
 
 ### Client → Server
+
 - `auth` - Authenticate connection
 - `subscribe` - Subscribe to transfer updates
 - `unsubscribe` - Unsubscribe from transfer
 
 ### Server → Client
+
 - `connected` - Connection established
 - `transfer:update` - Transfer status update
 - `transport:error` - Transport error notification
@@ -100,6 +117,7 @@ src/
 ## Storage
 
 Documents are stored locally at `~/.firmasign/` (configurable):
+
 ```
 ~/.firmasign/
 ├── transfers/
@@ -115,6 +133,7 @@ Documents are stored locally at `~/.firmasign/` (configurable):
 See `.env.example` for all configuration options.
 
 Key variables:
+
 - `PORT` - Server port (default: 8080)
 - `STORAGE_PATH` - Local storage path
 - `LOG_LEVEL` - Logging level

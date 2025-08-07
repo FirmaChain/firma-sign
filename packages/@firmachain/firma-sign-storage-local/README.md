@@ -37,10 +37,10 @@ const storage = new LocalStorage();
 
 // Initialize with configuration
 await storage.initialize({
-  basePath: '~/.firmasign/storage',  // Supports tilde expansion
-  maxFileSize: 100 * 1024 * 1024,    // 100MB limit
-  ensureDirectories: true,            // Auto-create directories
-  useChecksum: true                   // Generate SHA-256 hashes
+	basePath: '~/.firmasign/storage', // Supports tilde expansion
+	maxFileSize: 100 * 1024 * 1024, // 100MB limit
+	ensureDirectories: true, // Auto-create directories
+	useChecksum: true, // Generate SHA-256 hashes
 });
 
 // Save a document
@@ -69,10 +69,10 @@ await storage.shutdown();
 
 ```typescript
 interface LocalStorageConfig {
-  basePath?: string;           // Base directory for storage (default: ~/.firmasign/storage)
-  maxFileSize?: number;        // Maximum file size in bytes (default: 100MB)
-  ensureDirectories?: boolean; // Auto-create directories (default: true)
-  useChecksum?: boolean;       // Generate checksums for files (default: true)
+	basePath?: string; // Base directory for storage (default: ~/.firmasign/storage)
+	maxFileSize?: number; // Maximum file size in bytes (default: 100MB)
+	ensureDirectories?: boolean; // Auto-create directories (default: true)
+	useChecksum?: boolean; // Generate checksums for files (default: true)
 }
 ```
 
@@ -81,26 +81,26 @@ interface LocalStorageConfig {
 ```typescript
 // Development configuration
 await storage.initialize({
-  basePath: './dev-storage',
-  maxFileSize: 50 * 1024 * 1024,  // 50MB
-  ensureDirectories: true,
-  useChecksum: true
+	basePath: './dev-storage',
+	maxFileSize: 50 * 1024 * 1024, // 50MB
+	ensureDirectories: true,
+	useChecksum: true,
 });
 
 // Production configuration
 await storage.initialize({
-  basePath: '/var/firma-sign/storage',
-  maxFileSize: 500 * 1024 * 1024,  // 500MB
-  ensureDirectories: true,
-  useChecksum: true
+	basePath: '/var/firma-sign/storage',
+	maxFileSize: 500 * 1024 * 1024, // 500MB
+	ensureDirectories: true,
+	useChecksum: true,
 });
 
 // Testing configuration
 await storage.initialize({
-  basePath: '/tmp/firma-sign-test',
-  maxFileSize: 10 * 1024 * 1024,   // 10MB
-  ensureDirectories: true,
-  useChecksum: false  // Skip checksums for speed
+	basePath: '/tmp/firma-sign-test',
+	maxFileSize: 10 * 1024 * 1024, // 10MB
+	ensureDirectories: true,
+	useChecksum: false, // Skip checksums for speed
 });
 ```
 
@@ -109,48 +109,61 @@ await storage.initialize({
 ### Core Methods
 
 #### `initialize(config: LocalStorageConfig): Promise<void>`
+
 Initialize the storage backend with configuration.
 
 #### `save(path: string, data: Buffer | Readable): Promise<StorageResult>`
+
 Save data to the specified path. Supports both Buffer and Stream inputs.
 
 #### `read(path: string): Promise<Buffer>`
+
 Read file content as a Buffer.
 
 #### `readStream(path: string): Promise<Readable>`
+
 Read file content as a Stream for efficient large file handling.
 
 #### `exists(path: string): Promise<boolean>`
+
 Check if a file or directory exists.
 
 #### `delete(path: string): Promise<void>`
+
 Delete a file or directory (recursively for directories).
 
 #### `list(prefix: string): Promise<StorageEntry[]>`
+
 List files and directories at the specified path.
 
 ### Directory Operations
 
 #### `createDirectory(path: string): Promise<void>`
+
 Create a directory (creates parent directories if needed).
 
 ### Metadata Operations
 
 #### `getMetadata(path: string): Promise<StorageMetadata>`
+
 Retrieve metadata for a file.
 
 #### `setMetadata(path: string, metadata: StorageMetadata): Promise<void>`
+
 Set metadata for a file.
 
 ### Storage Information
 
 #### `getStatus(): StorageStatus`
+
 Get current storage status and configuration.
 
 #### `getUsage(): Promise<StorageUsage>`
+
 Get storage usage statistics including file count and total size.
 
 #### `validateConfig(config: unknown): boolean`
+
 Validate configuration object.
 
 ## Storage Structure
@@ -177,24 +190,26 @@ When checksums are enabled, metadata files are automatically created:
 
 ```json
 {
-  "hash": "sha256:abcd1234...",
-  "size": 1024000,
-  "timestamp": 1234567890000
+	"hash": "sha256:abcd1234...",
+	"size": 1024000,
+	"timestamp": 1234567890000
 }
 ```
 
 ## Security Features
 
 ### Path Traversal Protection
+
 The storage implementation prevents path traversal attacks:
 
 ```typescript
 // These will throw errors:
-await storage.save('../../../etc/passwd', data);  // ❌ Blocked
-await storage.read('../../sensitive/file');       // ❌ Blocked
+await storage.save('../../../etc/passwd', data); // ❌ Blocked
+await storage.read('../../sensitive/file'); // ❌ Blocked
 ```
 
 ### Checksum Verification
+
 Automatic SHA-256 hash generation for integrity verification:
 
 ```typescript
@@ -226,23 +241,23 @@ The storage uses typed errors from `@firmachain/firma-sign-core`:
 import { StorageError, StorageErrorCodes } from '@firmachain/firma-sign-core';
 
 try {
-  await storage.read('non-existent.pdf');
+	await storage.read('non-existent.pdf');
 } catch (error) {
-  if (error instanceof StorageError) {
-    switch (error.code) {
-      case StorageErrorCodes.NOT_FOUND:
-        console.log('File not found');
-        break;
-      case StorageErrorCodes.PERMISSION_DENIED:
-        console.log('Permission denied');
-        break;
-      case StorageErrorCodes.FILE_TOO_LARGE:
-        console.log('File too large');
-        break;
-      default:
-        console.log('Storage error:', error.message);
-    }
-  }
+	if (error instanceof StorageError) {
+		switch (error.code) {
+			case StorageErrorCodes.NOT_FOUND:
+				console.log('File not found');
+				break;
+			case StorageErrorCodes.PERMISSION_DENIED:
+				console.log('Permission denied');
+				break;
+			case StorageErrorCodes.FILE_TOO_LARGE:
+				console.log('File too large');
+				break;
+			default:
+				console.log('Storage error:', error.message);
+		}
+	}
 }
 ```
 
@@ -269,14 +284,12 @@ console.log('Transfer files:', files);
 ```typescript
 // Save multiple documents
 const documents = [
-  { path: 'batch/doc1.pdf', data: buffer1 },
-  { path: 'batch/doc2.pdf', data: buffer2 },
-  { path: 'batch/doc3.pdf', data: buffer3 }
+	{ path: 'batch/doc1.pdf', data: buffer1 },
+	{ path: 'batch/doc2.pdf', data: buffer2 },
+	{ path: 'batch/doc3.pdf', data: buffer3 },
 ];
 
-const results = await Promise.all(
-  documents.map(doc => storage.save(doc.path, doc.data))
-);
+const results = await Promise.all(documents.map((doc) => storage.save(doc.path, doc.data)));
 
 // Get storage usage
 const usage = await storage.getUsage();
@@ -289,12 +302,12 @@ console.log(`Files: ${usage.fileCount}, Size: ${usage.used} bytes`);
 // Save document with metadata
 await storage.save('document.pdf', documentData);
 await storage.setMetadata('document.pdf', {
-  contentType: 'application/pdf',
-  customMetadata: {
-    author: 'John Doe',
-    department: 'Legal',
-    confidentiality: 'high'
-  }
+	contentType: 'application/pdf',
+	customMetadata: {
+		author: 'John Doe',
+		department: 'Legal',
+		confidentiality: 'high',
+	},
 });
 
 // Retrieve metadata
@@ -363,15 +376,21 @@ import { LocalStorage } from '@firmachain/firma-sign-storage-local';
 
 const storage = new LocalStorage();
 await storage.initialize({
-  basePath: process.env.STORAGE_PATH || '~/.firmasign/storage'
+	basePath: process.env.STORAGE_PATH || '~/.firmasign/storage',
 });
 
 // Use storage in your server
 app.post('/upload', async (req, res) => {
-  const result = await storage.save(`uploads/${filename}`, fileData);
-  res.json({ success: true, path: result.path, hash: result.hash });
+	const result = await storage.save(`uploads/${filename}`, fileData);
+	res.json({ success: true, path: result.path, hash: result.hash });
 });
 ```
+
+## Documentation
+
+- [API Reference](./docs/API.md) - Detailed API documentation
+- [Architecture](./docs/ARCHITECTURE.md) - Storage architecture and design
+- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
 
 ## License
 

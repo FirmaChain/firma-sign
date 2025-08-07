@@ -22,18 +22,18 @@ The main interface that all transport implementations must follow:
 import { Transport } from '@firmachain/firma-sign-core';
 
 class MyTransport implements Transport {
-  name = 'my-transport';
-  version = '1.0.0';
-  
-  async initialize(config: TransportConfig): Promise<void> {
-    // Initialize your transport
-  }
-  
-  async send(transfer: OutgoingTransfer): Promise<TransferResult> {
-    // Implement sending logic
-  }
-  
-  // ... other required methods
+	name = 'my-transport';
+	version = '1.0.0';
+
+	async initialize(config: TransportConfig): Promise<void> {
+		// Initialize your transport
+	}
+
+	async send(transfer: OutgoingTransfer): Promise<TransferResult> {
+		// Implement sending logic
+	}
+
+	// ... other required methods
 }
 ```
 
@@ -43,12 +43,12 @@ class MyTransport implements Transport {
 import { Document, SignedDocument } from '@firmachain/firma-sign-core';
 
 const document: Document = {
-  id: 'doc123',
-  fileName: 'contract.pdf',
-  fileSize: 1024000,
-  mimeType: 'application/pdf',
-  hash: 'sha256hash...',
-  data: 'base64EncodedData'
+	id: 'doc123',
+	fileName: 'contract.pdf',
+	fileSize: 1024000,
+	mimeType: 'application/pdf',
+	hash: 'sha256hash...',
+	data: 'base64EncodedData',
 };
 ```
 
@@ -57,43 +57,43 @@ const document: Document = {
 For documents with form fields and signature components:
 
 ```typescript
-import { 
-  DocumentComponent,
-  prepareDocumentForExport,
-  DocumentExport 
+import {
+	DocumentComponent,
+	prepareDocumentForExport,
+	DocumentExport,
 } from '@firmachain/firma-sign-core';
 
 // Components from the frontend editor (like sample-components.json)
 const components: DocumentComponent[] = [
-  {
-    id: 'comp-1',
-    type: 'SIGNATURE',
-    pageNumber: 0,
-    position: { x: 120, y: 250 },
-    size: { width: 180, height: 70 },
-    assigned: {
-      email: 'alice@example.com',
-      name: 'Alice Johnson',
-      color: '#3b82f6'
-    },
-    config: { required: true }
-  }
+	{
+		id: 'comp-1',
+		type: 'SIGNATURE',
+		pageNumber: 0,
+		position: { x: 120, y: 250 },
+		size: { width: 180, height: 70 },
+		assigned: {
+			email: 'alice@example.com',
+			name: 'Alice Johnson',
+			color: '#3b82f6',
+		},
+		config: { required: true },
+	},
 ];
 
 // Prepare document for sending
 const exportData: DocumentExport = prepareDocumentForExport(
-  pdfData, // Uint8Array or base64 string
-  components,
-  {
-    fileName: 'contract.pdf',
-    fileSize: 1024000,
-    pageCount: 2,
-    title: 'Service Agreement'
-  },
-  {
-    deadline: new Date('2024-12-31'),
-    requireAllSigners: true
-  }
+	pdfData, // Uint8Array or base64 string
+	components,
+	{
+		fileName: 'contract.pdf',
+		fileSize: 1024000,
+		pageCount: 2,
+		title: 'Service Agreement',
+	},
+	{
+		deadline: new Date('2024-12-31'),
+		requireAllSigners: true,
+	},
 );
 ```
 
@@ -103,20 +103,22 @@ const exportData: DocumentExport = prepareDocumentForExport(
 import { OutgoingTransfer, IncomingTransfer } from '@firmachain/firma-sign-core';
 
 const transfer: OutgoingTransfer = {
-  transferId: 'transfer123',
-  documents: [document],
-  recipients: [{
-    id: 'recipient1',
-    identifier: 'user@example.com',
-    name: 'John Doe'
-  }],
-  sender: {
-    senderId: 'sender123',
-    name: 'Alice Smith',
-    transport: 'email',
-    timestamp: new Date(),
-    verificationStatus: 'verified'
-  }
+	transferId: 'transfer123',
+	documents: [document],
+	recipients: [
+		{
+			id: 'recipient1',
+			identifier: 'user@example.com',
+			name: 'John Doe',
+		},
+	],
+	sender: {
+		senderId: 'sender123',
+		name: 'Alice Smith',
+		transport: 'email',
+		timestamp: new Date(),
+		verificationStatus: 'verified',
+	},
 };
 ```
 
@@ -159,7 +161,7 @@ import { isValidEmail, isValidTransferId, generateTransferId } from '@firmachain
 
 // Validate email
 if (isValidEmail('user@example.com')) {
-  // Valid email
+	// Valid email
 }
 
 // Generate valid transfer ID
@@ -169,11 +171,11 @@ const transferId = generateTransferId();
 ### Document Preparation Utilities
 
 ```typescript
-import { 
-  extractSigners,
-  getComponentsForSigner,
-  getSigningProgress,
-  validateSignedComponents 
+import {
+	extractSigners,
+	getComponentsForSigner,
+	getSigningProgress,
+	validateSignedComponents,
 } from '@firmachain/firma-sign-core';
 
 // Extract unique signers from components
@@ -189,7 +191,7 @@ console.log(`${progress.percentage}% complete`);
 // Validate all required components are signed
 const validation = validateSignedComponents(preparedDoc, signedComponents);
 if (!validation.valid) {
-  console.log('Missing signatures:', validation.missing);
+	console.log('Missing signatures:', validation.missing);
 }
 ```
 
@@ -201,22 +203,22 @@ The main interface that all storage implementations must follow:
 import { Storage } from '@firmachain/firma-sign-core';
 
 class MyStorage implements Storage {
-  name = 'my-storage';
-  version = '1.0.0';
-  
-  async initialize(config: StorageConfig): Promise<void> {
-    // Initialize your storage backend
-  }
-  
-  async save(path: string, data: Buffer): Promise<StorageResult> {
-    // Implement save logic
-  }
-  
-  async read(path: string): Promise<Buffer> {
-    // Implement read logic
-  }
-  
-  // ... other required methods
+	name = 'my-storage';
+	version = '1.0.0';
+
+	async initialize(config: StorageConfig): Promise<void> {
+		// Initialize your storage backend
+	}
+
+	async save(path: string, data: Buffer): Promise<StorageResult> {
+		// Implement save logic
+	}
+
+	async read(path: string): Promise<Buffer> {
+		// Implement read logic
+	}
+
+	// ... other required methods
 }
 ```
 
@@ -225,45 +227,47 @@ class MyStorage implements Storage {
 To create your own transport implementation:
 
 1. Install the core package:
+
 ```bash
 npm install @firmachain/firma-sign-core
 ```
 
 2. Implement the Transport interface:
+
 ```typescript
-import { 
-  Transport, 
-  TransportCapabilities,
-  OutgoingTransfer,
-  TransferResult 
+import {
+	Transport,
+	TransportCapabilities,
+	OutgoingTransfer,
+	TransferResult,
 } from '@firmachain/firma-sign-core';
 
 export class CustomTransport implements Transport {
-  name = 'custom';
-  version = '1.0.0';
-  
-  capabilities: TransportCapabilities = {
-    maxFileSize: 50 * 1024 * 1024, // 50MB
-    supportsBatch: true,
-    supportsEncryption: true,
-    supportsNotifications: false,
-    supportsResume: false,
-    requiredConfig: ['apiKey', 'endpoint']
-  };
+	name = 'custom';
+	version = '1.0.0';
 
-  async initialize(config: any): Promise<void> {
-    // Your initialization logic
-  }
+	capabilities: TransportCapabilities = {
+		maxFileSize: 50 * 1024 * 1024, // 50MB
+		supportsBatch: true,
+		supportsEncryption: true,
+		supportsNotifications: false,
+		supportsResume: false,
+		requiredConfig: ['apiKey', 'endpoint'],
+	};
 
-  async send(transfer: OutgoingTransfer): Promise<TransferResult> {
-    // Your sending logic
-    return {
-      success: true,
-      transferId: transfer.transferId
-    };
-  }
+	async initialize(config: any): Promise<void> {
+		// Your initialization logic
+	}
 
-  // Implement other required methods...
+	async send(transfer: OutgoingTransfer): Promise<TransferResult> {
+		// Your sending logic
+		return {
+			success: true,
+			transferId: transfer.transferId,
+		};
+	}
+
+	// Implement other required methods...
 }
 ```
 
@@ -274,53 +278,55 @@ export class CustomTransport implements Transport {
 To create your own storage implementation:
 
 1. Install the core package:
+
 ```bash
 npm install @firmachain/firma-sign-core
 ```
 
 2. Implement the Storage interface:
+
 ```typescript
-import { 
-  Storage, 
-  StorageCapabilities,
-  StorageResult,
-  StorageEntry 
+import {
+	Storage,
+	StorageCapabilities,
+	StorageResult,
+	StorageEntry,
 } from '@firmachain/firma-sign-core';
 
 export class CustomStorage implements Storage {
-  name = 'custom';
-  version = '1.0.0';
-  
-  capabilities: StorageCapabilities = {
-    maxFileSize: 1024 * 1024 * 1024, // 1GB
-    supportsStreaming: true,
-    supportsMetadata: true,
-    supportsVersioning: false,
-    supportsEncryption: true,
-    supportsConcurrentAccess: true,
-    supportsDirectoryListing: true,
-    requiredConfig: ['endpoint', 'apiKey']
-  };
+	name = 'custom';
+	version = '1.0.0';
 
-  async initialize(config: any): Promise<void> {
-    // Your initialization logic
-  }
+	capabilities: StorageCapabilities = {
+		maxFileSize: 1024 * 1024 * 1024, // 1GB
+		supportsStreaming: true,
+		supportsMetadata: true,
+		supportsVersioning: false,
+		supportsEncryption: true,
+		supportsConcurrentAccess: true,
+		supportsDirectoryListing: true,
+		requiredConfig: ['endpoint', 'apiKey'],
+	};
 
-  async save(path: string, data: Buffer | Readable): Promise<StorageResult> {
-    // Your save logic
-    return {
-      success: true,
-      path: path,
-      size: data.length,
-      timestamp: Date.now()
-    };
-  }
+	async initialize(config: any): Promise<void> {
+		// Your initialization logic
+	}
 
-  async read(path: string): Promise<Buffer> {
-    // Your read logic
-  }
+	async save(path: string, data: Buffer | Readable): Promise<StorageResult> {
+		// Your save logic
+		return {
+			success: true,
+			path: path,
+			size: data.length,
+			timestamp: Date.now(),
+		};
+	}
 
-  // Implement other required methods...
+	async read(path: string): Promise<Buffer> {
+		// Your read logic
+	}
+
+	// Implement other required methods...
 }
 ```
 
@@ -353,6 +359,12 @@ MIT © FirmaChain
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Documentation
+
+- [API Reference](./docs/API.md) - Detailed API documentation
+- [Architecture](./docs/ARCHITECTURE.md) - Package architecture
+- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
 
 ## Links
 
