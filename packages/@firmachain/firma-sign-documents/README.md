@@ -16,16 +16,11 @@ npm install @firmachain/firma-sign-documents
 import { Editor } from '@firmachain/firma-sign-documents';
 
 function App() {
-  const handleExport = (data) => {
-    console.log('Exported document:', data);
-  };
+	const handleExport = (data) => {
+		console.log('Exported document:', data);
+	};
 
-  return (
-    <Editor
-      mode="edit"
-      onExport={handleExport}
-    />
-  );
+	return <Editor mode="edit" onExport={handleExport} />;
 }
 ```
 
@@ -42,9 +37,11 @@ function App() {
 ## Main Components
 
 ### Editor
+
 The main editor component for document editing and viewing.
 
 ### Document Components
+
 - SignatureComponent
 - TextComponent
 - CheckboxComponent
@@ -53,6 +50,7 @@ The main editor component for document editing and viewing.
 - And more...
 
 ### Supporting Components
+
 - ComponentsPanel
 - PanelManager
 - ZoomBar
@@ -60,12 +58,9 @@ The main editor component for document editing and viewing.
 
 ## Documentation
 
-- [API Reference](./API.md) - Detailed component APIs
-- [Architecture](./ARCHITECTURE.md) - Technical architecture
-- [Development](./DEVELOPMENT.md) - Development guide
-- [Editor Guide](./EDITOR.md) - Using the editor
-- [Export Setup](./EXPORT_SETUP.md) - Export configuration
-- [Troubleshooting](./EDITOR-TROUBLESHOOTING.md) - Common issues
+- [API Reference](./docs/API.md) - Detailed component APIs
+- [Architecture](./docs/ARCHITECTURE.md) - Technical architecture
+- [Development](./docs/DEVELOPMENT.md) - Development guide
 
 ## Browser Support
 

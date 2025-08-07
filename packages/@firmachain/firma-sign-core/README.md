@@ -364,7 +364,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - [API Reference](./docs/API.md) - Detailed API documentation
 - [Architecture](./docs/ARCHITECTURE.md) - Package architecture
-- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
 
 ## Links
 

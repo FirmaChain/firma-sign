@@ -71,11 +71,6 @@ transport.receive({
 
 - [API Reference](./docs/API.md)
 - [Architecture](./docs/ARCHITECTURE.md)
-- [Development Guide](./docs/DEVELOPMENT.md)
-- [Configuration](./docs/CONFIGURATION.md)
-- [Troubleshooting](./docs/TROUBLESHOOTING.md)
-- [Connection Scenarios](./docs/CONNECTION-SCENARIOS.md)
-- [Connection Workaround](./docs/CONNECTION-WORKAROUND.md)
 
 ## License
 

@@ -390,7 +390,6 @@ app.post('/upload', async (req, res) => {
 
 - [API Reference](./docs/API.md) - Detailed API documentation
 - [Architecture](./docs/ARCHITECTURE.md) - Storage architecture and design
-- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
 
 ## License
 

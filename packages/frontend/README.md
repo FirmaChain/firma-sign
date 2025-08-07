@@ -137,6 +137,13 @@ The frontend connects to the backend server for:
 - WebSocket real-time updates
 - Authentication and sessions
 
+## Documentation
+
+- [Architecture](./docs/ARCHITECTURE.md) - Frontend architecture design
+- [Components](./docs/COMPONENTS.md) - Component structure and hierarchy
+- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
+- [React 19 Features](./docs/REACT-19-FEATURES.md) - React 19 specific features
+
 ## Contributing
 
 1. Follow the TypeScript and React best practices

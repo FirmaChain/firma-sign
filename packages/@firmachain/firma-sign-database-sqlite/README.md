@@ -250,7 +250,6 @@ pnpm type-check
 
 - [API Reference](./docs/API.md) - Detailed API documentation
 - [Architecture](./docs/ARCHITECTURE.md) - Database architecture and design
-- [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
 
 ## License
 
