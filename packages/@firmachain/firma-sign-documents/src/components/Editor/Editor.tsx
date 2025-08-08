@@ -1,3 +1,6 @@
+// Import and configure PDF worker before anything else
+import '../../pdf-worker';
+
 import { useCallback, useLayoutEffect, useRef, forwardRef, type ComponentProps } from 'react';
 import { Document, Page as ReactPdfPage } from 'react-pdf';
 import { cn } from '../../utils/cn';
@@ -15,7 +18,6 @@ import { ErrorComponent } from './Components/ErrorComponent';
 import { ZoomBar } from './Components/ZoomBar';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import '../../pdf-worker';
 
 // DocumentArea component with Tailwind styling
 const DocumentArea = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
@@ -137,7 +139,8 @@ const EditorInner = forwardRef<HTMLDivElement, EditorProps>(
 			return () => {
 				clearTimeout(timeoutId);
 			};
-		}, [panelManager, pdfManager.$DocumentArea]); // Empty dependency array - runs only once on mount
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		}, []); // Empty dependency array - runs only once on mount
 
 		// Panel management handlers
 		const handleLeftPanelPositionChange = useCallback(

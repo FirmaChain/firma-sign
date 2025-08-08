@@ -127,3 +127,6 @@ temp/
 # Claude Code context files
 .claude-context/
 CLAUDE.md 
+
+# Storybook
+storybook-static/

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type FC, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useMemo, type FC, type ReactNode } from 'react';
 import { FloatingPanelPosition, PanelPosition } from './FloatingPanel';
 
 // Calculate smart default positions that work within typical container sizes
@@ -164,7 +164,7 @@ export const PanelManagerProvider: FC<PanelManagerProviderProps> = ({ children, 
 		});
 	}, []);
 
-	const value: PanelManagerContextType = {
+	const value: PanelManagerContextType = useMemo(() => ({
 		state,
 		updateLeftPanel,
 		updateRightPanel,
@@ -172,7 +172,15 @@ export const PanelManagerProvider: FC<PanelManagerProviderProps> = ({ children, 
 		toggleRightPanel,
 		resetPanels,
 		adjustPanelsToContainer,
-	};
+	}), [
+		state,
+		updateLeftPanel,
+		updateRightPanel,
+		toggleLeftPanel,
+		toggleRightPanel,
+		resetPanels,
+		adjustPanelsToContainer,
+	]);
 
 	return <PanelManagerContext.Provider value={value}>{children}</PanelManagerContext.Provider>;
 };

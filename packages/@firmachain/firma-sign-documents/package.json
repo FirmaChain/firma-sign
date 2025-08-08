@@ -15,15 +15,16 @@
 	},
 	"scripts": {
 		"build": "vite build",
-		"dev": "storybook dev -p 6006",
+		"dev": "pnpm pre-storybook && storybook dev -p 6006",
+		"pre-storybook": "node scripts/pre-storybook.cjs",
 		"test": "vitest",
 		"test:watch": "vitest --watch",
 		"lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
 		"lintfix": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",
 		"format": "prettier --write src/**/*.{ts,tsx}",
 		"format:check": "prettier --check src/**/*.{ts,tsx}",
-		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"storybook": "pnpm pre-storybook && storybook dev -p 6006",
+		"build-storybook": "pnpm pre-storybook && storybook build"
 	},
 	"dependencies": {
 		"clsx": "^2.1.0",
