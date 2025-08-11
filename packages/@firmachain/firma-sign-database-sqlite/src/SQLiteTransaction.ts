@@ -55,15 +55,19 @@ export class SQLiteTransaction implements Transaction {
 
   async execute<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
     try {
-      // Use better-sqlite3's transaction mechanism
-      const transaction = this.db.transaction(async () => {
-        return await fn(this);
-      });
+      // better-sqlite3 transactions are synchronous, but we need to support async operations
+      // We'll use the immediate mode to ensure atomicity
+      this.db.exec('BEGIN IMMEDIATE');
       
-      // Execute the transaction
-      const result = await transaction();
-      this.isActive = false;
-      return result;
+      try {
+        const result = await fn(this);
+        this.db.exec('COMMIT');
+        this.isActive = false;
+        return result;
+      } catch (error) {
+        this.db.exec('ROLLBACK');
+        throw error;
+      }
     } catch (error) {
       this.isActive = false;
       

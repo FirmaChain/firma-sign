@@ -148,8 +148,9 @@ describe('TransferRepository', () => {
       const original = await repository.findById('transfer-1');
       const originalUpdatedAt = original?.updatedAt;
 
-      // Wait a bit to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 10));
+      // Wait at least 1 second to ensure timestamp difference
+      // (SQLite stores timestamps as Unix seconds, not milliseconds)
+      await new Promise(resolve => setTimeout(resolve, 1100));
 
       const updated = await repository.update('transfer-1', {
         status: 'completed'

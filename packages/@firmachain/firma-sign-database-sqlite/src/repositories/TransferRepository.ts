@@ -12,10 +12,10 @@ export class TransferRepository extends SQLiteRepository<TransferEntity> {
       id: row.id as string,
       type: row.type as 'incoming' | 'outgoing',
       status: row.status as string,
-      senderId: row.sender_id as string | undefined,
-      senderName: row.sender_name as string | undefined,
-      senderEmail: row.sender_email as string | undefined,
-      senderPublicKey: row.sender_public_key as string | undefined,
+      senderId: row.sender_id === null ? undefined : row.sender_id as string,
+      senderName: row.sender_name === null ? undefined : row.sender_name as string,
+      senderEmail: row.sender_email === null ? undefined : row.sender_email as string,
+      senderPublicKey: row.sender_public_key === null ? undefined : row.sender_public_key as string,
       transportType: row.transport_type as string,
       transportConfig: this.deserializeValue(row.transport_config, 'json'),
       metadata: this.deserializeValue(row.metadata, 'json'),
@@ -29,6 +29,7 @@ export class TransferRepository extends SQLiteRepository<TransferEntity> {
     
     if (entity.id !== undefined) row.id = entity.id;
     if (entity.type !== undefined) row.type = entity.type;
+    // Status has a default value in the database, so only set if provided
     if (entity.status !== undefined) row.status = entity.status;
     if (entity.senderId !== undefined) row.sender_id = entity.senderId;
     if (entity.senderName !== undefined) row.sender_name = entity.senderName;

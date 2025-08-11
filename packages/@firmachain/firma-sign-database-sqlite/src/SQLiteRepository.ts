@@ -92,10 +92,12 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
   }
 
   async create(data: Partial<T>): Promise<T> {
+    const now = new Date();
     const entity = {
       ...data,
       id: (data as any).id || nanoid(),
-      createdAt: new Date()
+      createdAt: (data as any).createdAt || now,
+      updatedAt: (data as any).updatedAt || now
     };
 
     const row = this.mapEntityToRow(entity);
@@ -108,7 +110,8 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     
     try {
       stmt.run(...values);
-      return this.mapRowToEntity(row);
+      // Fetch the created entity from the database to ensure proper data types
+      return await this.findById(entity.id as string) as T;
     } catch (error) {
       throw createDatabaseError(
         `Failed to create entity in ${this.tableName}`,
@@ -129,7 +132,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
       ...existing,
       ...data,
       id, // Ensure ID doesn't change
-      updatedAt: new Date()
+      updatedAt: (data as any).updatedAt || new Date()
     };
 
     const row = this.mapEntityToRow(updated);
@@ -147,7 +150,8 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     try {
       const result = stmt.run(...values);
       if (result.changes > 0) {
-        return this.mapRowToEntity(row);
+        // Fetch the updated entity from the database to ensure proper data types
+        return await this.findById(id);
       }
       return null;
     } catch (error) {
@@ -254,10 +258,12 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   // Helper method for synchronous creation (used in transactions)
   protected createSync(data: Partial<T>): T {
+    const now = new Date();
     const entity = {
       ...data,
       id: (data as any).id || nanoid(),
-      createdAt: new Date()
+      createdAt: (data as any).createdAt || now,
+      updatedAt: (data as any).updatedAt || now
     };
 
     const row = this.mapEntityToRow(entity);
@@ -269,7 +275,10 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     const stmt = this.db.prepare(query);
     stmt.run(...values);
     
-    return this.mapRowToEntity(row);
+    // Fetch the created entity from the database to ensure proper data types
+    const getStmt = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE id = ?`);
+    const result = getStmt.get(entity.id);
+    return this.mapRowToEntity(result as Record<string, unknown>);
   }
 
   // Abstract methods to be implemented by specific repositories
@@ -292,6 +301,9 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
   }
 
   protected deserializeValue(value: any, type?: string): any {
+    if (value === null) {
+      return undefined;
+    }
     if (type === 'date' && typeof value === 'number') {
       return new Date(value * 1000);
     }
@@ -299,7 +311,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
       try {
         return JSON.parse(value);
       } catch {
-        return null;
+        return undefined;
       }
     }
     return value;
