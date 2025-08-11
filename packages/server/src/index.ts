@@ -12,6 +12,10 @@ import { createTransferRoutes } from './api/routes/transfers.js';
 import { createAuthRoutes } from './api/routes/auth.js';
 import { createBlockchainRoutes } from './api/routes/blockchain.js';
 import { validateSession } from './api/routes/auth.js';
+import { createDocumentRoutes } from './api/routes/documents.js';
+import { DocumentService } from './services/DocumentService.js';
+import { SQLiteDatabase } from '@firmachain/firma-sign-database-sqlite';
+import { MockLocalStorage } from './storage/MockLocalStorage.js';
 import { logger } from './utils/logger.js';
 
 // Initialize configuration
@@ -34,9 +38,14 @@ async function initializeServer() {
 
     const { sessionSecret } = config.server;
 
+    // Initialize database and storage backends
+    const database = new SQLiteDatabase();
+    const localStorage = new MockLocalStorage();
+    
     // Initialize managers with configuration
     const transportManager = new TransportManager(configManager);
-    const storageManager = new StorageManager(configManager);
+    const storageManager = new StorageManager(configManager, database, localStorage);
+    const documentService = new DocumentService(configManager, localStorage, database);
     const wsServer = new WebSocketServer(httpServer, sessionSecret);
 
     // Set up WebSocket session validation
@@ -44,13 +53,19 @@ async function initializeServer() {
       return Promise.resolve(validateSession(sessionId) !== null);
     });
 
-    // Initialize transport and storage managers
+    // Initialize database first
+    await database.initialize({
+      database: `${config.storage.basePath}/firma-sign.db`
+    });
+    
+    // Initialize all services
     await Promise.all([
       transportManager.initialize(),
-      storageManager.initialize()
+      storageManager.initialize(),
+      documentService.initialize()
     ]);
 
-    return { app, httpServer, transportManager, storageManager, wsServer, config };
+    return { app, httpServer, transportManager, storageManager, documentService, wsServer, config, database };
   } catch (error) {
     logger.error('Failed to initialize server:', error);
     process.exit(1);
@@ -58,7 +73,7 @@ async function initializeServer() {
 }
 
 // Start server initialization and setup
-initializeServer().then(({ app, httpServer, transportManager, storageManager, wsServer, config }) => {
+initializeServer().then(({ app, httpServer, transportManager, storageManager, documentService, wsServer, config, database }) => {
   const { port, rateLimiting, corsOrigin } = config.server;
 
   // Middleware setup
@@ -79,6 +94,7 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, ws
   app.use('/api/transfers', createTransferRoutes(transportManager, storageManager));
   app.use('/api/auth', createAuthRoutes());
   app.use('/api/blockchain', createBlockchainRoutes());
+  app.use('/api/documents', createDocumentRoutes(documentService));
 
   // Transport availability endpoint
   app.get('/api/transports/available', (_req, res) => {
@@ -187,7 +203,9 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, ws
     // Shutdown all services
     await Promise.all([
       transportManager.shutdown(),
-      storageManager.close()
+      storageManager.close(),
+      documentService.close(),
+      database.shutdown()
     ]);
     
     wsServer.close();
