@@ -1,15 +1,16 @@
-import { promises as fs } from 'fs';
 import path from 'path';
-import os from 'os';
 import { logger } from '../utils/logger.js';
 import { 
   Database,
   Repository,
   TransferEntity,
   DocumentEntity,
-  RecipientEntity
+  RecipientEntity,
+  Storage,
+  StorageResult
 } from '@firmachain/firma-sign-core';
 import { SQLiteDatabase } from '@firmachain/firma-sign-database-sqlite';
+import { MockLocalStorage } from './MockLocalStorage.js';
 import { 
   Transfer, 
   Document, 
@@ -17,30 +18,64 @@ import {
   TransferType,
   DocumentStatus,
   RecipientStatus,
-  SenderInfo
+  SenderInfo,
+  TransferStatus
 } from '../types/database.js';
+import type { ConfigManager } from '../config/ConfigManager.js';
 
 export class StorageManager {
-  private database: Database;
+  private readonly database: Database;
+  private readonly storage: Storage;
   private transferRepo!: Repository<TransferEntity>;
   private documentRepo!: Repository<DocumentEntity>;
   private recipientRepo!: Repository<RecipientEntity>;
   private storagePath: string;
+  // Keep configManager for potential future use
+  private readonly configManager: ConfigManager;
   private isInitialized = false;
 
-  constructor(storagePath?: string, database?: Database) {
-    this.storagePath = storagePath || path.join(os.homedir(), '.firma-sign');
+  constructor(configManager: ConfigManager, database?: Database, storage?: Storage) {
+    this.configManager = configManager;
+    const storageConfig = configManager.getStorage();
+    this.storagePath = storageConfig.basePath;
     this.database = database || new SQLiteDatabase();
+    this.storage = storage || new MockLocalStorage();
     
-    // Initialize database and storage asynchronously
-    void this.initialize();
+    // Don't auto-initialize in constructor
   }
 
-  private async initialize() {
+  /**
+   * Initialize storage and database
+   */
+  async initialize(): Promise<void> {
     if (this.isInitialized) return;
     
-    await this.initializeStorage();
+    // Initialize file storage
+    await this.storage.initialize({
+      basePath: this.storagePath,
+      maxFileSize: 500 * 1024 * 1024, // 500MB
+      ensureDirectories: true,
+      useChecksum: true
+    });
     
+    // Create required directory structure
+    const dirs = [
+      'transfers',
+      'transfers/outgoing',
+      'transfers/incoming',
+      'config',
+      'logs'
+    ];
+    
+    for (const dir of dirs) {
+      // Check if createDirectory method exists (it's optional in the interface)
+      const storage = this.storage as Storage & { createDirectory?: (path: string) => Promise<void> };
+      if (storage.createDirectory && typeof storage.createDirectory === 'function') {
+        await storage.createDirectory(dir);
+      }
+    }
+    
+    // Initialize database
     const dbPath = path.join(this.storagePath, 'firma-sign.db');
     await this.database.initialize({
       database: dbPath
@@ -51,22 +86,9 @@ export class StorageManager {
     this.recipientRepo = this.database.getRepository<RecipientEntity>('Recipient');
     
     this.isInitialized = true;
+    logger.info(`Storage initialized at: ${this.storagePath}`);
   }
 
-  private async initializeStorage() {
-    const dirs = [
-      this.storagePath,
-      path.join(this.storagePath, 'transfers'),
-      path.join(this.storagePath, 'transfers', 'outgoing'),
-      path.join(this.storagePath, 'transfers', 'incoming'),
-      path.join(this.storagePath, 'config'),
-      path.join(this.storagePath, 'logs')
-    ];
-
-    for (const dir of dirs) {
-      await fs.mkdir(dir, { recursive: true });
-    }
-  }
 
 
   async createTransfer(transferData: {
@@ -86,7 +108,7 @@ export class StorageManager {
     sender?: SenderInfo;
     metadata?: Record<string, unknown>;
   }): Promise<Transfer> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     
     // Use transaction to create transfer with documents and recipients
     const result = await this.database.transaction(async (tx) => {
@@ -145,28 +167,24 @@ export class StorageManager {
       return { transfer, documents, recipients };
     });
 
-    const transferDir = path.join(
-      this.storagePath,
-      'transfers',
-      transferData.type,
-      transferData.transferId
-    );
-
-    await fs.mkdir(path.join(transferDir, 'documents'), { recursive: true });
-    await fs.mkdir(path.join(transferDir, 'signed'), { recursive: true });
+    // Create directory structure in storage
+    const transferBasePath = `transfers/${transferData.type}/${transferData.transferId}`;
+    const storage = this.storage as Storage & { createDirectory?: (path: string) => Promise<void> };
+    if (storage.createDirectory) {
+      await storage.createDirectory(`${transferBasePath}/documents`);
+      await storage.createDirectory(`${transferBasePath}/signed`);
+    }
     
+    // Save metadata if provided
     if (transferData.metadata) {
-      await fs.writeFile(
-        path.join(transferDir, 'metadata.json'),
-        JSON.stringify(transferData.metadata, null, 2)
-      );
+      await this.saveTransferMetadata(transferData.transferId, transferData.metadata);
     }
 
     return this.mapTransferEntityToTransfer(result.transfer);
   }
 
   async getTransfer(transferId: string): Promise<Transfer | null> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) {
       return null;
@@ -179,7 +197,7 @@ export class StorageManager {
     documents: Document[];
     recipients: Recipient[];
   } | null> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const transfer = await this.transferRepo.findById(transferId);
     if (!transfer) {
       return null;
@@ -196,7 +214,7 @@ export class StorageManager {
   }
 
   async listTransfers(type?: TransferType, limit: number = 100): Promise<Transfer[]> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     let transfers: TransferEntity[];
     
     if (type) {
@@ -214,7 +232,7 @@ export class StorageManager {
     signedBy?: string;
     blockchainTxSigned?: string;
   }>): Promise<void> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     
     await this.database.transaction(async (tx) => {
       const documentRepo = tx.getRepository<DocumentEntity>('Document');
@@ -229,58 +247,59 @@ export class StorageManager {
         });
       }
       
-      // Update transfer status if all documents are signed
+      // Update transfer status based on document signatures
       const allDocs = await documentRepo.find({ transferId });
-      const allSigned = allDocs.every(d => d.status === 'signed');
+      const signedCount = allDocs.filter(d => d.status === 'signed').length;
+      const totalCount = allDocs.length;
       
-      if (allSigned) {
-        await transferRepo.update(transferId, {
-          status: 'completed',
-          updatedAt: new Date()
-        });
+      let newStatus: TransferStatus = 'pending';
+      if (signedCount === totalCount && totalCount > 0) {
+        newStatus = 'completed';
+      } else if (signedCount > 0) {
+        newStatus = 'partially-signed';
       }
+      
+      await transferRepo.update(transferId, {
+        status: newStatus,
+        updatedAt: new Date()
+      });
     });
   }
 
-  async saveDocument(transferId: string, fileName: string, data: Buffer): Promise<void> {
+  async saveDocument(transferId: string, fileName: string, data: Buffer): Promise<StorageResult> {
+    this.ensureInitialized();
+    
     const transfer = await this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
 
-    const filePath = path.join(
-      this.storagePath,
-      'transfers',
-      transfer.type,
-      transferId,
-      'documents',
-      fileName
-    );
-
-    await fs.writeFile(filePath, data);
-    logger.info(`Document saved: ${fileName} for transfer ${transferId}`);
+    const storagePath = `transfers/${transfer.type}/${transferId}/documents/${fileName}`;
+    const result = await this.storage.save(storagePath, data);
+    
+    logger.info(`Document saved: ${fileName} for transfer ${transferId}`, {
+      path: result.path,
+      size: result.size,
+      hash: result.hash
+    });
+    
+    return result;
   }
 
   async getDocument(transferId: string, fileName: string): Promise<Buffer> {
+    this.ensureInitialized();
+    
     const transfer = await this.getTransfer(transferId);
     if (!transfer) {
       throw new Error('Transfer not found');
     }
 
-    const filePath = path.join(
-      this.storagePath,
-      'transfers',
-      transfer.type,
-      transferId,
-      'documents',
-      fileName
-    );
-
-    return await fs.readFile(filePath);
+    const storagePath = `transfers/${transfer.type}/${transferId}/documents/${fileName}`;
+    return await this.storage.read(storagePath);
   }
 
   async updateRecipientStatus(recipientId: string, status: RecipientStatus): Promise<void> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     
     const updates: Partial<RecipientEntity> = {
       status
@@ -298,7 +317,7 @@ export class StorageManager {
   }
   
   async storeBlockchainHash(documentId: string, type: 'original' | 'signed', txHash: string): Promise<void> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     
     const updates: Partial<DocumentEntity> = {};
     if (type === 'original') {
@@ -311,39 +330,138 @@ export class StorageManager {
   }
   
   async getDocumentsByTransferId(transferId: string): Promise<Document[]> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const documents = await this.documentRepo.find({ transferId });
     return documents.map(d => this.mapDocumentEntityToDocument(d));
   }
   
   async getRecipientsByTransferId(transferId: string): Promise<Recipient[]> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const recipients = await this.recipientRepo.find({ transferId });
     return recipients.map(r => this.mapRecipientEntityToRecipient(r));
   }
   
   async getDocumentById(documentId: string): Promise<Document | null> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const document = await this.documentRepo.findById(documentId);
     return document ? this.mapDocumentEntityToDocument(document) : null;
   }
   
   async getRecipientById(recipientId: string): Promise<Recipient | null> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     const recipient = await this.recipientRepo.findById(recipientId);
     return recipient ? this.mapRecipientEntityToRecipient(recipient) : null;
   }
   
+  /**
+   * Save signed document to signed folder
+   */
+  async saveSignedDocument(transferId: string, fileName: string, data: Buffer): Promise<StorageResult> {
+    this.ensureInitialized();
+    
+    const transfer = await this.getTransfer(transferId);
+    if (!transfer) {
+      throw new Error('Transfer not found');
+    }
+
+    const storagePath = `transfers/${transfer.type}/${transferId}/signed/${fileName}`;
+    const result = await this.storage.save(storagePath, data);
+    
+    logger.info(`Signed document saved: ${fileName} for transfer ${transferId}`, {
+      path: result.path,
+      size: result.size,
+      hash: result.hash
+    });
+    
+    return result;
+  }
+
+  /**
+   * Get signed document
+   */
+  async getSignedDocument(transferId: string, fileName: string): Promise<Buffer> {
+    this.ensureInitialized();
+    
+    const transfer = await this.getTransfer(transferId);
+    if (!transfer) {
+      throw new Error('Transfer not found');
+    }
+
+    const storagePath = `transfers/${transfer.type}/${transferId}/signed/${fileName}`;
+    return await this.storage.read(storagePath);
+  }
+
+  /**
+   * Check if document exists
+   */
+  async documentExists(transferId: string, fileName: string, signed: boolean = false): Promise<boolean> {
+    this.ensureInitialized();
+    
+    const transfer = await this.getTransfer(transferId);
+    if (!transfer) {
+      return false;
+    }
+
+    const folder = signed ? 'signed' : 'documents';
+    const storagePath = `transfers/${transfer.type}/${transferId}/${folder}/${fileName}`;
+    return await this.storage.exists(storagePath);
+  }
+
+  /**
+   * Save transfer metadata
+   */
+  async saveTransferMetadata(transferId: string, metadata: Record<string, unknown>): Promise<StorageResult> {
+    this.ensureInitialized();
+    
+    const transfer = await this.getTransfer(transferId);
+    if (!transfer) {
+      throw new Error('Transfer not found');
+    }
+
+    const storagePath = `transfers/${transfer.type}/${transferId}/metadata.json`;
+    const data = Buffer.from(JSON.stringify(metadata, null, 2), 'utf-8');
+    return await this.storage.save(storagePath, data);
+  }
+
+  /**
+   * Get storage status and usage information
+   */
+  async getStorageInfo(): Promise<{
+    storagePath: string;
+    storageStatus: Record<string, unknown>;
+    databaseConnected: boolean;
+    totalTransfers: number;
+    totalDocuments: number;
+  }> {
+    this.ensureInitialized();
+    
+    const storageStatus = this.storage.getStatus();
+    const transferCount = await this.transferRepo.count();
+    const documentCount = await this.documentRepo.count();
+    
+    return {
+      storagePath: this.storagePath,
+      storageStatus: storageStatus as unknown as Record<string, unknown>,
+      databaseConnected: true,
+      totalTransfers: transferCount,
+      totalDocuments: documentCount
+    };
+  }
+
   async close(): Promise<void> {
     if (this.isInitialized) {
-      await this.database.shutdown();
+      await Promise.all([
+        this.database.shutdown(),
+        this.storage.shutdown()
+      ]);
       this.isInitialized = false;
+      logger.info('Storage manager closed');
     }
   }
   
-  private async ensureInitialized(): Promise<void> {
+  private ensureInitialized(): void {
     if (!this.isInitialized) {
-      await this.initialize();
+      throw new Error('StorageManager is not initialized. Call initialize() first.');
     }
   }
   

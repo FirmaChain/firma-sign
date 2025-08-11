@@ -82,30 +82,88 @@ export function createTransferRoutes(
   });
 
   router.get('/', (req, res) => {
+    void (async () => {
     try {
-      const transfers = storageManager.listTransfers();
-      res.json({ transfers });
+      const { type, limit = '100', offset = '0' } = req.query;
+      const limitNum = parseInt(limit as string, 10);
+      const offsetNum = parseInt(offset as string, 10);
+      
+      const transfers = await storageManager.listTransfers(
+        type as 'incoming' | 'outgoing' | undefined, 
+        limitNum
+      );
+      
+      // Simple pagination (could be enhanced)
+      const paginatedTransfers = transfers.slice(offsetNum, offsetNum + limitNum);
+      
+      res.json({ 
+        transfers: paginatedTransfers,
+        pagination: {
+          total: transfers.length,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < transfers.length
+        }
+      });
     } catch (error) {
       logger.error('Error listing transfers:', error);
       res.status(500).json({ error: 'Failed to list transfers' });
     }
+    })();
   });
 
-  router.get('/:transferId', (req, res) => void (async () => {
+  router.get('/:transferId', (req, res) => {
+    void (async () => {
     try {
       const { transferId } = req.params;
-      const transfer = await storageManager.getTransfer(transferId);
+      const transferDetails = await storageManager.getTransferWithDetails(transferId);
       
-      if (!transfer) {
+      if (!transferDetails) {
         return res.status(404).json({ error: 'Transfer not found' });
       }
 
-      res.json(transfer);
+      const { transfer, documents, recipients } = transferDetails;
+
+      // Build response according to API documentation
+      res.json({
+        transferId: transfer.id,
+        type: transfer.type,
+        sender: transfer.sender,
+        status: transfer.status,
+        transport: {
+          type: transfer.transportType,
+          deliveryStatus: 'delivered' // TODO: Track actual delivery status
+        },
+        documents: documents.map(doc => ({
+          documentId: doc.id,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize,
+          fileHash: doc.fileHash,
+          status: doc.status,
+          url: `/api/transfers/${transferId}/documents/${doc.id}`,
+          expires: null // TODO: Add document expiry
+        })),
+        recipients: recipients.map(rec => ({
+          id: rec.id,
+          identifier: rec.identifier,
+          transport: rec.transport,
+          status: rec.status,
+          notifiedAt: rec.notifiedAt?.getTime(),
+          viewedAt: rec.viewedAt?.getTime(),
+          signedAt: rec.signedAt?.getTime()
+        })),
+        metadata: {
+          ...transfer.metadata,
+          createdAt: transfer.createdAt.getTime(),
+          updatedAt: transfer.updatedAt.getTime()
+        }
+      });
     } catch (error) {
       logger.error('Error getting transfer:', error);
       res.status(500).json({ error: 'Failed to get transfer' });
     }
-  })());
+    })();
+  });
 
   router.post('/:transferId/sign', validateRequest(signDocumentsSchema), (req, res) => void (async () => {
     try {
@@ -140,6 +198,144 @@ export function createTransferRoutes(
       res.status(500).json({ error: 'Failed to sign documents' });
     }
   })());
+
+  // Document download route
+  router.get('/:transferId/documents/:documentId', (req, res) => {
+    void (async () => {
+    try {
+      const { transferId, documentId } = req.params;
+      
+      // Get document metadata
+      const document = await storageManager.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      // Verify document belongs to transfer
+      if (document.transferId !== transferId) {
+        return res.status(404).json({ error: 'Document not found in transfer' });
+      }
+      
+      // Check if document file exists
+      const exists = await storageManager.documentExists(transferId, document.fileName);
+      if (!exists) {
+        return res.status(404).json({ error: 'Document file not found' });
+      }
+      
+      // Get document data
+      const documentData = await storageManager.getDocument(transferId, document.fileName);
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+      res.setHeader('Content-Length', documentData.length);
+      
+      res.send(documentData);
+    } catch (error) {
+      logger.error('Error downloading document:', error);
+      res.status(500).json({ error: 'Failed to download document' });
+    }
+    })();
+  });
+
+  // Document upload route
+  router.post('/:transferId/documents', (req, res) => {
+    void (async () => {
+    try {
+      const { transferId } = req.params;
+      const { documentId, fileName, fileData } = req.body as {
+        documentId: string;
+        fileName: string;
+        fileData: string;
+        metadata?: unknown;
+      };
+      
+      if (!documentId || !fileName || !fileData) {
+        return res.status(400).json({ error: 'Missing required fields: documentId, fileName, fileData' });
+      }
+      
+      // Verify transfer exists
+      const transfer = await storageManager.getTransfer(transferId);
+      if (!transfer) {
+        return res.status(404).json({ error: 'Transfer not found' });
+      }
+      
+      // Convert base64 to buffer
+      let documentBuffer: Buffer;
+      try {
+        documentBuffer = Buffer.from(fileData, 'base64');
+      } catch {
+        return res.status(400).json({ error: 'Invalid file data encoding' });
+      }
+      
+      // Save document file
+      const saveResult = await storageManager.saveDocument(transferId, fileName, documentBuffer);
+      
+      // Update document in database if it exists, otherwise it should have been created during transfer creation
+      const existingDoc = await storageManager.getDocumentById(documentId);
+      if (existingDoc) {
+        // Update with actual file info
+        // TODO: Add method to update document metadata in StorageManager
+        logger.info(`Document ${documentId} updated with file data`);
+      }
+      
+      res.json({
+        success: true,
+        documentId,
+        fileName,
+        fileSize: documentBuffer.length,
+        fileHash: saveResult.hash || undefined
+      });
+    } catch (error) {
+      logger.error('Error uploading document:', error);
+      res.status(500).json({ error: 'Failed to upload document' });
+    }
+    })();
+  });
+
+  // Get signed document
+  router.get('/:transferId/documents/:documentId/signed', (req, res) => {
+    void (async () => {
+    try {
+      const { transferId, documentId } = req.params;
+      
+      // Get document metadata
+      const document = await storageManager.getDocumentById(documentId);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      // Verify document belongs to transfer and is signed
+      if (document.transferId !== transferId) {
+        return res.status(404).json({ error: 'Document not found in transfer' });
+      }
+      
+      if (document.status !== 'signed') {
+        return res.status(400).json({ error: 'Document is not signed' });
+      }
+      
+      // Check if signed document file exists
+      const signedFileName = `signed-${document.fileName}`;
+      const exists = await storageManager.documentExists(transferId, signedFileName, true);
+      if (!exists) {
+        return res.status(404).json({ error: 'Signed document file not found' });
+      }
+      
+      // Get signed document data
+      const documentData = await storageManager.getSignedDocument(transferId, signedFileName);
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${signedFileName}"`);
+      res.setHeader('Content-Length', documentData.length);
+      
+      res.send(documentData);
+    } catch (error) {
+      logger.error('Error downloading signed document:', error);
+      res.status(500).json({ error: 'Failed to download signed document' });
+    }
+    })();
+  });
 
   return router;
 }

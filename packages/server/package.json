@@ -25,6 +25,7 @@
 	"dependencies": {
 		"@firmachain/firma-sign-core": "workspace:*",
 		"@firmachain/firma-sign-database-sqlite": "workspace:*",
+		"@firmachain/firma-sign-storage-local": "workspace:*",
 		"express": "catalog:",
 		"ws": "catalog:",
 		"cors": "catalog:",
@@ -35,7 +36,8 @@
 		"nanoid": "catalog:",
 		"zod": "catalog:",
 		"multer": "catalog:",
-		"express-rate-limit": "catalog:"
+		"express-rate-limit": "catalog:",
+		"jsonwebtoken": "catalog:"
 	},
 	"devDependencies": {
 		"@types/express": "catalog:",
@@ -44,9 +46,12 @@
 		"@types/node": "catalog:",
 		"@types/node-forge": "catalog:",
 		"@types/multer": "catalog:",
+		"@types/jsonwebtoken": "catalog:",
 		"typescript": "catalog:",
 		"tsx": "catalog:",
 		"vitest": "catalog:",
+		"supertest": "catalog:",
+		"@types/supertest": "catalog:",
 		"eslint": "catalog:",
 		"@eslint/js": "catalog:",
 		"typescript-eslint": "catalog:",

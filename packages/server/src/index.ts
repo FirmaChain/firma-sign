@@ -4,93 +4,220 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
+import { ConfigManager } from './config/ConfigManager.js';
 import { TransportManager } from './transport/TransportManager.js';
 import { StorageManager } from './storage/StorageManager.js';
 import { WebSocketServer } from './websocket/WebSocketServer.js';
 import { createTransferRoutes } from './api/routes/transfers.js';
 import { createAuthRoutes } from './api/routes/auth.js';
 import { createBlockchainRoutes } from './api/routes/blockchain.js';
+import { validateSession } from './api/routes/auth.js';
 import { logger } from './utils/logger.js';
 
-const app = express();
-const httpServer = createServer(app);
+// Initialize configuration
+const configManager = new ConfigManager();
 
-const PORT = parseInt(process.env.PORT || '8080', 10);
-const HOST = process.env.HOST || '0.0.0.0';
+async function initializeServer() {
+  try {
+    // Load configuration
+    await configManager.load();
+    const config = configManager.get();
+    
+    logger.info('Configuration loaded', {
+      port: config.server.port,
+      storage: config.storage.basePath,
+      transports: Object.keys(config.transports).filter(key => config.transports[key as keyof typeof config.transports])
+    });
 
-const transportManager = new TransportManager();
-const storageManager = new StorageManager(process.env.STORAGE_PATH);
-const wsServer = new WebSocketServer(httpServer);
+    const app = express();
+    const httpServer = createServer(app);
 
-app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true
-}));
-app.use(express.json({ limit: '50mb' }));
+    const { sessionSecret } = config.server;
 
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100')
-});
-app.use('/api', limiter);
+    // Initialize managers with configuration
+    const transportManager = new TransportManager(configManager);
+    const storageManager = new StorageManager(configManager);
+    const wsServer = new WebSocketServer(httpServer, sessionSecret);
 
-app.use('/api/transfers', createTransferRoutes(transportManager, storageManager));
-app.use('/api/auth', createAuthRoutes());
-app.use('/api/blockchain', createBlockchainRoutes());
+    // Set up WebSocket session validation
+    wsServer.setSessionValidator((sessionId: string) => {
+      return Promise.resolve(validateSession(sessionId) !== null);
+    });
 
-app.get('/api/transports/available', (req, res) => {
-  const transports = transportManager.getAvailableTransports();
-  res.json({
-    transports: transports.map(t => ({
-      type: t.name,
-      enabled: true,
-      configured: true,
-      features: Object.keys(t.capabilities)
-    }))
+    // Initialize transport and storage managers
+    await Promise.all([
+      transportManager.initialize(),
+      storageManager.initialize()
+    ]);
+
+    return { app, httpServer, transportManager, storageManager, wsServer, config };
+  } catch (error) {
+    logger.error('Failed to initialize server:', error);
+    process.exit(1);
+  }
+}
+
+// Start server initialization and setup
+initializeServer().then(({ app, httpServer, transportManager, storageManager, wsServer, config }) => {
+  const { port, rateLimiting, corsOrigin } = config.server;
+
+  // Middleware setup
+  app.use(helmet());
+  app.use(cors({
+    origin: corsOrigin,
+    credentials: true
+  }));
+  app.use(express.json({ limit: '50mb' }));
+
+  const limiter = rateLimit({
+    windowMs: rateLimiting.windowMs,
+    max: rateLimiting.maxRequests
   });
-});
+  app.use('/api', limiter);
 
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    connections: wsServer.getConnectionCount()
-  });
-});
+  // Routes setup
+  app.use('/api/transfers', createTransferRoutes(transportManager, storageManager));
+  app.use('/api/auth', createAuthRoutes());
+  app.use('/api/blockchain', createBlockchainRoutes());
 
-transportManager.on('transfer:received', (data: { transport: string; transfer: { transferId: string } }) => {
-  const { transport, transfer } = data;
-  logger.info(`Transfer received via ${transport}:`, { transferId: transfer.transferId });
-  wsServer.broadcastToTransfer(transfer.transferId, 'transfer:update', {
-    status: 'received',
-    transport
-  });
-});
-
-transportManager.on('transport:error', (data: { transport: string; error: Error }) => {
-  const { transport, error } = data;
-  logger.error(`Transport error in ${transport}:`, error);
-  wsServer.broadcast('transport:error', {
-    transport,
-    error: error.message
-  });
-});
-
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  
-  httpServer.close(() => {
-    logger.info('HTTP server closed');
+  // Transport availability endpoint
+  app.get('/api/transports/available', (_req, res) => {
+    void (async () => {
+    try {
+      const transportInfo = await transportManager.getTransportInfo();
+      res.json({
+        transports: transportInfo.map(t => ({
+          type: t.name.split('-').pop(), // Extract transport type from package name
+          enabled: t.isInstalled,
+          configured: t.isConfigured,
+          status: t.status,
+          version: t.version,
+          features: t.isInstalled ? ['send', 'receive'] : [],
+          installCommand: t.installCommand
+        }))
+      });
+    } catch (error) {
+      logger.error('Error getting transport info:', error);
+      res.status(500).json({ error: 'Failed to get transport information' });
+    }
+    })();
   });
 
-  void transportManager.shutdown();
-  void storageManager.close();
-  wsServer.close();
-  
-  process.exit(0);
+  // System info endpoint
+  app.get('/api/info', (_req, res) => {
+    void (async () => {
+    try {
+      const storageInfo = await storageManager.getStorageInfo();
+      const connectionStats = wsServer.getConnectionStats();
+      
+      res.json({
+        version: '1.0.0', // TODO: Get from package.json
+        uptime: process.uptime(),
+        storage: storageInfo,
+        websocket: connectionStats,
+        transports: {
+          ready: transportManager.isReady(),
+          status: transportManager.getTransportsStatus()
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting system info:', error);
+      res.status(500).json({ error: 'Failed to get system information' });
+    }
+    })();
+  });
+
+  // Health check endpoint
+  app.get('/health', (_req, res) => {
+    void (async () => {
+    try {
+      const storageInfo = await storageManager.getStorageInfo();
+      const isHealthy = storageInfo.databaseConnected && transportManager.isReady();
+      
+      res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? 'ok' : 'degraded',
+        uptime: process.uptime(),
+        connections: wsServer.getConnectionCount(),
+        services: {
+          database: storageInfo.databaseConnected ? 'connected' : 'disconnected',
+          storage: (storageInfo.storageStatus as { available?: boolean }).available ? 'available' : 'unavailable',
+          transports: transportManager.isReady() ? 'ready' : 'not ready'
+        }
+      });
+    } catch (error) {
+      logger.error('Health check error:', error);
+      res.status(503).json({
+        status: 'error',
+        error: 'Health check failed'
+      });
+    }
+    })();
+  });
+
+  // Event handlers
+  transportManager.on('transfer:received', (data: { transport: string; transfer: { transferId: string } }) => {
+    const { transport, transfer } = data;
+    logger.info(`Transfer received via ${transport}:`, { transferId: transfer.transferId });
+    wsServer.broadcastToTransfer(transfer.transferId, 'transfer:update', {
+      status: 'received',
+      transport,
+      timestamp: Date.now()
+    });
+  });
+
+  transportManager.on('transport:error', (data: { transport: string; error: Error }) => {
+    const { transport, error } = data;
+    logger.error(`Transport error in ${transport}:`, error);
+    wsServer.broadcast('transport:error', {
+      transport,
+      error: error.message,
+      timestamp: Date.now()
+    });
+  });
+
+  // Signal handlers with proper cleanup
+  const shutdown = async () => {
+    logger.info('Shutting down server gracefully...');
+    
+    // Close HTTP server
+    httpServer.close(() => {
+      logger.info('HTTP server closed');
+    });
+
+    // Shutdown all services
+    await Promise.all([
+      transportManager.shutdown(),
+      storageManager.close()
+    ]);
+    
+    wsServer.close();
+    logger.info('All services shut down successfully');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => void shutdown());
+  process.on('SIGINT', () => void shutdown());
+
+  // Start the HTTP server
+  httpServer.listen(port, () => {
+    logger.info(`🚀 Firma-Sign server running on port ${port}`);
+    logger.info(`📡 WebSocket server ready`);
+    logger.info(`💾 Storage initialized at ${config.storage.basePath}`);
+    logger.info(`🔧 Configuration loaded from ${process.env.CONFIG_PATH || 'environment variables'}`);
+    
+    if (transportManager.isReady()) {
+      logger.info(`🚛 Transport system ready`);
+    } else {
+      logger.warn(`⚠️  No transports configured. Install and configure transport packages to enable document transfers.`);
+    }
+  });
+
+}).catch((error) => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
 });
 
+// Global error handlers
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught exception:', error);
   process.exit(1);
@@ -98,31 +225,5 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled rejection at:', promise, 'reason:', reason);
-});
-
-function initializeTransports() {
-  try {
-    logger.info('Server configuration:');
-    logger.info(`- Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.info(`- Port: ${PORT}`);
-    logger.info(`- Storage: ${process.env.STORAGE_PATH || '~/.firmasign'}`);
-    
-    logger.info('Transport configuration pending...');
-    logger.info('To add transports, install the corresponding packages:');
-    logger.info('- npm install @firmachain/firma-sign-transport-p2p');
-    logger.info('- npm install @firmachain/firma-sign-transport-email');
-    logger.info('- npm install @firmachain/firma-sign-transport-discord');
-    
-  } catch (error) {
-    logger.error('Failed to initialize transports:', error);
-    process.exit(1);
-  }
-}
-
-initializeTransports();
-
-httpServer.listen(PORT, HOST, () => {
-  logger.info(`🚀 Firma-Sign server running at http://${HOST}:${PORT}`);
-  logger.info(`📡 WebSocket server ready`);
-  logger.info(`💾 Storage initialized at ${process.env.STORAGE_PATH || '~/.firmasign'}`);
+  process.exit(1);
 });

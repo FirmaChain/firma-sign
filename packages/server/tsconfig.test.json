@@ -1,0 +1,10 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"skipLibCheck": true,
+		"types": ["vitest/globals", "node", "@types/supertest"]
+	},
+	"include": ["src/**/*", "src/__tests__/**/*"],
+	"exclude": ["node_modules", "dist"]
+}
