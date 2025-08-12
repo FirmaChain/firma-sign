@@ -35,6 +35,9 @@ export class MockLocalStorage implements Storage {
   private initialized = false;
 
   async initialize(config: StorageConfig): Promise<void> {
+    // Skip if already initialized
+    if (this.initialized) return;
+    
     const basePath = config.basePath as string || path.join(os.homedir(), '.firmasign', 'storage');
     this.basePath = path.resolve(basePath);
     

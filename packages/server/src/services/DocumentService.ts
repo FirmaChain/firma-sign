@@ -125,15 +125,8 @@ export class DocumentService {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    // Initialize storage
-    await this.storage.initialize({
-      basePath: this.basePath,
-      maxFileSize: 500 * 1024 * 1024, // 500MB
-      ensureDirectories: true,
-      useChecksum: true
-    });
-
-    // Create directory structure
+    // Storage should already be initialized by StorageManager
+    // Just create directory structure for documents
     const categories = Object.values(DocumentCategory);
     for (const category of categories) {
       const categoryPath = path.join(this.basePath, category);

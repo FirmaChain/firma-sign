@@ -54,18 +54,11 @@ async function initializeServer() {
     wsServer.setSessionValidator((sessionId: string) => {
       return Promise.resolve(validateSession(sessionId) !== null);
     });
-
-    // Initialize database first
-    await database.initialize({
-      database: `${config.storage.basePath}/firma-sign.db`
-    });
     
-    // Initialize all services
-    await Promise.all([
-      transportManager.initialize(),
-      storageManager.initialize(),
-      documentService.initialize()
-    ]);
+    // Initialize services in sequence (StorageManager must initialize first)
+    await transportManager.initialize();
+    await storageManager.initialize();  // This initializes database and storage
+    await documentService.initialize(); // This depends on storage being initialized
 
     return { app, httpServer, transportManager, storageManager, documentService, wsServer, config, database };
   } catch (error) {
