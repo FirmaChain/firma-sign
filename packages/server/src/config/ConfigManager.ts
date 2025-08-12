@@ -176,18 +176,21 @@ export class ConfigManager {
       this.config.logging.directory = this.resolvePath(this.config.logging.directory);
     }
 
-    // P2P Transport configuration
+    // P2P Transport configuration - set defaults if package is installed
+    // Always create default P2P config if not exists
+    if (!this.config.transports.p2p) {
+      this.config.transports.p2p = {
+        port: 9090,
+        enableDHT: false,  // Disable DHT by default for local development
+        enableMDNS: true,   // Enable mDNS for local discovery
+        maxConnections: 50,
+        connectionTimeout: 30000
+      };
+    }
+    
+    // Override with environment variables if provided
     if (process.env.P2P_PORT || process.env.P2P_ENABLE_DHT !== undefined || 
         process.env.P2P_ENABLE_MDNS !== undefined || process.env.P2P_BOOTSTRAP_NODES) {
-      if (!this.config.transports.p2p) {
-        this.config.transports.p2p = {
-          port: 9090,
-          enableDHT: true,
-          enableMDNS: true,
-          maxConnections: 50,
-          connectionTimeout: 30000
-        };
-      }
       
       if (process.env.P2P_PORT) {
         this.config.transports.p2p.port = parseInt(process.env.P2P_PORT, 10);

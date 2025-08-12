@@ -26,6 +26,7 @@
 		"@firmachain/firma-sign-core": "workspace:*",
 		"@firmachain/firma-sign-database-sqlite": "workspace:*",
 		"@firmachain/firma-sign-storage-local": "workspace:*",
+		"@firmachain/firma-sign-transport-p2p": "workspace:*",
 		"cors": "catalog:",
 		"dotenv": "catalog:",
 		"express": "catalog:",

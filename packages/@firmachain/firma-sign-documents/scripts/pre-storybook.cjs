@@ -7,7 +7,6 @@ const { execSync } = require('child_process');
 // Define paths
 const srcDir = path.join(__dirname, '..', 'src');
 const pdfWorkerPath = path.join(srcDir, 'pdf-worker.ts');
-const configurePdfPath = path.join(srcDir, 'configure-pdf.ts');
 
 console.log('🔍 Checking pre-storybook requirements...');
 
@@ -31,31 +30,6 @@ export { pdfjs };
     console.log('✅ Created pdf-worker.ts');
 } else {
     console.log('✅ pdf-worker.ts exists');
-}
-
-// Check if configure-pdf.ts exists (if needed for CDN fallback)
-if (!fs.existsSync(configurePdfPath)) {
-    console.log('⚠️  configure-pdf.ts not found. Creating it...');
-    
-    const configurePdfContent = `// Configure PDF.js before react-pdf initializes
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set up the worker immediately on module load
-const workerUrl = \`https://unpkg.com/pdfjs-dist@\${pdfjsLib.version}/build/pdf.worker.min.js\`;
-
-console.log('[PDF Configuration] Configuring PDF.js worker:', workerUrl);
-
-// Configure the worker globally
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-
-// Export for use if needed
-export { pdfjsLib };
-`;
-    
-    fs.writeFileSync(configurePdfPath, configurePdfContent);
-    console.log('✅ Created configure-pdf.ts');
-} else {
-    console.log('✅ configure-pdf.ts exists');
 }
 
 // Check if dist directory exists (needed for some imports)

@@ -29,6 +29,7 @@ export class TransportLoader {
    */
   async discoverTransports(): Promise<TransportPackage[]> {
     const discovered: TransportPackage[] = [];
+    
 
     for (const packageName of this.knownTransports) {
       try {
@@ -64,12 +65,13 @@ export class TransportLoader {
       const module = await import(packageName) as Record<string, unknown>;
       
       // Look for common export patterns
-      let TransportClass = module.default || module[this.getTransportClassName(packageName)];
+      let TransportClass = module.default || module.P2PTransport || module[this.getTransportClassName(packageName)];
       
       if (!TransportClass) {
         // Try to find any export that looks like a transport class
-        for (const [, value] of Object.entries(module)) {
-          if (typeof value === 'function' && this.isTransportClass(value)) {
+        for (const [key, value] of Object.entries(module)) {
+          // Check if this looks like a transport class by name or type
+          if (typeof value === 'function' && key.endsWith('Transport')) {
             TransportClass = value;
             break;
           }
@@ -95,8 +97,7 @@ export class TransportLoader {
         isInstalled: true
       };
 
-    } catch (error) {
-      logger.debug(`Failed to load transport package ${packageName}:`, (error as Error).message);
+    } catch {
       return null;
     }
   }
@@ -106,13 +107,20 @@ export class TransportLoader {
    */
   private getPackageInfo(packageName: string): { version: string } | null {
     try {
+      // Try to get the package.json path
       const packageJsonPath = require.resolve(`${packageName}/package.json`);
       const packageJson = require(packageJsonPath) as { version: string };
       return {
         version: packageJson.version
       };
     } catch {
-      return null;
+      // If package.json is not exported, try to check if the package exists
+      try {
+        require.resolve(packageName);
+        return { version: 'unknown' };
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -126,19 +134,6 @@ export class TransportLoader {
     return transportType.charAt(0).toUpperCase() + transportType.slice(1) + 'Transport';
   }
 
-  /**
-   * Check if a class implements the Transport interface
-   */
-  private isTransportClass(cls: unknown): boolean {
-    if (typeof cls !== 'function') return false;
-    
-    try {
-      const instance = new (cls as new () => unknown)();
-      return this.validateTransport(instance);
-    } catch {
-      return false;
-    }
-  }
 
   /**
    * Validate that an object implements the Transport interface
@@ -189,16 +184,16 @@ export class TransportLoader {
                 discovered.push(transportPackage);
                 logger.info(`Discovered custom transport package: ${packageName}`);
               }
-            } catch (error) {
-              logger.debug(`Failed to load custom transport ${packageName}:`, (error as Error).message);
+            } catch {
+              // Failed to load custom transport, continue scanning
             }
           }
         }
       } catch {
         // @firmachain scope doesn't exist, that's fine
       }
-    } catch (error) {
-      logger.debug('Error discovering custom transports:', (error as Error).message);
+    } catch {
+      // Error discovering custom transports, continue without them
     }
 
     return discovered;
