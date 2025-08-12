@@ -1,0 +1,70 @@
+# Authentication endpoints documentation
+
+/auth/connect:
+  post:
+    tags:
+      - Authentication
+    summary: Connect with transfer code
+    description: Authenticate using a 6-digit transfer code to access documents
+    operationId: connectWithCode
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConnectRequest'
+    responses:
+      '200':
+        description: Successfully authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectResponse'
+      '400':
+        description: Invalid code format
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '401':
+        description: Invalid or expired code
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/auth/generate-keypair:
+  post:
+    tags:
+      - Authentication
+    summary: Generate RSA keypair
+    description: Generate RSA keypair for encryption
+    operationId: generateKeypair
+    responses:
+      '200':
+        description: Keypair generated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publicKey:
+                  type: string
+                  description: PEM-encoded public key
+                  example: '-----BEGIN PUBLIC KEY-----...'
+                privateKey:
+                  type: string
+                  description: PEM-encoded private key
+                  example: '-----BEGIN PRIVATE KEY-----...'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'

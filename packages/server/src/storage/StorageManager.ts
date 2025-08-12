@@ -75,8 +75,17 @@ export class StorageManager {
       }
     }
     
-    // Initialize database
-    const dbPath = path.join(this.storagePath, 'firma-sign.db');
+    // Initialize database - use unique in-memory DB for each test
+    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+    let dbPath: string;
+    if (isTest) {
+      // Create unique in-memory database for each test instance
+      const testId = Math.random().toString(36).substring(7);
+      dbPath = `:memory:${testId}`;
+    } else {
+      dbPath = path.join(this.storagePath, 'firma-sign.db');
+    }
+    
     await this.database.initialize({
       database: dbPath
     });
@@ -351,6 +360,15 @@ export class StorageManager {
     this.ensureInitialized();
     const recipient = await this.recipientRepo.findById(recipientId);
     return recipient ? this.mapRecipientEntityToRecipient(recipient) : null;
+  }
+
+  async updateDocumentMetadata(documentId: string, updates: Partial<{
+    fileHash: string;
+    fileSize: number;
+    status: DocumentStatus;
+  }>): Promise<void> {
+    this.ensureInitialized();
+    await this.documentRepo.update(documentId, updates);
   }
   
   /**

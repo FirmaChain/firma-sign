@@ -300,7 +300,8 @@ describe('ConfigManager', () => {
       const loggingConfig = configManager.getLogging();
       
       expect(loggingConfig.level).toBe('debug');
-      expect(loggingConfig.directory).toBe('./logs');
+      // Directory will be resolved to absolute path
+      expect(loggingConfig.directory).toContain('logs');
     });
 
     it('should return blockchain configuration', () => {

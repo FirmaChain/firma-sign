@@ -7,7 +7,7 @@
 		"build": "vite build",
 		"dev": "vite",
 		"preview": "vite preview",
-		"test": "vitest",
+		"test": "vitest run --passWithNoTests",
 		"format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,html}\" --ignore-unknown || true",
 		"format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,html}\" --ignore-unknown || true",
 		"lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

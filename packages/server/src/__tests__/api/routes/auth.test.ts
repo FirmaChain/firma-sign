@@ -65,10 +65,11 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
+        success: true,
         transferId: transferId,
-        transport: 'p2p'
+        expiresIn: 86400
       });
-      expect(response.body.sessionId).toMatch(/^test-session-id-\d+$/);
+      expect(response.body.sessionToken).toMatch(/^test-session-id-\d+$/);
     });
 
     it('should connect with valid transfer code and transport hint', async () => {
@@ -81,10 +82,11 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
+        success: true,
         transferId: transferId,
-        transport: 'email'
+        expiresIn: 86400
       });
-      expect(response.body.sessionId).toMatch(/^test-session-id-\d+$/);
+      expect(response.body.sessionToken).toMatch(/^test-session-id-\d+$/);
     });
 
     it('should reject invalid transfer code', async () => {
@@ -199,13 +201,13 @@ describe('Auth Routes', () => {
         .post('/api/auth/connect')
         .send({ code });
 
-      const sessionId = connectResponse.body.sessionId as string;
+      const sessionToken = connectResponse.body.sessionToken as string;
 
       // Validate the session
-      const session = validateSession(sessionId as string);
+      const session = validateSession(sessionToken as string);
 
       expect(session).toBeTruthy();
-      expect(session?.sessionId).toBe(sessionId);
+      expect(session?.sessionId).toBe(sessionToken);
       expect(session?.transferId).toBe(transferId);
       expect(session?.expiresAt).toBeGreaterThan(Date.now());
     });
@@ -225,13 +227,13 @@ describe('Auth Routes', () => {
         .post('/api/auth/connect')
         .send({ code });
 
-      const sessionId = connectResponse.body.sessionId as string;
+      const sessionToken = connectResponse.body.sessionToken as string;
 
       // Mock session as expired by manipulating time
       const originalNow = Date.now;
       Date.now = vi.fn(() => originalNow() + 25 * 60 * 60 * 1000); // 25 hours later
 
-      const session = validateSession(sessionId as string);
+      const session = validateSession(sessionToken as string);
 
       expect(session).toBeNull();
 
@@ -253,17 +255,17 @@ describe('Auth Routes', () => {
         .post('/api/auth/connect')
         .send({ code });
 
-      const sessionId = connectResponse.body.sessionId as string;
+      const sessionToken = connectResponse.body.sessionToken as string;
 
       // Verify session exists
-      expect(validateSession(sessionId)).toBeTruthy();
+      expect(validateSession(sessionToken)).toBeTruthy();
 
       // Mock time to make session expired
       const originalNow = Date.now;
       Date.now = vi.fn(() => originalNow() + 25 * 60 * 60 * 1000); // 25 hours later
 
       // Verify session is now expired
-      expect(validateSession(sessionId)).toBeNull();
+      expect(validateSession(sessionToken)).toBeNull();
 
       // Restore original Date.now
       Date.now = originalNow;
@@ -296,7 +298,7 @@ describe('Auth Routes', () => {
 
   describe('concurrent session handling', () => {
     it('should handle multiple concurrent sessions', async () => {
-      const sessions: Array<{ sessionId: string; transferId: string }> = [];
+      const sessions: Array<{ sessionToken: string; transferId: string }> = [];
 
       // Create multiple sessions concurrently
       for (let i = 0; i < 5; i++) {
@@ -308,15 +310,15 @@ describe('Auth Routes', () => {
           .send({ code });
 
         sessions.push({
-          sessionId: response.body.sessionId as string,
+          sessionToken: response.body.sessionToken as string,
           transferId: response.body.transferId as string
         });
       }
 
       // Verify all sessions are valid
       for (let i = 0; i < sessions.length; i++) {
-        const { sessionId, transferId } = sessions[i];
-        const session = validateSession(sessionId as string);
+        const { sessionToken, transferId } = sessions[i];
+        const session = validateSession(sessionToken as string);
         expect(session).toBeTruthy();
         expect(session?.transferId).toBe(transferId);
       }
@@ -332,11 +334,11 @@ describe('Auth Routes', () => {
         .post('/api/auth/connect')
         .send({ code });
 
-      const sessionId = response.body.sessionId as string;
-      const session = validateSession(sessionId as string);
+      const sessionToken = response.body.sessionToken as string;
+      const session = validateSession(sessionToken as string);
 
       expect(session).toEqual({
-        sessionId: sessionId as string,
+        sessionId: sessionToken as string,
         transferId: transferId,
         expiresAt: expect.any(Number)
       });

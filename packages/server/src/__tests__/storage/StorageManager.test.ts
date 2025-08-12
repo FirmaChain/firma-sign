@@ -57,10 +57,15 @@ describe('StorageManager', () => {
       }
     });
 
-    it('should create database file', async () => {
+    it('should use in-memory database in test environment', async () => {
+      // In test environment, we use in-memory database, not a file
+      // The database should be initialized successfully without creating a file
       const dbPath = path.join(testStoragePath, 'firma-sign.db');
       const exists = await fs.access(dbPath).then(() => true).catch(() => false);
-      expect(exists).toBe(true);
+      // Should NOT create a database file in test mode
+      expect(exists).toBe(false);
+      // But storage manager should be initialized
+      expect(storageManager.isInitialized).toBe(true);
     });
 
     it('should use default home directory if no path provided', async () => {

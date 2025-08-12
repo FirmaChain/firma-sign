@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 import { createServer } from 'http';
 import { ConfigManager } from './config/ConfigManager.js';
 import { TransportManager } from './transport/TransportManager.js';
@@ -16,6 +17,7 @@ import { createDocumentRoutes } from './api/routes/documents.js';
 import { DocumentService } from './services/DocumentService.js';
 import { SQLiteDatabase } from '@firmachain/firma-sign-database-sqlite';
 import { MockLocalStorage } from './storage/MockLocalStorage.js';
+import { swaggerSpec } from './config/swagger.js';
 import { logger } from './utils/logger.js';
 
 // Initialize configuration
@@ -77,7 +79,16 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, do
   const { port, rateLimiting, corsOrigin } = config.server;
 
   // Middleware setup
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  }));
   app.use(cors({
     origin: corsOrigin,
     credentials: true
@@ -90,8 +101,20 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, do
   });
   app.use('/api', limiter);
 
+  // Swagger documentation endpoints
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Firma-Sign API Documentation',
+  }));
+
+  // Serve OpenAPI spec as JSON
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
   // Routes setup
-  app.use('/api/transfers', createTransferRoutes(transportManager, storageManager));
+  app.use('/api/transfers', createTransferRoutes(transportManager, storageManager, documentService));
   app.use('/api/auth', createAuthRoutes());
   app.use('/api/blockchain', createBlockchainRoutes());
   app.use('/api/documents', createDocumentRoutes(documentService));
@@ -221,6 +244,8 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, do
     logger.info(`🚀 Firma-Sign server running on port ${port}`);
     logger.info(`📡 WebSocket server ready`);
     logger.info(`💾 Storage initialized at ${config.storage.basePath}`);
+    logger.info(`📚 API Documentation available at http://localhost:${port}/api-docs`);
+    logger.info(`📄 OpenAPI spec available at http://localhost:${port}/api-docs.json`);
     logger.info(`🔧 Configuration loaded from ${process.env.CONFIG_PATH || 'environment variables'}`);
     
     if (transportManager.isReady()) {

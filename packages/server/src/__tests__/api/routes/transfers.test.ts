@@ -41,6 +41,9 @@ describe('Transfer Routes', () => {
     getDocument: ReturnType<typeof vi.fn>;
     getSignedDocument: ReturnType<typeof vi.fn>;
     saveDocument: ReturnType<typeof vi.fn>;
+    getDocumentsByTransferId: ReturnType<typeof vi.fn>;
+    saveSignedDocument: ReturnType<typeof vi.fn>;
+    updateDocumentMetadata: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -57,6 +60,9 @@ describe('Transfer Routes', () => {
       getDocument: vi.fn(),
       getSignedDocument: vi.fn(),
       saveDocument: vi.fn(),
+      getDocumentsByTransferId: vi.fn(),
+      saveSignedDocument: vi.fn(),
+      updateDocumentMetadata: vi.fn(),
     };
 
     // Create Express app with routes
@@ -97,15 +103,20 @@ describe('Transfer Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        transferId: 'test-transfer-id',
+        transferId: expect.any(String),
         code: expect.stringMatching(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/),
         status: 'created'
       });
 
       expect(mockStorageManager.createTransfer).toHaveBeenCalledWith({
-        transferId: 'test-transfer-id',
+        transferId: expect.any(String),
         type: 'outgoing',
-        documents: transferData.documents,
+        documents: transferData.documents.map(doc => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileHash: undefined,
+          fileSize: undefined
+        })),
         recipients: transferData.recipients,
         metadata: {
           ...transferData.metadata,
@@ -133,26 +144,43 @@ describe('Transfer Routes', () => {
 
   describe('GET /api/transfers', () => {
     it('should list transfers with pagination', async () => {
+      const now = new Date();
       const mockTransfers = [
-        { id: 'transfer1', type: 'outgoing', status: 'pending' },
-        { id: 'transfer2', type: 'incoming', status: 'completed' },
-        { id: 'transfer3', type: 'outgoing', status: 'pending' }
+        { id: 'transfer1', type: 'outgoing', status: 'pending', createdAt: now, updatedAt: now },
+        { id: 'transfer2', type: 'outgoing', status: 'completed', createdAt: now, updatedAt: now },
+        { id: 'transfer3', type: 'outgoing', status: 'pending', createdAt: now, updatedAt: now }
       ];
 
       vi.mocked(mockStorageManager.listTransfers).mockResolvedValue(mockTransfers as Transfer[]);
+      vi.mocked(mockStorageManager.getDocumentsByTransferId).mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/transfers?type=outgoing&limit=2&offset=0');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        transfers: mockTransfers.slice(0, 2),
-        pagination: {
-          total: 3,
-          limit: 2,
-          offset: 0,
-          hasMore: true
-        }
+        transfers: [
+          {
+            transferId: 'transfer1',
+            type: 'outgoing',
+            sender: undefined,
+            documentCount: 0,
+            status: 'pending',
+            createdAt: now.getTime(),
+            updatedAt: now.getTime()
+          },
+          {
+            transferId: 'transfer2',
+            type: 'outgoing',
+            sender: undefined,
+            documentCount: 0,
+            status: 'completed',
+            createdAt: now.getTime(),
+            updatedAt: now.getTime()
+          }
+        ],
+        total: 3,
+        hasMore: true
       });
 
       expect(mockStorageManager.listTransfers).toHaveBeenCalledWith('outgoing', 2);
@@ -265,17 +293,29 @@ describe('Transfer Routes', () => {
 
       vi.mocked(mockStorageManager.getTransfer).mockResolvedValue(mockTransfer as Transfer);
       vi.mocked(mockStorageManager.updateTransferSignatures).mockResolvedValue();
+      vi.mocked(mockStorageManager.getDocumentById).mockResolvedValue({
+        id: 'doc1',
+        fileName: 'test.pdf',
+        transferId: 'transfer123'
+      } as Document);
+      vi.mocked(mockStorageManager.saveSignedDocument).mockResolvedValue();
 
       const response = await request(app)
         .post('/api/transfers/transfer123/sign')
         .send(signatureData);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ status: 'success' });
+      expect(response.body).toHaveProperty('status', 'success');
+      expect(response.body).toHaveProperty('signedDocuments');
 
       expect(mockStorageManager.updateTransferSignatures).toHaveBeenCalledWith(
         'transfer123',
-        signatureData.signatures
+        expect.arrayContaining([
+          expect.objectContaining({
+            documentId: 'doc1',
+            status: 'signed'
+          })
+        ])
       );
     });
 
@@ -304,7 +344,10 @@ describe('Transfer Routes', () => {
         .send(signatureData);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ status: 'success' });
+      expect(response.body).toEqual({ 
+        status: 'success',
+        signedDocuments: []
+      });
     });
 
     it('should return 404 for non-existent transfer', async () => {

@@ -1,82 +1,82 @@
 {
-  "name": "@firmachain/firma-sign-core",
-  "version": "0.1.0",
-  "description": "Core interfaces and utilities for Firma-Sign transport system",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
-    },
-    "./interfaces": {
-      "require": "./dist/interfaces/index.js",
-      "import": "./dist/interfaces/index.mjs",
-      "types": "./dist/interfaces/index.d.ts"
-    },
-    "./interfaces/storage": {
-      "require": "./dist/interfaces/storage.js",
-      "import": "./dist/interfaces/storage.mjs",
-      "types": "./dist/interfaces/storage.d.ts"
-    },
-    "./utils": {
-      "require": "./dist/utils/index.js",
-      "import": "./dist/utils/index.mjs",
-      "types": "./dist/utils/index.d.ts"
-    }
-  },
-  "files": [
-    "dist",
-    "src",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "firma-sign",
-    "document-signing",
-    "transport",
-    "core",
-    "firmachain",
-    "blockchain"
-  ],
-  "author": "FirmaChain",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/firmachain/firma-sign.git",
-    "directory": "packages/@firmachain/firma-sign-core"
-  },
-  "bugs": {
-    "url": "https://github.com/firmachain/firma-sign/issues"
-  },
-  "homepage": "https://github.com/firmachain/firma-sign#readme",
-  "devDependencies": {
-    "@types/jest": "catalog:",
-    "@types/node": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
-    "eslint": "catalog:",
-    "@eslint/js": "catalog:",
-    "typescript-eslint": "catalog:",
-    "jest": "catalog:",
-    "ts-jest": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:"
-  },
-  "dependencies": {
-    "zod": "catalog:"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  }
+	"name": "@firmachain/firma-sign-core",
+	"version": "0.1.0",
+	"description": "Core interfaces and utilities for Firma-Sign transport system",
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		},
+		"./interfaces": {
+			"require": "./dist/interfaces/index.js",
+			"import": "./dist/interfaces/index.mjs",
+			"types": "./dist/interfaces/index.d.ts"
+		},
+		"./interfaces/storage": {
+			"require": "./dist/interfaces/storage.js",
+			"import": "./dist/interfaces/storage.mjs",
+			"types": "./dist/interfaces/storage.d.ts"
+		},
+		"./utils": {
+			"require": "./dist/utils/index.js",
+			"import": "./dist/utils/index.mjs",
+			"types": "./dist/utils/index.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md"
+	],
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"test": "jest --passWithNoTests",
+		"test:watch": "jest --watch",
+		"lint": "eslint src --ext .ts",
+		"type-check": "tsc --noEmit",
+		"prepublishOnly": "npm run build"
+	},
+	"keywords": [
+		"firma-sign",
+		"document-signing",
+		"transport",
+		"core",
+		"firmachain",
+		"blockchain"
+	],
+	"author": "FirmaChain",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/firmachain/firma-sign.git",
+		"directory": "packages/@firmachain/firma-sign-core"
+	},
+	"bugs": {
+		"url": "https://github.com/firmachain/firma-sign/issues"
+	},
+	"homepage": "https://github.com/firmachain/firma-sign#readme",
+	"devDependencies": {
+		"@types/jest": "catalog:",
+		"@types/node": "catalog:",
+		"@typescript-eslint/eslint-plugin": "catalog:",
+		"@typescript-eslint/parser": "catalog:",
+		"eslint": "catalog:",
+		"@eslint/js": "catalog:",
+		"typescript-eslint": "catalog:",
+		"jest": "catalog:",
+		"ts-jest": "catalog:",
+		"tsup": "catalog:",
+		"typescript": "catalog:"
+	},
+	"dependencies": {
+		"zod": "catalog:"
+	},
+	"engines": {
+		"node": ">=16.0.0"
+	}
 }

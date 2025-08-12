@@ -170,7 +170,10 @@ export class ConfigManager {
       this.config.logging.level = process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error';
     }
     if (process.env.LOG_DIR) {
-      this.config.logging.directory = process.env.LOG_DIR;
+      this.config.logging.directory = this.resolvePath(process.env.LOG_DIR);
+    } else {
+      // Resolve default logging directory
+      this.config.logging.directory = this.resolvePath(this.config.logging.directory);
     }
 
     // P2P Transport configuration

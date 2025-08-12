@@ -198,17 +198,30 @@ export class DocumentService {
       uploadedAt: now,
       lastModified: now,
       tags: options?.tags || [],
-      version: 1,
+      version: (typeof options?.metadata?.version === 'number') ? options.metadata.version : 1,
       metadata: options?.metadata
     };
 
-    // Save metadata
-    await this.saveMetadata(storagePath, metadata);
+    // No separate metadata file needed - using database as source of truth
 
-    // Store in database
+    // Store in database - create a dummy transfer if none provided
+    let transferId = options?.transferId;
+    if (!transferId) {
+      transferId = `doc-transfer-${documentId}`;
+      // Create a dummy transfer for standalone documents
+      const transferRepo = this.database.getRepository('Transfer');
+      await transferRepo.create({
+        id: transferId,
+        type: 'outgoing',
+        status: 'pending',
+        transportType: 'local',
+        createdAt: now
+      });
+    }
+
     await this.documentRepo.create({
       id: documentId,
-      transferId: options?.transferId || '',
+      transferId: transferId,
       fileName: originalName,
       fileSize: data.length,
       fileHash: hash,
@@ -233,12 +246,56 @@ export class DocumentService {
       throw new Error(`Document not found: ${documentId}`);
     }
 
-    // Reconstruct storage path from document info
-    const storagePath = await this.findDocumentStoragePath(documentId);
-    const metadata = await this.loadMetadata(storagePath);
+    // Reconstruct the storage path based on when the document was created
+    const createdAt = new Date(entity.createdAt);
+    const year = createdAt.getFullYear();
+    const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+    
+    // Try to find the document in the expected location
+    let documentPath: string | null = null;
+    let category = DocumentCategory.UPLOADED; // Default category
+    
+    // Try each category to find where the document is stored
+    for (const cat of Object.values(DocumentCategory)) {
+      const expectedPath = path.join(cat, year.toString(), month, documentId, this.sanitizeFileName(entity.fileName));
+      try {
+        if (await this.storage.exists(expectedPath)) {
+          documentPath = expectedPath;
+          category = cat;
+          break;
+        }
+      } catch {
+        // Continue searching
+      }
+    }
+
+    if (!documentPath) {
+      throw new Error(`Document file not found: ${documentId}`);
+    }
 
     // Load document data
-    const data = await this.storage.read(metadata.storedName);
+    const data = await this.storage.read(documentPath);
+
+    // Reconstruct metadata from database entity
+    const metadata: DocumentMetadata = {
+      id: entity.id,
+      originalName: entity.fileName,
+      storedName: documentPath,
+      category: category,
+      status: entity.status as DocumentStatus,
+      hash: entity.fileHash,
+      size: entity.fileSize,
+      mimeType: this.detectMimeType(entity.fileName),
+      uploadedAt: new Date(entity.createdAt),
+      lastModified: new Date(entity.createdAt),
+      tags: [],
+      version: 1, // TODO: Store version in database
+      signedBy: entity.signedBy ? [entity.signedBy] : undefined,
+      signedAt: entity.signedAt ? new Date(entity.signedAt) : undefined,
+      transferId: entity.transferId,
+      // TODO: Add support for previousVersionId in database schema
+      previousVersionId: undefined
+    };
 
     return { data, metadata };
   }
@@ -268,25 +325,10 @@ export class DocumentService {
       signedAt: options?.signedAt
     });
 
-    // Update metadata file
-    const storagePath = await this.findDocumentStoragePath(documentId);
-    const metadata = await this.loadMetadata(storagePath);
-    metadata.status = status;
-    if (options?.signedBy) {
-      metadata.signedBy = metadata.signedBy || [];
-      metadata.signedBy.push(options.signedBy);
-    }
-    if (options?.signedAt) {
-      metadata.signedAt = options.signedAt;
-    }
-    metadata.lastModified = new Date();
-
-    await this.saveMetadata(storagePath, metadata);
-
     // Move to appropriate category if needed
-    if (status === DocumentStatus.SIGNED && metadata.category !== DocumentCategory.SIGNED) {
+    if (status === DocumentStatus.SIGNED) {
       await this.moveDocument(documentId, DocumentCategory.SIGNED);
-    } else if (status === DocumentStatus.ARCHIVED && metadata.category !== DocumentCategory.ARCHIVED) {
+    } else if (status === DocumentStatus.ARCHIVED) {
       await this.moveDocument(documentId, DocumentCategory.ARCHIVED);
     }
   }
@@ -301,7 +343,6 @@ export class DocumentService {
     
     // Save old path before updating metadata
     const oldStoredName = metadata.storedName;
-    const oldMetadataPath = path.dirname(oldStoredName);
     
     // Create new storage path
     const now = new Date();
@@ -315,27 +356,11 @@ export class DocumentService {
     );
 
     // Store in new location
-    const newDocumentPath = path.join(newStoragePath, path.basename(metadata.originalName));
+    const newDocumentPath = path.join(newStoragePath, this.sanitizeFileName(metadata.originalName));
     await this.storage.save(newDocumentPath, data);
 
-    // Update metadata
-    metadata.category = newCategory;
-    metadata.storedName = newDocumentPath;
-    metadata.lastModified = now;
-    if (newCategory === DocumentCategory.ARCHIVED) {
-      metadata.archivedAt = now;
-    }
-
-    await this.saveMetadata(newStoragePath, metadata);
-
-    // Delete from old location (using the saved old path)
+    // Delete from old location
     await this.storage.delete(oldStoredName);
-    await this.storage.delete(path.join(oldMetadataPath, 'metadata.json'));
-
-    // Update database - just update the status since we track location in metadata files
-    await this.documentRepo.update(documentId, {
-      status: metadata.status
-    });
 
     logger.info(`Document ${documentId} moved to category: ${newCategory}`);
   }
@@ -346,34 +371,51 @@ export class DocumentService {
   async searchDocuments(filter: DocumentFilter): Promise<DocumentMetadata[]> {
     this.ensureInitialized();
 
+    // Build database query criteria
+    const criteria: Partial<DocumentEntity> = {};
+    if (filter.transferId) criteria.transferId = filter.transferId;
+    if (filter.uploadedBy) criteria.signedBy = filter.uploadedBy;
+    
+    // Get documents from database
+    const entities = await this.documentRepo.find(criteria);
     const results: DocumentMetadata[] = [];
-    const categories = filter.category ? [filter.category] : Object.values(DocumentCategory);
 
-    for (const category of categories) {
-      const categoryPath = path.join(this.basePath, category);
-      const documents = await this.scanCategory(categoryPath);
+    for (const entity of entities) {
+      // Convert database entity to DocumentMetadata
+      const metadata: DocumentMetadata = {
+        id: entity.id,
+        originalName: entity.fileName,
+        storedName: '', // We'll determine this if needed
+        category: DocumentCategory.UPLOADED, // Default, we'd need to track this better
+        status: entity.status as DocumentStatus,
+        hash: entity.fileHash,
+        size: entity.fileSize,
+        mimeType: this.detectMimeType(entity.fileName),
+        uploadedAt: new Date(entity.createdAt),
+        lastModified: new Date(entity.createdAt),
+        tags: [], // TODO: Add tags support to database
+        version: 1,
+        transferId: entity.transferId,
+        signedBy: entity.signedBy ? [entity.signedBy] : undefined,
+        signedAt: entity.signedAt
+      };
 
-      for (const doc of documents) {
-        // Apply filters
-        if (filter.status && doc.status !== filter.status) continue;
-        if (filter.transferId && doc.transferId !== filter.transferId) continue;
-        if (filter.uploadedBy && doc.uploadedBy !== filter.uploadedBy) continue;
-        if (filter.signedBy && !doc.signedBy?.includes(filter.signedBy)) continue;
-        if (filter.tags && filter.tags.length > 0) {
-          const hasAllTags = filter.tags.every(tag => doc.tags?.includes(tag));
-          if (!hasAllTags) continue;
-        }
-        if (filter.fromDate && doc.uploadedAt < filter.fromDate) continue;
-        if (filter.toDate && doc.uploadedAt > filter.toDate) continue;
-        if (filter.searchText) {
-          const searchLower = filter.searchText.toLowerCase();
-          const matchesText = doc.originalName.toLowerCase().includes(searchLower) ||
-                            doc.tags?.some(tag => tag.toLowerCase().includes(searchLower));
-          if (!matchesText) continue;
-        }
-
-        results.push(doc);
+      // Apply filters
+      if (filter.status && metadata.status !== filter.status) continue;
+      if (filter.signedBy && !metadata.signedBy?.includes(filter.signedBy)) continue;
+      if (filter.tags && filter.tags.length > 0) {
+        const hasAllTags = filter.tags.every(tag => metadata.tags?.includes(tag));
+        if (!hasAllTags) continue;
       }
+      if (filter.fromDate && metadata.uploadedAt.getTime() < filter.fromDate.getTime()) continue;
+      if (filter.toDate && metadata.uploadedAt.getTime() > filter.toDate.getTime()) continue;
+      if (filter.searchText) {
+        const searchLower = filter.searchText.toLowerCase();
+        const matchesText = metadata.originalName.toLowerCase().includes(searchLower);
+        if (!matchesText) continue;
+      }
+
+      results.push(metadata);
     }
 
     // Sort by date (newest first)
@@ -410,8 +452,6 @@ export class DocumentService {
         uploadedBy: options?.uploadedBy || oldMetadata.uploadedBy,
         tags: oldMetadata.tags,
         metadata: {
-          ...oldMetadata.metadata,
-          ...options?.metadata,
           previousVersionId: documentId,
           version: oldMetadata.version + 1
         }
@@ -458,12 +498,11 @@ export class DocumentService {
         throw new Error(`Document not found: ${documentId}`);
       }
 
-      const storagePath = await this.findDocumentStoragePath(documentId);
-      const metadata = await this.loadMetadata(storagePath);
+      // Find the actual document file
+      const { metadata } = await this.getDocument(documentId);
 
-      // Delete files
+      // Delete the document file
       await this.storage.delete(metadata.storedName);
-      await this.storage.delete(path.join(storagePath, 'metadata.json'));
 
       // Delete from database
       await this.documentRepo.delete(documentId);
@@ -485,17 +524,15 @@ export class DocumentService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-    const filter: DocumentFilter = {
-      toDate: cutoffDate,
-      status: DocumentStatus.COMPLETED
-    };
-
-    const documents = await this.searchDocuments(filter);
+    // Find documents to archive from database
+    const allDocuments = await this.documentRepo.findAll();
     let archivedCount = 0;
 
-    for (const doc of documents) {
-      if (doc.category !== DocumentCategory.ARCHIVED) {
-        await this.moveDocument(doc.id, DocumentCategory.ARCHIVED);
+    for (const entity of allDocuments) {
+      // Archive documents older than cutoff date and completed
+      const entityDate = new Date(entity.createdAt);
+      if (entityDate < cutoffDate && entity.status === 'completed') {
+        await this.updateDocumentStatus(entity.id, DocumentStatus.ARCHIVED);
         archivedCount++;
       }
     }
@@ -515,8 +552,11 @@ export class DocumentService {
   }> {
     this.ensureInitialized();
 
+    // Get all documents from database
+    const allDocuments = await this.documentRepo.findAll();
+
     const stats = {
-      totalDocuments: 0,
+      totalDocuments: allDocuments.length,
       totalSize: 0,
       byCategory: {} as Record<DocumentCategory, { count: number; size: number }>,
       byStatus: {} as Record<DocumentStatus, number>
@@ -532,17 +572,19 @@ export class DocumentService {
       stats.byStatus[status] = 0;
     }
 
-    // Scan all categories
-    for (const category of Object.values(DocumentCategory)) {
-      const categoryPath = path.join(this.basePath, category);
-      const documents = await this.scanCategory(categoryPath);
-
-      for (const doc of documents) {
-        stats.totalDocuments++;
-        stats.totalSize += doc.size;
-        stats.byCategory[category].count++;
-        stats.byCategory[category].size += doc.size;
-        stats.byStatus[doc.status]++;
+    // Calculate stats from database entities
+    for (const doc of allDocuments) {
+      stats.totalSize += doc.fileSize;
+      
+      // For now, assume all documents are uploaded category
+      // TODO: Add category tracking to database
+      const category = DocumentCategory.UPLOADED;
+      stats.byCategory[category].count++;
+      stats.byCategory[category].size += doc.fileSize;
+      
+      const status = doc.status as DocumentStatus;
+      if (stats.byStatus[status] !== undefined) {
+        stats.byStatus[status]++;
       }
     }
 
@@ -552,20 +594,61 @@ export class DocumentService {
   // Private helper methods
 
   private async findDocumentStoragePath(documentId: string): Promise<string> {
-    // Search for document in all categories
+    // Get document from database to get creation date
+    const entity = await this.documentRepo.findById(documentId);
+    if (!entity) {
+      throw new Error(`Document not found in database: ${documentId}`);
+    }
+    
+    // Reconstruct the expected path based on creation date
+    const createdAt = new Date(entity.createdAt);
+    const year = createdAt.getFullYear();
+    const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+
+    // Try each category to find where the document was stored
     for (const category of Object.values(DocumentCategory)) {
-      const categoryPath = path.join(this.basePath, category);
+      const expectedPath = path.join(category, year.toString(), month, documentId);
+      
       try {
-        const entries = await this.storage.list(categoryPath);
-        for (const entry of entries) {
-          if (entry.type === 'directory' && entry.path.includes(documentId)) {
-            return entry.path;
-          }
+        // Check if this path exists by trying to list it
+        if (await this.storage.exists(expectedPath)) {
+          return expectedPath;
         }
       } catch {
-        // Continue searching other categories
+        // Continue to next category
+        logger.debug(`Path ${expectedPath} does not exist, trying next category`);
       }
     }
+
+    // Fallback: Search for document in all categories by scanning
+    logger.debug(`Direct path lookup failed for document ${documentId}, scanning directories`);
+    for (const category of Object.values(DocumentCategory)) {
+      try {
+        const categoryPath = category; // Use relative path
+        const entries = await this.storage.list(categoryPath);
+        
+        for (const entry of entries) {
+          if (entry.type === 'directory') {
+            // Look for the document ID in year directories
+            const yearEntries = await this.storage.list(entry.path);
+            for (const yearEntry of yearEntries) {
+              if (yearEntry.type === 'directory') {
+                const monthEntries = await this.storage.list(yearEntry.path);
+                for (const monthEntry of monthEntries) {
+                  if (monthEntry.type === 'directory' && monthEntry.path.includes(documentId)) {
+                    return monthEntry.path;
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Continue searching other categories
+        logger.debug(`Error scanning category ${category}:`, error);
+      }
+    }
+    
     throw new Error(`Storage path not found for document: ${documentId}`);
   }
 
@@ -611,42 +694,7 @@ export class DocumentService {
     return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   }
 
-  private async saveMetadata(storagePath: string, metadata: DocumentMetadata): Promise<void> {
-    const metadataPath = path.join(storagePath, 'metadata.json');
-    const metadataJson = JSON.stringify(metadata, null, 2);
-    await this.storage.save(metadataPath, Buffer.from(metadataJson, 'utf-8'));
-  }
-
-  private async loadMetadata(storagePath: string): Promise<DocumentMetadata> {
-    const metadataPath = path.join(storagePath, 'metadata.json');
-    const data = await this.storage.read(metadataPath);
-    return JSON.parse(data.toString('utf-8')) as DocumentMetadata;
-  }
-
-  private async scanCategory(categoryPath: string): Promise<DocumentMetadata[]> {
-    const documents: DocumentMetadata[] = [];
-    
-    try {
-      // Recursively scan for metadata files
-      const entries = await this.storage.list(categoryPath);
-      
-      for (const entry of entries) {
-        if (entry.type === 'directory') {
-          // Recursively scan subdirectories
-          const subDocs = await this.scanCategory(entry.path);
-          documents.push(...subDocs);
-        } else if (entry.path.endsWith('metadata.json')) {
-          // Load metadata
-          const metadata = await this.loadMetadata(path.dirname(entry.path));
-          documents.push(metadata);
-        }
-      }
-    } catch (error) {
-      logger.debug(`Error scanning category ${categoryPath}:`, error);
-    }
-
-    return documents;
-  }
+  // Metadata methods removed - now using database as source of truth
 
   async close(): Promise<void> {
     if (this.isInitialized) {

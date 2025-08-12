@@ -1,0 +1,373 @@
+# Transfer endpoints documentation
+
+/transfers/create:
+  post:
+    tags:
+      - Transfers
+    summary: Create a new transfer
+    description: Create a new document transfer with recipients
+    operationId: createTransfer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateTransferRequest'
+    responses:
+      '200':
+        description: Transfer created successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transferId:
+                  type: string
+                  example: 'transfer-xyz'
+                code:
+                  type: string
+                  example: 'ABC123'
+                status:
+                  type: string
+                  example: 'created'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers:
+  get:
+    tags:
+      - Transfers
+    summary: List transfers
+    description: Get all transfers for the current user with optional filtering
+    operationId: listTransfers
+    parameters:
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum: [incoming, outgoing]
+        description: Filter by transfer type
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum: [pending, ready, partially-signed, completed]
+        description: Filter by transfer status
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          default: 100
+          minimum: 1
+          maximum: 1000
+        description: Number of results to return
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+        description: Number of results to skip
+    responses:
+      '200':
+        description: List of transfers
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transfers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      transferId:
+                        type: string
+                      type:
+                        $ref: '#/components/schemas/TransferType'
+                      sender:
+                        $ref: '#/components/schemas/SenderInfo'
+                      documentCount:
+                        type: integer
+                      status:
+                        $ref: '#/components/schemas/TransferStatus'
+                      createdAt:
+                        type: number
+                      updatedAt:
+                        type: number
+                total:
+                  type: integer
+                hasMore:
+                  type: boolean
+      '400':
+        description: Invalid parameters
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers/{transferId}:
+  get:
+    tags:
+      - Transfers
+    summary: Get transfer details
+    description: Get detailed information about a specific transfer
+    operationId: getTransfer
+    parameters:
+      - in: path
+        name: transferId
+        required: true
+        schema:
+          type: string
+        description: Transfer ID
+    responses:
+      '200':
+        description: Transfer details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transfer'
+      '404':
+        description: Transfer not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers/{transferId}/sign:
+  post:
+    tags:
+      - Transfers
+    summary: Sign documents
+    description: Sign documents in a transfer
+    operationId: signDocuments
+    parameters:
+      - in: path
+        name: transferId
+        required: true
+        schema:
+          type: string
+        description: Transfer ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SignDocumentsRequest'
+    responses:
+      '200':
+        description: Documents signed successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: 'success'
+                signedDocuments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      documentId:
+                        type: string
+                      signedUrl:
+                        type: string
+                      blockchainTx:
+                        type: string
+      '404':
+        description: Transfer not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers/{transferId}/documents/{documentId}:
+  get:
+    tags:
+      - Transfers
+    summary: Download document
+    description: Download a document from a transfer
+    operationId: downloadDocument
+    parameters:
+      - in: path
+        name: transferId
+        required: true
+        schema:
+          type: string
+        description: Transfer ID
+      - in: path
+        name: documentId
+        required: true
+        schema:
+          type: string
+        description: Document ID
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Document file
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+      '404':
+        description: Document not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers/{transferId}/documents:
+  post:
+    tags:
+      - Transfers
+    summary: Upload document
+    description: Upload a document to an existing transfer
+    operationId: uploadDocument
+    parameters:
+      - in: path
+        name: transferId
+        required: true
+        schema:
+          type: string
+        description: Transfer ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [documentId, fileName, fileData]
+            properties:
+              documentId:
+                type: string
+              fileName:
+                type: string
+              fileData:
+                type: string
+                format: byte
+                description: Base64 encoded file data
+              metadata:
+                type: object
+    responses:
+      '200':
+        description: Document uploaded successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                documentId:
+                  type: string
+                fileName:
+                  type: string
+                fileSize:
+                  type: integer
+                fileHash:
+                  type: string
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '404':
+        description: Transfer not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/transfers/{transferId}/documents/{documentId}/signed:
+  get:
+    tags:
+      - Transfers
+    summary: Download signed document
+    description: Download the signed version of a document
+    operationId: downloadSignedDocument
+    parameters:
+      - in: path
+        name: transferId
+        required: true
+        schema:
+          type: string
+        description: Transfer ID
+      - in: path
+        name: documentId
+        required: true
+        schema:
+          type: string
+        description: Document ID
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Signed document file
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+      '400':
+        description: Document is not signed
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '404':
+        description: Document not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'

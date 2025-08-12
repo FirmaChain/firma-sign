@@ -24,7 +24,7 @@ export function createAuthRoutes(): Router {
 
   router.post('/connect', validateRequest(connectSchema), (req, res) => {
     try {
-      const { code, transport } = req.body as { code: string; transport?: string };
+      const { code } = req.body as { code: string; transport?: string };
       
       const transferId = transferCodes.get(code);
       if (!transferId) {
@@ -44,9 +44,10 @@ export function createAuthRoutes(): Router {
       logger.info(`Session created for transfer ${transferId}`);
 
       res.json({
-        sessionId,
+        success: true,
         transferId,
-        transport: transport || 'p2p'
+        sessionToken: sessionId, // Use sessionId as the token
+        expiresIn: 86400 // 24 hours in seconds
       });
     } catch (error) {
       logger.error('Error in connect:', error);

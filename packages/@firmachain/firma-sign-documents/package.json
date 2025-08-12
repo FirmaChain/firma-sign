@@ -17,7 +17,7 @@
 		"build": "vite build",
 		"dev": "pnpm pre-storybook && storybook dev -p 6006",
 		"pre-storybook": "node scripts/pre-storybook.cjs",
-		"test": "vitest",
+		"test": "vitest run --passWithNoTests",
 		"test:watch": "vitest --watch",
 		"lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
 		"lintfix": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",

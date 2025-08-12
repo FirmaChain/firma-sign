@@ -1,0 +1,133 @@
+# System endpoints documentation
+
+/transports/available:
+  get:
+    tags:
+      - System
+    summary: List available transports
+    description: Returns loaded transport packages and their capabilities
+    operationId: getAvailableTransports
+    responses:
+      '200':
+        description: List of available transports
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transports:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TransportInfo'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/info:
+  get:
+    tags:
+      - System
+    summary: Get server information
+    description: Get server information and capabilities
+    operationId: getServerInfo
+    responses:
+      '200':
+        description: Server information
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                  example: '1.0.0'
+                uptime:
+                  type: number
+                  description: Server uptime in seconds
+                storage:
+                  type: object
+                  properties:
+                    storagePath:
+                      type: string
+                    storageStatus:
+                      type: object
+                    databaseConnected:
+                      type: boolean
+                    totalTransfers:
+                      type: integer
+                    totalDocuments:
+                      type: integer
+                websocket:
+                  type: object
+                  properties:
+                    connections:
+                      type: integer
+                    totalConnections:
+                      type: integer
+                transports:
+                  type: object
+                  properties:
+                    ready:
+                      type: boolean
+                    status:
+                      type: object
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/health:
+  get:
+    tags:
+      - System
+    summary: Health check
+    description: Check server health status
+    operationId: healthCheck
+    responses:
+      '200':
+        description: Server is healthy
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ok, degraded, error]
+                uptime:
+                  type: number
+                connections:
+                  type: integer
+                version:
+                  type: string
+                services:
+                  type: object
+                  properties:
+                    database:
+                      type: string
+                      enum: [connected, disconnected, error]
+                    storage:
+                      type: string
+                      enum: [connected, disconnected, error]
+                    transports:
+                      type: object
+                      additionalProperties:
+                        type: string
+                        enum: [connected, disconnected, error]
+      '503':
+        description: Server is unhealthy
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [degraded, error]
+                message:
+                  type: string

@@ -50,6 +50,25 @@ pnpm build
 pnpm start
 ```
 
+## API Documentation
+
+The server provides interactive API documentation using Swagger/OpenAPI:
+
+### Accessing Documentation
+
+Once the server is running:
+
+- **Swagger UI**: http://localhost:8080/api-docs
+- **OpenAPI Spec**: http://localhost:8080/api-docs.json
+
+### Features
+
+- Interactive API testing interface
+- Complete request/response schemas
+- Authentication details
+- Example payloads
+- Error response documentation
+
 ## Architecture
 
 ### Directory Structure
@@ -57,6 +76,9 @@ pnpm start
 ```
 src/
 ├── api/          # REST API routes and middleware
+│   └── swagger/  # OpenAPI/Swagger documentation
+├── config/       # Configuration including Swagger setup
+├── services/     # Business logic services
 ├── storage/      # Local storage management
 ├── transport/    # Transport protocol management
 ├── websocket/    # WebSocket server for real-time updates
