@@ -15,7 +15,7 @@
 	},
 	"scripts": {
 		"build": "vite build",
-		"dev": "pnpm pre-storybook && storybook dev -p 6006",
+		"dev": "pnpm pre-storybook && storybook dev -p 6006 --no-open",
 		"pre-storybook": "node scripts/pre-storybook.cjs",
 		"test": "vitest run --passWithNoTests",
 		"test:watch": "vitest --watch",
