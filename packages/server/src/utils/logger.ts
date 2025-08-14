@@ -30,10 +30,16 @@ export function configureLogger(config: LoggingConfig, nodeEnv: string): void {
   // Update log level
   logger.level = config.level;
 
-  // Clear existing file transports
-  logger.transports = logger.transports.filter(
-    transport => transport instanceof winston.transports.Console
-  );
+  // Clear all existing transports
+  logger.clear();
+
+  // Re-add console transport
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  }));
 
   // Add file transports in production
   if (nodeEnv === 'production') {
