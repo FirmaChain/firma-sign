@@ -1,11 +1,24 @@
 import { Editor, SAMPLE_PDF_BASE64, USER_COLORS } from '@firmachain/firma-sign-documents';
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PDFUploader from './PDFUploader';
+import type { FileItem } from './FileExplorer/types';
 
-const DocumentsModule: React.FC = () => {
+interface DocumentsModuleProps {
+	selectedFile?: FileItem | null;
+}
+
+const DocumentsModule: React.FC<DocumentsModuleProps> = ({ selectedFile }) => {
 	const [uploadedPDF, setUploadedPDF] = useState<string | null>(null);
 	const [isUploadSectionVisible, setIsUploadSectionVisible] = useState(false);
+
+	// Update uploaded PDF when a file is selected from the explorer
+	useEffect(() => {
+		if (selectedFile && selectedFile.type === 'file' && selectedFile.data) {
+			setUploadedPDF(selectedFile.data);
+			setIsUploadSectionVisible(false);
+		}
+	}, [selectedFile]);
 
 	const handlePDFUpload = (pdfDataUrl: string) => {
 		setUploadedPDF(pdfDataUrl);
@@ -19,9 +32,10 @@ const DocumentsModule: React.FC = () => {
 		setIsUploadSectionVisible(!isUploadSectionVisible);
 	};
 
-	// Use uploaded PDF if available, otherwise use sample PDF
-	const currentPDFUrl = uploadedPDF || SAMPLE_PDF_BASE64;
-	const hasDocument = !!uploadedPDF || !!SAMPLE_PDF_BASE64;
+	// Use selected file, uploaded PDF, or sample PDF
+	const currentPDFUrl = selectedFile?.data || uploadedPDF || SAMPLE_PDF_BASE64;
+	const hasDocument = !!selectedFile?.data || !!uploadedPDF || !!SAMPLE_PDF_BASE64;
+	const currentFileName = selectedFile?.name || (uploadedPDF ? 'uploaded-pdf' : 'sample-document');
 
 	return (
 		<div className="h-full flex flex-col">
@@ -42,14 +56,18 @@ const DocumentsModule: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Toggle Button - Only show when document is loaded */}
+			{/* File Info and Toggle Button */}
 			{hasDocument && (
 				<div className="flex-shrink-0 border-b border-gray-200 bg-white">
 					<div className="px-4 py-2 flex items-center justify-between">
-						<div className="text-sm text-gray-600">
-							{isUploadSectionVisible
-								? 'Hide upload section for more editing space'
-								: 'Show upload section'}
+						<div className="flex items-center gap-2">
+							<span className="text-sm text-gray-600">Current file:</span>
+							<span className="text-sm font-medium text-gray-800">{currentFileName}</span>
+							{selectedFile?.status && (
+								<span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+									{selectedFile.status}
+								</span>
+							)}
 						</div>
 						<button
 							onClick={toggleUploadSection}
@@ -70,7 +88,7 @@ const DocumentsModule: React.FC = () => {
 									d="M5 15l7-7 7 7"
 								/>
 							</svg>
-							{isUploadSectionVisible ? 'Hide' : 'Show'}
+							{isUploadSectionVisible ? 'Hide Upload' : 'Upload New'}
 						</button>
 					</div>
 				</div>
@@ -94,7 +112,7 @@ const DocumentsModule: React.FC = () => {
 					hideSave={false}
 					enableNext={false}
 					fileUrl={currentPDFUrl}
-					fileId={uploadedPDF ? 'uploaded-pdf' : 'floating-panels-demo'}
+					fileId={selectedFile?.id || (uploadedPDF ? 'uploaded-pdf' : 'floating-panels-demo')}
 					contractId="contract-floating"
 					className="w-full h-full"
 				/>
