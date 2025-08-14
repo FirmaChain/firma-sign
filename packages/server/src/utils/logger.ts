@@ -1,13 +1,10 @@
 import winston from 'winston';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import type { LoggingConfig } from '../config/ConfigManager.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const logDir = process.env.LOG_DIR || path.join(__dirname, '../../../logs');
-
+// Create a basic logger instance with default settings
 export const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
@@ -25,13 +22,36 @@ export const logger = winston.createLogger({
   ]
 });
 
-if (process.env.NODE_ENV === 'production') {
-  logger.add(new winston.transports.File({ 
-    filename: path.join(logDir, 'error.log'), 
-    level: 'error' 
-  }));
-  
-  logger.add(new winston.transports.File({ 
-    filename: path.join(logDir, 'combined.log') 
-  }));
+/**
+ * Configure logger with settings from ConfigManager
+ * This should be called after ConfigManager is initialized
+ */
+export function configureLogger(config: LoggingConfig, nodeEnv: string): void {
+  // Update log level
+  logger.level = config.level;
+
+  // Clear existing file transports
+  logger.transports = logger.transports.filter(
+    transport => transport instanceof winston.transports.Console
+  );
+
+  // Add file transports in production
+  if (nodeEnv === 'production') {
+    const logDir = config.directory;
+    
+    logger.add(new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'), 
+      level: 'error' 
+    }));
+    
+    logger.add(new winston.transports.File({ 
+      filename: path.join(logDir, 'combined.log') 
+    }));
+  }
+
+  logger.info('Logger configured', {
+    level: config.level,
+    environment: nodeEnv,
+    directory: nodeEnv === 'production' ? config.directory : 'console only'
+  });
 }

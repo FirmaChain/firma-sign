@@ -6,10 +6,12 @@ import { logger } from '../utils/logger.js';
 
 // Configuration schemas
 const ServerConfigSchema = z.object({
+  nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
   port: z.number().default(8080),
   host: z.string().default('0.0.0.0'),
   corsOrigin: z.string().default('http://localhost:5173'),
   sessionSecret: z.string().optional(),
+  jwtSecret: z.string().optional(),
   rateLimiting: z.object({
     windowMs: z.number().default(900000), // 15 minutes
     maxRequests: z.number().default(100)
@@ -141,6 +143,9 @@ export class ConfigManager {
 
   private loadFromEnvironment(): void {
     // Server configuration
+    if (process.env.NODE_ENV) {
+      this.config.server.nodeEnv = process.env.NODE_ENV as 'development' | 'production' | 'test';
+    }
     if (process.env.PORT) {
       this.config.server.port = parseInt(process.env.PORT, 10);
     }
@@ -152,6 +157,9 @@ export class ConfigManager {
     }
     if (process.env.SESSION_SECRET) {
       this.config.server.sessionSecret = process.env.SESSION_SECRET;
+    }
+    if (process.env.JWT_SECRET) {
+      this.config.server.jwtSecret = process.env.JWT_SECRET;
     }
     if (process.env.RATE_LIMIT_WINDOW_MS) {
       this.config.server.rateLimiting.windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10);
@@ -342,6 +350,29 @@ export class ConfigManager {
   }
 
   /**
+   * Environment helper methods
+   */
+  isDevelopment(): boolean {
+    return this.config.server.nodeEnv === 'development';
+  }
+
+  isProduction(): boolean {
+    return this.config.server.nodeEnv === 'production';
+  }
+
+  isTest(): boolean {
+    return this.config.server.nodeEnv === 'test' || process.env.VITEST === 'true';
+  }
+
+  getNodeEnv(): string {
+    return this.config.server.nodeEnv;
+  }
+
+  getJwtSecret(): string {
+    return this.config.server.jwtSecret || (this.isDevelopment() ? 'development-secret-key' : '');
+  }
+
+  /**
    * Validate a configuration object against the schema
    */
   static validate(config: unknown): Config {
@@ -358,3 +389,6 @@ export class ConfigManager {
     logger.info(`Default configuration generated at: ${outputPath}`);
   }
 }
+
+// Export singleton instance for convenience
+export const configManager = new ConfigManager();

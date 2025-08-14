@@ -1,5 +1,6 @@
 import path from 'path';
 import { logger } from '../utils/logger.js';
+import { configManager } from '../config/ConfigManager.js';
 import { 
   Database,
   Repository,
@@ -76,7 +77,7 @@ export class StorageManager {
     }
     
     // Initialize database - use unique in-memory DB for each test
-    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+    const isTest = configManager.isTest();
     let dbPath: string;
     if (isTest) {
       // Create unique in-memory database for each test instance

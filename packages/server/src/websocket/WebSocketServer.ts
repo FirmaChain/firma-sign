@@ -4,6 +4,7 @@ import { EventEmitter } from 'events';
 import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
+import { configManager } from '../config/ConfigManager.js';
 
 interface Client {
   id: string;
@@ -43,7 +44,7 @@ export class WebSocketServer extends EventEmitter {
 
   constructor(server: HTTPServer, jwtSecret?: string) {
     super();
-    this.jwtSecret = jwtSecret || process.env.JWT_SECRET || 'default-secret';
+    this.jwtSecret = jwtSecret || configManager.getJwtSecret() || 'default-secret';
     this.wss = new WSServer({ server });
     this.setupWebSocketServer();
     this.startCleanupInterval();

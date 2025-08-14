@@ -28,7 +28,7 @@ describe('DocumentService', () => {
   let storage: MockLocalStorage;
   let documentRepo: Repository<unknown>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Create mocked dependencies
     configManager = new ConfigManager();
     vi.spyOn(configManager, 'getStorage').mockReturnValue({
@@ -50,10 +50,9 @@ describe('DocumentService', () => {
 
     // Create mock storage with spied methods
     storage = new MockLocalStorage();
-    await storage.initialize({ basePath: '/tmp/test-storage' });
     
-    // Spy on storage methods
-    vi.spyOn(storage, 'initialize');
+    // Spy on storage methods BEFORE any calls
+    vi.spyOn(storage, 'initialize').mockResolvedValue(undefined);
     vi.spyOn(storage, 'save').mockResolvedValue({
       success: true,
       path: '',
@@ -80,12 +79,12 @@ describe('DocumentService', () => {
     it('should initialize service with correct base path', async () => {
       await documentService.initialize();
 
-      expect(storage.initialize).toHaveBeenCalledWith({
-        basePath: '/tmp/test-storage/docs',
-        maxFileSize: 500 * 1024 * 1024,
-        ensureDirectories: true,
-        useChecksum: true
-      });
+      // Storage should NOT be initialized by DocumentService
+      // It's expected to be already initialized by StorageManager
+      expect(storage.initialize).not.toHaveBeenCalled();
+      
+      // Should create directories for categories instead
+      expect(storage.createDirectory).toHaveBeenCalled();
     });
 
     it('should create directory structure for all categories', async () => {

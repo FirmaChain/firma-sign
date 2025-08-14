@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../../utils/logger.js';
+import { configManager } from '../../config/ConfigManager.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -15,9 +16,20 @@ export interface AuthenticatedRequest extends Request {
  */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   try {
+    // In development mode, allow "dev-token" to bypass authentication
+    const isDevelopment = configManager.isDevelopment();
     const authHeader = req.headers.authorization;
     
     if (!authHeader) {
+      if (isDevelopment) {
+        // In development, create a mock user
+        (req as AuthenticatedRequest).user = {
+          id: 'dev-user',
+          sessionId: 'dev-session',
+          transferId: 'dev-transfer'
+        };
+        return next();
+      }
       res.status(401).json({ error: 'Authorization header required' });
       return;
     }
@@ -31,8 +43,18 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       return;
     }
 
+    // Allow "dev-token" in development mode
+    if (isDevelopment && token === 'dev-token') {
+      (req as AuthenticatedRequest).user = {
+        id: 'dev-user',
+        sessionId: 'dev-session',
+        transferId: 'dev-transfer'
+      };
+      return next();
+    }
+
     // Get JWT secret from environment or use default for development
-    const jwtSecret = process.env.JWT_SECRET || 'development-secret-key';
+    const jwtSecret = configManager.getJwtSecret();
 
     try {
       const decoded = jwt.verify(token, jwtSecret) as {
@@ -87,7 +109,7 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
       return next();
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'development-secret-key';
+    const jwtSecret = configManager.getJwtSecret();
 
     try {
       const decoded = jwt.verify(token, jwtSecret) as {

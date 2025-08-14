@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import { createServer } from 'http';
-import { ConfigManager } from './config/ConfigManager.js';
+import { configManager } from './config/ConfigManager.js';
 import { TransportManager } from './transport/TransportManager.js';
 import { StorageManager } from './storage/StorageManager.js';
 import { WebSocketServer } from './websocket/WebSocketServer.js';
@@ -18,16 +18,18 @@ import { DocumentService } from './services/DocumentService.js';
 import { SQLiteDatabase } from '@firmachain/firma-sign-database-sqlite';
 import { MockLocalStorage } from './storage/MockLocalStorage.js';
 import { swaggerSpec } from './config/swagger.js';
-import { logger } from './utils/logger.js';
+import { logger, configureLogger } from './utils/logger.js';
 
-// Initialize configuration
-const configManager = new ConfigManager();
+// ConfigManager handles NODE_ENV internally
 
 async function initializeServer() {
   try {
     // Load configuration
     await configManager.load();
     const config = configManager.get();
+    
+    // Configure logger with loaded settings
+    configureLogger(config.logging, config.server.nodeEnv);
     
     logger.info('Configuration loaded', {
       port: config.server.port,
@@ -82,10 +84,27 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, do
       },
     },
   }));
-  app.use(cors({
-    origin: corsOrigin,
-    credentials: true
-  }));
+  
+  // Configure CORS - allow any origin in development
+  const isDevelopment = configManager.isDevelopment();
+  const corsOptions = isDevelopment 
+    ? {
+        // In development, allow ANY origin
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+      }
+    : {
+        // In production, use configured CORS origin
+        origin: corsOrigin,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+      };
+  
+  logger.info(`CORS configured for ${isDevelopment ? 'development (allowing any origin)' : `production (origin: ${corsOrigin})`}`);
+  app.use(cors(corsOptions));
   app.use(express.json({ limit: '50mb' }));
 
   const limiter = rateLimit({
@@ -239,7 +258,7 @@ initializeServer().then(({ app, httpServer, transportManager, storageManager, do
     logger.info(`💾 Storage initialized at ${config.storage.basePath}`);
     logger.info(`📚 API Documentation available at http://localhost:${port}/api-docs`);
     logger.info(`📄 OpenAPI spec available at http://localhost:${port}/api-docs.json`);
-    logger.info(`🔧 Configuration loaded from ${process.env.CONFIG_PATH || 'environment variables'}`);
+    logger.info(`🔧 Configuration loaded (environment: ${configManager.getNodeEnv()})`);
     
     if (transportManager.isReady()) {
       logger.info(`🚛 Transport system ready`);

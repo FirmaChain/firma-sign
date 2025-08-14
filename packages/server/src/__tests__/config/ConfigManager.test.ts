@@ -53,10 +53,12 @@ describe('ConfigManager', () => {
       
       expect(config).toEqual({
         server: {
+          nodeEnv: 'development',
           port: 8080,
           host: '0.0.0.0',
           corsOrigin: 'http://localhost:5173',
           sessionSecret: undefined,
+          jwtSecret: undefined,
           rateLimiting: {
             windowMs: 900000,
             maxRequests: 100
@@ -316,7 +318,7 @@ describe('ConfigManager', () => {
       
       expect(p2pConfig).toEqual({
         port: 9091,
-        enableDHT: true,
+        enableDHT: false,  // Default is false for development
         enableMDNS: true,
         maxConnections: 50,
         connectionTimeout: 30000

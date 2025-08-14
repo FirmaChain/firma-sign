@@ -13,20 +13,15 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (_req, file, cb) => {
-    // Accept common document types
+    // Only accept PDF files
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      'image/png',
-      'image/jpeg'
+      'application/pdf'
     ];
     
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, DOC, DOCX, TXT, PNG, and JPEG files are allowed.'));
+      cb(new Error('Invalid file type. Only PDF files are allowed.'));
     }
   }
 });
@@ -36,9 +31,9 @@ const uploadDocumentSchema = z.object({
   body: z.object({
     category: z.nativeEnum(DocumentCategory).optional().default(DocumentCategory.UPLOADED),
     transferId: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    metadata: z.record(z.unknown()).optional()
-  })
+    tags: z.union([z.string(), z.array(z.string())]).optional(),
+    metadata: z.union([z.string(), z.record(z.unknown())]).optional()
+  }).optional()
 });
 
 const updateDocumentSchema = z.object({
@@ -65,7 +60,7 @@ const searchDocumentsSchema = z.object({
     searchText: z.string().optional(),
     limit: z.string().transform(Number).optional(),
     offset: z.string().transform(Number).optional()
-  })
+  }).optional()
 });
 
 const moveDocumentSchema = z.object({
@@ -107,7 +102,31 @@ export function createDocumentRoutes(documentService: DocumentService): Router {
 
         const body = req.body as Record<string, unknown>;
         const validated = uploadDocumentSchema.parse({ body });
-        const { category, transferId, tags, metadata } = validated.body;
+        
+        // Extract values with defaults
+        const category = (validated.body?.category || body.category || DocumentCategory.UPLOADED) as DocumentCategory;
+        const transferId = validated.body?.transferId || body.transferId as string | undefined;
+        
+        // Parse tags if they come as JSON string
+        let tags = validated.body?.tags || body.tags;
+        if (typeof tags === 'string') {
+          try {
+            tags = JSON.parse(tags);
+          } catch {
+            tags = undefined;
+          }
+        }
+        
+        // Parse metadata if it comes as JSON string
+        let metadata = validated.body?.metadata || body.metadata;
+        if (typeof metadata === 'string') {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch {
+            metadata = undefined;
+          }
+        }
+        
         const uploadedBy = (req as Request & { user?: { id: string } }).user?.id;
 
         const document = await documentService.storeDocument(
@@ -117,8 +136,8 @@ export function createDocumentRoutes(documentService: DocumentService): Router {
           {
             transferId,
             uploadedBy,
-            tags,
-            metadata
+            tags: tags as string[] | undefined,
+            metadata: metadata as Record<string, unknown> | undefined
           }
         );
 
