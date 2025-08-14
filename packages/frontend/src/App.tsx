@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import DocumentsModule from './components/DocumentsModule';
 import FileExplorer from './components/FileExplorer/FileExplorer';
 import AuthConnect from './components/AuthConnect';
@@ -10,10 +10,78 @@ const AppContent: React.FC = () => {
 	const { isAuthenticated } = useAuth();
 	const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+	const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
+	const [isResizing, setIsResizing] = useState(false);
+	const resizeRef = useRef<HTMLDivElement>(null);
 
 	const handleFileSelect = (file: FileItem) => {
 		setSelectedFile(file);
 	};
+
+	// Load saved sidebar width from localStorage
+	useEffect(() => {
+		const savedWidth = localStorage.getItem('sidebarWidth');
+		if (savedWidth) {
+			const width = parseInt(savedWidth, 10);
+			if (width >= 200 && width <= 600) {
+				setSidebarWidth(width);
+			}
+		}
+	}, []);
+
+	// Save sidebar width to localStorage
+	const saveSidebarWidth = useCallback((width: number) => {
+		localStorage.setItem('sidebarWidth', width.toString());
+	}, []);
+
+	// Handle mouse down on resize handle
+	const handleResizeStart = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsResizing(true);
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+		
+		// Prevent text selection during resize
+		document.body.classList.add('select-none');
+	}, []);
+
+	// Handle mouse move during resize
+	const handleResizeMove = useCallback((e: MouseEvent) => {
+		if (!isResizing) return;
+		
+		const newWidth = e.clientX;
+		const minWidth = 200;
+		const maxWidth = 600;
+		
+		if (newWidth >= minWidth && newWidth <= maxWidth) {
+			setSidebarWidth(newWidth);
+		}
+	}, [isResizing]);
+
+	// Handle mouse up to end resize
+	const handleResizeEnd = useCallback(() => {
+		if (isResizing) {
+			setIsResizing(false);
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+			document.body.classList.remove('select-none');
+			saveSidebarWidth(sidebarWidth);
+		}
+	}, [isResizing, sidebarWidth, saveSidebarWidth]);
+
+	// Attach global mouse events for resize
+	useEffect(() => {
+		if (isResizing) {
+			document.addEventListener('mousemove', handleResizeMove);
+			document.addEventListener('mouseup', handleResizeEnd);
+			
+			return () => {
+				document.removeEventListener('mousemove', handleResizeMove);
+				document.removeEventListener('mouseup', handleResizeEnd);
+			};
+		}
+	}, [isResizing, handleResizeMove, handleResizeEnd]);
 
 	// Skip authentication in development mode
 	const isDevelopment = import.meta.env.MODE === 'development';
@@ -63,12 +131,41 @@ const AppContent: React.FC = () => {
 					{/* Sidebar with File Explorer */}
 					<aside
 						className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
-							isSidebarOpen ? 'w-64' : 'w-0'
-						} overflow-hidden`}
+							isSidebarOpen ? '' : 'w-0'
+						} overflow-hidden relative`}
+						style={{ 
+							width: isSidebarOpen ? `${sidebarWidth}px` : '0px',
+							transition: isSidebarOpen ? 'none' : 'width 300ms ease-in-out'
+						}}
 					>
-						<div className="w-64 h-full">
+						<div className="h-full" style={{ width: `${sidebarWidth}px` }}>
 							<FileExplorer onFileSelect={handleFileSelect} />
 						</div>
+						
+						{/* Resize Handle */}
+						{isSidebarOpen && (
+							<div
+								ref={resizeRef}
+								className={`absolute top-0 right-0 w-2 h-full cursor-col-resize hover:bg-blue-500/30 transition-colors group ${
+									isResizing ? 'bg-blue-500/50' : 'bg-transparent'
+								}`}
+								onMouseDown={handleResizeStart}
+								title="Drag to resize sidebar width"
+								style={{ marginRight: '-4px' }} // Extend beyond the border
+							>
+								{/* Visual indicator */}
+								<div className="absolute inset-y-0 right-1 w-0.5 bg-gray-600 group-hover:bg-blue-500 transition-colors" />
+								
+								{/* Resize dots for better visibility */}
+								<div className="absolute top-1/2 right-0.5 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+									<div className="flex flex-col space-y-1">
+										<div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+										<div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+										<div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+									</div>
+								</div>
+							</div>
+						)}
 					</aside>
 
 					{/* Main Content Area */}

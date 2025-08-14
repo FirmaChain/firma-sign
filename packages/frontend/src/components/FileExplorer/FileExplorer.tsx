@@ -20,7 +20,7 @@ interface FileExplorerProps {
 const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 	// Organization mode state
 	const [organizationMode, setOrganizationMode] = useState<OrganizationMode>(
-		localStorage.getItem('fileExplorer_organizationMode') as OrganizationMode || 'automatic'
+		(localStorage.getItem('fileExplorer_organizationMode') as OrganizationMode) || 'automatic',
 	);
 
 	// Use file system hook for document management
@@ -57,7 +57,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 		selectFile,
 		deleteFile,
 		renameFile,
-	} = useFileTree([]);
+	} = useFileTree([], organizationMode);
 
 	const { searchQuery, filteredFiles, handleSearch, clearSearch } = useFileSearch(files);
 
@@ -136,19 +136,23 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 							if (file.type === 'folder') {
 								// For folders, check if it's empty first
 								if (file.children && file.children.length > 0) {
-									alert('Cannot delete non-empty folder. Please delete or move all items inside first.');
+									alert(
+										'Cannot delete non-empty folder. Please delete or move all items inside first.',
+									);
 									return;
 								}
 								// Delete folder locally only (no server call needed)
 								deleteFolder(file.id);
 							} else {
 								// For files, delete from server and then locally
-								void deleteDocumentAPI(file.id).then(() => {
-									deleteFile(file.id);
-								}).catch((err) => {
-									console.error('Failed to delete document:', err);
-									alert('Failed to delete document. Please try again.');
-								});
+								void deleteDocumentAPI(file.id)
+									.then(() => {
+										deleteFile(file.id);
+									})
+									.catch((err) => {
+										console.error('Failed to delete document:', err);
+										alert('Failed to delete document. Please try again.');
+									});
 							}
 						}
 					},
@@ -177,7 +181,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 
 	const handleNewFolder = useCallback(() => {
 		if (organizationMode === 'automatic') {
-			alert('Folders are automatically organized by document categories. Switch to Manual mode to create custom folders.');
+			alert(
+				'Folders are automatically organized by document categories. Switch to Manual mode to create custom folders.',
+			);
 			return;
 		}
 
@@ -213,12 +219,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 					}
 					return;
 				}
-				
+
 				try {
 					// Determine category based on selected folder
 					let category = DocumentCategory.UPLOADED;
 					if (selectedFiles.length === 1) {
-						const selectedFolder = files.find(f => f.id === selectedFiles[0] && f.type === 'folder');
+						const selectedFolder = files.find(
+							(f) => f.id === selectedFiles[0] && f.type === 'folder',
+						);
 						if (selectedFolder) {
 							// Extract category from folder ID (e.g., "folder-uploaded" -> "uploaded")
 							const folderCategory = selectedFolder.id.replace('folder-', '');
@@ -230,7 +238,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 
 					// Upload to server
 					await uploadDocument(file, category);
-					
+
 					// The documents list will be refreshed automatically by the API hook
 				} catch (err) {
 					console.error('Failed to upload file:', err);
@@ -253,16 +261,16 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 	const handleDeleteSelected = useCallback(async () => {
 		if (selectedFiles.length > 0) {
 			const fileNames = selectedFiles
-				.map(id => findFileById(files, id)?.name)
+				.map((id) => findFileById(files, id)?.name)
 				.filter(Boolean)
 				.join(', ');
-			
+
 			if (window.confirm(`Delete ${selectedFiles.length} item(s)?\n${fileNames}`)) {
 				try {
 					// Delete from server
-					await Promise.all(selectedFiles.map(id => deleteDocumentAPI(id)));
+					await Promise.all(selectedFiles.map((id) => deleteDocumentAPI(id)));
 					// Update local state
-					selectedFiles.forEach(id => deleteFile(id));
+					selectedFiles.forEach((id) => deleteFile(id));
 				} catch (err) {
 					console.error('Failed to delete documents:', err);
 				}
@@ -319,15 +327,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 					void fetchFileSystemDocs();
 				}}
 			/>
-			{error && (
-				<div className="px-3 py-2 bg-red-900 text-red-200 text-sm">
-					{error}
-				</div>
-			)}
+			{error && <div className="px-3 py-2 bg-red-900 text-red-200 text-sm">{error}</div>}
 			{loading && (
-				<div className="px-3 py-2 text-gray-400 text-sm text-center">
-					Loading documents...
-				</div>
+				<div className="px-3 py-2 text-gray-400 text-sm text-center">Loading documents...</div>
 			)}
 			<FileTree
 				files={sortedFiles}
@@ -340,11 +342,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect }) => {
 				}}
 				onContextMenu={handleContextMenu}
 				onRename={(id, newName) => {
-					void renameDocumentAPI(id, newName).then(() => {
-						renameFile(id, newName);
-					}).catch((err) => {
-						console.error('Failed to rename document:', err);
-					});
+					void renameDocumentAPI(id, newName)
+						.then(() => {
+							renameFile(id, newName);
+						})
+						.catch((err) => {
+							console.error('Failed to rename document:', err);
+						});
 				}}
 				renamingId={renamingId}
 				onStartRename={setRenamingId}
