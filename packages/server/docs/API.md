@@ -337,6 +337,18 @@ Returns transport capabilities from loaded packages:
 }
 ```
 
+## P2P Network & Peer Management
+
+For P2P network operations, peer discovery, and direct peer-to-peer document transfers, see the dedicated [Peer Explorer API documentation](./API-PEER-EXPLORER.md).
+
+Key P2P endpoints include:
+
+- `/api/p2p/initialize` - Initialize P2P node
+- `/api/p2p/status` - Network status
+- `/api/p2p/peers` - Peer management
+- `/api/p2p/transfers` - P2P document transfers
+- WebSocket at `ws://localhost:8080/p2p` for real-time P2P events
+
 ## Blockchain
 
 ### Store Document Hash

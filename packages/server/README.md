@@ -96,6 +96,7 @@ src/
 ## Documentation
 
 - [API Reference](./docs/API.md) - Detailed API documentation
+- [Peer Explorer API](./docs/API-PEER-EXPLORER.md) - P2P network and peer management APIs
 - [API Flowchart](./docs/API-FLOWCHART.md) - Visual API flow documentation
 - [Architecture](./docs/ARCHITECTURE.md) - System architecture details
 - [Development Guide](./docs/DEVELOPMENT.md) - Development setup and workflow
