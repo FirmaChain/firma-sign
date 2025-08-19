@@ -1,8 +1,22 @@
-# Peer Explorer API Reference
+# Peer Explorer API
 
 ## Overview
 
-This document defines the server API endpoints and WebSocket events required to support the Peer Explorer feature in the Firma-Sign frontend. These APIs enable P2P network management, peer discovery, and direct document transfers between peers.
+The Peer Explorer API provides a unified interface for discovering and connecting with other users across multiple transport protocols (P2P, Email, Discord, Telegram, etc.). It enables document transfers and real-time messaging through various communication channels.
+
+## Core Concepts
+
+### Connection
+
+A connection represents a communication channel with another user, regardless of the underlying transport protocol.
+
+### Peer
+
+A peer is another user in the network who can receive documents and messages.
+
+### Transport
+
+The underlying protocol used for communication (P2P, Email, Discord, etc.).
 
 ## Base URL
 
@@ -10,925 +24,903 @@ This document defines the server API endpoints and WebSocket events required to 
 http://localhost:8080/api
 ```
 
-## P2P Network Management
+## WebSocket Endpoint
 
-### Initialize P2P Node
-
-Start or restart the P2P node with configuration.
-
-```http
-POST /api/p2p/initialize
+```
+ws://localhost:8080/explorer
 ```
 
-#### Request Body
+## REST API Endpoints
+
+### Connection Management
+
+#### Initialize Connection Manager
+
+Initialize the connection manager with selected transports.
+
+```http
+POST /api/connections/initialize
+```
+
+**Request Body:**
 
 ```json
 {
-	"port": 9090,
-	"enableDHT": true,
-	"enableMDNS": true,
-	"bootstrapNodes": [
-		"/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
-	],
-	"maxConnections": 50,
-	"autoConnect": true
+	"transports": ["p2p", "email", "discord"],
+	"config": {
+		"p2p": {
+			"port": 9090,
+			"enableDHT": true,
+			"enableMDNS": true
+		},
+		"email": {
+			"smtp": {
+				"host": "smtp.gmail.com",
+				"port": 587,
+				"auth": {
+					"user": "user@example.com",
+					"pass": "password"
+				}
+			}
+		},
+		"discord": {
+			"botToken": "discord-bot-token",
+			"guildId": "guild-id"
+		}
+	}
 }
 ```
 
-#### Response
+**Response:**
 
 ```json
 {
-	"success": true,
-	"peerId": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
-	"addresses": [
-		"/ip4/192.168.1.100/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
-		"/ip4/127.0.0.1/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
-	],
-	"protocols": ["/firma-sign/1.0.0", "/firma-sign/transfer/1.0.0"]
+	"initialized": true,
+	"transports": {
+		"p2p": {
+			"status": "active",
+			"nodeId": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+			"addresses": ["/ip4/192.168.1.100/tcp/9090"]
+		},
+		"email": {
+			"status": "active",
+			"address": "user@example.com"
+		},
+		"discord": {
+			"status": "active",
+			"username": "FirmaSign#1234"
+		}
+	}
 }
 ```
 
-### Get Network Status
+#### Get Connection Status
 
-Get current P2P network status and statistics.
+Get the current status of all connections and transports.
 
 ```http
-GET /api/p2p/status
+GET /api/connections/status
 ```
 
-#### Response
+**Response:**
 
 ```json
 {
-	"status": "connected",
-	"peerId": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
-	"addresses": [
-		"/ip4/192.168.1.100/tcp/9090/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
-	],
 	"connections": {
-		"total": 15,
-		"inbound": 8,
-		"outbound": 7
+		"active": 15,
+		"pending": 3,
+		"failed": 1
 	},
-	"bandwidth": {
-		"totalIn": 1048576,
-		"totalOut": 524288,
-		"rateIn": 1024,
-		"rateOut": 512
-	},
-	"dht": {
-		"enabled": true,
-		"mode": "server",
-		"routingTableSize": 25
-	},
-	"uptime": 3600,
-	"startedAt": "2024-01-15T10:00:00Z"
+	"transports": {
+		"p2p": {
+			"status": "active",
+			"connections": 10,
+			"bandwidth": {
+				"in": 1024000,
+				"out": 512000
+			}
+		},
+		"email": {
+			"status": "active",
+			"connections": 5,
+			"queue": 2
+		},
+		"discord": {
+			"status": "inactive",
+			"error": "Bot token expired"
+		}
+	}
 }
 ```
 
-### Shutdown P2P Node
+### Peer Discovery & Management
 
-Gracefully shutdown the P2P node.
+#### Discover Peers
+
+Discover available peers across all configured transports.
 
 ```http
-POST /api/p2p/shutdown
+POST /api/peers/discover
 ```
 
-#### Response
+**Request Body:**
 
 ```json
 {
-	"success": true,
-	"message": "P2P node shutdown successfully"
+	"transports": ["p2p", "email"], // Optional: specific transports to use
+	"query": "alice@example.com", // Optional: search query
+	"filters": {
+		"online": true,
+		"verified": true
+	}
 }
 ```
 
-## Peer Management
+**Response:**
 
-### List Peers
+```json
+{
+	"peers": [
+		{
+			"peerId": "peer-123",
+			"displayName": "Alice Johnson",
+			"identifiers": {
+				"p2p": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+				"email": "alice@example.com",
+				"discord": "Alice#1234"
+			},
+			"availableTransports": ["p2p", "email"],
+			"status": "online",
+			"verified": true,
+			"lastSeen": 1234567890000,
+			"capabilities": {
+				"maxFileSize": 104857600,
+				"supportsEncryption": true,
+				"supportsMessaging": true
+			}
+		}
+	],
+	"total": 25,
+	"discovered": 10
+}
+```
+
+#### List Peers
 
 Get list of all known peers categorized by status.
 
 ```http
-GET /api/p2p/peers
+GET /api/peers/:peerId
 ```
 
-#### Query Parameters
-
-- `status` (optional): Filter by status (`connected`, `discovered`, `recent`, `all`)
-- `limit` (optional): Number of results per category (default: 50)
-- `search` (optional): Search peers by ID or metadata
-
-#### Response
+**Response:**
 
 ```json
 {
-	"connected": [
-		{
-			"id": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-			"addresses": [
-				"/ip4/192.168.1.101/tcp/9090/p2p/12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk"
-			],
-			"protocols": ["/firma-sign/1.0.0"],
-			"connectedAt": "2024-01-15T10:15:00Z",
-			"latency": 45,
-			"tags": ["bootstrap", "relay"],
-			"metadata": {
-				"agent": "firma-sign/1.0.0",
-				"platform": "linux",
-				"version": "1.0.0"
-			},
-			"stats": {
-				"transfersSent": 5,
-				"transfersReceived": 3,
-				"bytesTransferred": 10485760
+	"peerId": "peer-123",
+	"displayName": "Alice Johnson",
+	"avatar": "data:image/png;base64,...",
+	"identifiers": {
+		"p2p": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+		"email": "alice@example.com",
+		"discord": "Alice#1234",
+		"telegram": "@alice_johnson"
+	},
+	"transports": {
+		"p2p": {
+			"status": "connected",
+			"addresses": ["/ip4/192.168.1.100/tcp/9090"],
+			"latency": 15,
+			"bandwidth": {
+				"in": 1024000,
+				"out": 512000
 			}
+		},
+		"email": {
+			"status": "available",
+			"verified": true
 		}
-	],
-	"discovered": [
-		{
-			"id": "12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq",
-			"addresses": [
-				"/ip4/192.168.1.102/tcp/9090/p2p/12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq"
-			],
-			"discoveredAt": "2024-01-15T10:20:00Z",
-			"discoveryMethod": "mdns"
-		}
-	],
-	"recent": [
-		{
-			"id": "12D3KooWF7pZqFdkQZtJxHYSV5xzNKPaExydjCNfLkP7cLt5BF8X",
-			"lastSeen": "2024-01-15T09:45:00Z",
-			"disconnectedAt": "2024-01-15T09:50:00Z",
-			"disconnectReason": "timeout"
-		}
-	],
-	"total": {
-		"connected": 15,
-		"discovered": 8,
-		"recent": 25
-	}
-}
-```
-
-### Get Peer Details
-
-Get detailed information about a specific peer.
-
-```http
-GET /api/p2p/peers/:peerId
-```
-
-#### Response
-
-```json
-{
-	"id": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"status": "connected",
-	"addresses": ["/ip4/192.168.1.101/tcp/9090", "/ip4/192.168.1.101/tcp/9091/ws"],
-	"protocols": [
-		"/firma-sign/1.0.0",
-		"/firma-sign/transfer/1.0.0",
-		"/libp2p/circuit/relay/0.2.0/hop"
-	],
-	"connection": {
-		"direction": "outbound",
-		"latency": 45,
-		"streams": 3,
-		"connectedAt": "2024-01-15T10:15:00Z",
-		"multiplexer": "yamux",
-		"encryption": "noise"
 	},
+	"publicKey": "-----BEGIN PUBLIC KEY-----...",
+	"transferHistory": {
+		"sent": 15,
+		"received": 8,
+		"lastTransfer": 1234567890000
+	},
+	"trustLevel": "verified",
 	"metadata": {
-		"agent": "firma-sign/1.0.0",
-		"platform": "linux",
-		"version": "1.0.0",
-		"publicKey": "-----BEGIN PUBLIC KEY-----..."
-	},
-	"stats": {
-		"messagesReceived": 150,
-		"messagesSent": 145,
-		"bytesReceived": 5242880,
-		"bytesSent": 4194304,
-		"transfersCompleted": 8,
-		"transfersFailed": 1,
-		"averageLatency": 48,
-		"connectionUptime": 3600
-	},
-	"transferHistory": [
-		{
-			"transferId": "transfer-abc123",
-			"direction": "sent",
-			"documentName": "contract.pdf",
-			"size": 1048576,
-			"timestamp": "2024-01-15T10:30:00Z",
-			"status": "completed"
-		}
-	]
-}
-```
-
-### Connect to Peer
-
-Manually connect to a peer by ID or multiaddress.
-
-```http
-POST /api/p2p/peers/connect
-```
-
-#### Request Body
-
-```json
-{
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"addresses": ["/ip4/192.168.1.101/tcp/9090"]
-}
-```
-
-#### Response
-
-```json
-{
-	"success": true,
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"connection": {
-		"latency": 45,
-		"streams": 1,
-		"direction": "outbound"
+		"organization": "FirmaChain",
+		"department": "Engineering"
 	}
 }
 ```
 
-### Disconnect from Peer
+#### Connect to Peer
+
+Establish a connection with a peer using specified transport.
+
+```http
+POST /api/peers/:peerId/connect
+```
+
+**Request Body:**
+
+```json
+{
+	"transport": "p2p", // Required: transport to use
+	"fallbackTransports": ["email", "discord"], // Optional: fallback order
+	"options": {
+		"encrypted": true,
+		"priority": "high"
+	}
+}
+```
+
+**Response:**
+
+```json
+{
+	"connected": true,
+	"connectionId": "conn-456",
+	"transport": "p2p",
+	"latency": 15,
+	"encrypted": true,
+	"sessionToken": "session-token-123"
+}
+```
+
+#### Disconnect from Peer
 
 Disconnect from a specific peer.
 
 ```http
-POST /api/p2p/peers/:peerId/disconnect
+POST /api/peers/:peerId/disconnect
 ```
 
-#### Response
+**Response:**
 
 ```json
 {
-	"success": true,
-	"message": "Disconnected from peer"
+	"disconnected": true,
+	"peerId": "peer-123"
 }
 ```
 
-### Block/Unblock Peer
+### Document Transfer via Peer Explorer
 
-Block or unblock a peer.
+#### Send Documents to Peer
+
+Send documents directly to a peer using the best available transport.
 
 ```http
-POST /api/p2p/peers/:peerId/block
-POST /api/p2p/peers/:peerId/unblock
+POST /api/peers/:peerId/transfers
 ```
 
-#### Response
+**Request Body:**
 
 ```json
 {
-	"success": true,
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"status": "blocked" // or "unblocked"
-}
-```
-
-## P2P Document Transfers
-
-### Send Document to Peer
-
-Send a document directly to a connected peer.
-
-```http
-POST /api/p2p/transfers/send
-```
-
-#### Request Body
-
-```json
-{
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
 	"documents": [
 		{
 			"id": "doc-1",
 			"fileName": "contract.pdf",
 			"fileData": "base64-encoded-data",
-			"fileSize": 1048576,
-			"mimeType": "application/pdf",
-			"hash": "sha256:abc123..."
+			"components": [
+				/* signature fields, etc. */
+			]
 		}
 	],
-	"metadata": {
-		"message": "Please review this contract",
+	"transport": "auto", // "auto" | "p2p" | "email" | etc.
+	"options": {
+		"encrypted": true,
 		"requireSignature": true,
-		"deadline": "2024-12-31T23:59:59Z"
-	}
+		"deadline": "2024-12-31T23:59:59Z",
+		"message": "Please review and sign this contract"
+	},
+	"fallbackTransports": ["email", "discord"]
 }
 ```
 
-#### Response
+**Response:**
 
 ```json
 {
-	"success": true,
-	"transferId": "transfer-xyz789",
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"status": "initiated",
-	"estimatedTime": 10
+	"transferId": "transfer-789",
+	"status": "sent",
+	"transport": "p2p", // Actually used transport
+	"deliveryStatus": {
+		"sent": 1234567890000,
+		"delivered": null,
+		"read": null,
+		"signed": null
+	},
+	"trackingUrl": "/api/transfers/transfer-789"
 }
 ```
 
-### Get P2P Transfer Status
+#### Get Peer Transfers
 
-Get status of a P2P transfer.
+Get all transfers with a specific peer.
 
 ```http
-GET /api/p2p/transfers/:transferId
+GET /api/peers/:peerId/transfers
 ```
 
-#### Response
+**Query Parameters:**
+
+- `type`: "sent" | "received" | "all"
+- `status`: Transfer status filter
+- `limit`: Number of results
+- `offset`: Pagination offset
+
+**Response:**
 
 ```json
 {
-	"transferId": "transfer-xyz789",
-	"type": "outgoing",
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"status": "in_progress",
-	"progress": 65,
-	"documents": [
+	"transfers": [
 		{
-			"id": "doc-1",
-			"fileName": "contract.pdf",
-			"size": 1048576,
-			"transferred": 681574,
-			"status": "transferring"
-		}
-	],
-	"startedAt": "2024-01-15T10:45:00Z",
-	"estimatedCompletion": "2024-01-15T10:45:10Z",
-	"speed": 104857,
-	"error": null
-}
-```
-
-### List P2P Transfers
-
-List all P2P transfers.
-
-```http
-GET /api/p2p/transfers
-```
-
-#### Query Parameters
-
-- `type` (optional): Filter by type (`incoming`, `outgoing`, `all`)
-- `status` (optional): Filter by status (`active`, `completed`, `failed`)
-- `peerId` (optional): Filter by peer ID
-- `limit` (optional): Number of results (default: 50)
-- `offset` (optional): Pagination offset
-
-#### Response
-
-```json
-{
-	"active": [
-		{
-			"transferId": "transfer-xyz789",
-			"type": "outgoing",
-			"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-			"documentName": "contract.pdf",
-			"size": 1048576,
-			"progress": 65,
-			"speed": 104857,
-			"status": "transferring",
-			"startedAt": "2024-01-15T10:45:00Z"
-		}
-	],
-	"completed": [
-		{
-			"transferId": "transfer-abc123",
-			"type": "incoming",
-			"peerId": "12D3KooWF7pZqFdkQZtJxHYSV5xzNKPaExydjCNfLkP7cLt5BF8X",
-			"documentName": "report.pdf",
-			"size": 524288,
+			"transferId": "transfer-789",
+			"type": "sent",
+			"documentCount": 2,
+			"transport": "p2p",
 			"status": "completed",
-			"completedAt": "2024-01-15T10:30:00Z",
-			"duration": 5
+			"createdAt": 1234567890000,
+			"completedAt": 1234567891000
 		}
 	],
-	"failed": [
+	"total": 15
+}
+```
+
+### Messaging
+
+#### Send Message to Peer
+
+Send a text message to a peer.
+
+```http
+POST /api/peers/:peerId/messages
+```
+
+**Request Body:**
+
+```json
+{
+	"content": "Hello, can you review the document I sent?",
+	"type": "text", // "text" | "file" | "transfer_notification"
+	"transport": "auto", // Let system choose best transport
+	"attachments": [
 		{
-			"transferId": "transfer-def456",
-			"type": "outgoing",
-			"peerId": "12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq",
-			"documentName": "presentation.pdf",
-			"size": 2097152,
-			"status": "failed",
-			"failedAt": "2024-01-15T09:50:00Z",
-			"error": "Connection timeout"
+			"type": "transfer_reference",
+			"transferId": "transfer-789"
 		}
 	],
-	"pagination": {
-		"total": 45,
-		"limit": 50,
-		"offset": 0,
-		"hasMore": false
+	"encrypted": true
+}
+```
+
+**Response:**
+
+```json
+{
+	"messageId": "msg-123",
+	"status": "sent",
+	"transport": "p2p",
+	"timestamp": 1234567890000,
+	"deliveryStatus": {
+		"sent": 1234567890000,
+		"delivered": null,
+		"read": null
 	}
 }
 ```
 
-### Cancel P2P Transfer
+#### Get Message History
 
-Cancel an active P2P transfer.
-
-```http
-POST /api/p2p/transfers/:transferId/cancel
-```
-
-#### Response
-
-```json
-{
-	"success": true,
-	"transferId": "transfer-xyz789",
-	"status": "cancelled"
-}
-```
-
-### Retry Failed Transfer
-
-Retry a failed P2P transfer.
+Get message history with a peer.
 
 ```http
-POST /api/p2p/transfers/:transferId/retry
+GET /api/peers/:peerId/messages
 ```
 
-#### Response
+**Query Parameters:**
+
+- `before`: Message ID or timestamp
+- `after`: Message ID or timestamp
+- `limit`: Number of messages (default: 50)
+
+**Response:**
 
 ```json
 {
-	"success": true,
-	"transferId": "transfer-def456",
-	"newTransferId": "transfer-ghi789",
-	"status": "initiated"
-}
-```
-
-## Peer Discovery
-
-### Discover Peers
-
-Trigger manual peer discovery.
-
-```http
-POST /api/p2p/discovery/scan
-```
-
-#### Request Body
-
-```json
-{
-	"methods": ["dht", "mdns"],
-	"timeout": 10000
-}
-```
-
-#### Response
-
-```json
-{
-	"success": true,
-	"discovered": 5,
-	"peers": [
+	"messages": [
 		{
-			"id": "12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq",
-			"addresses": ["/ip4/192.168.1.102/tcp/9090"],
-			"discoveryMethod": "mdns"
+			"messageId": "msg-123",
+			"type": "text",
+			"content": "Hello, can you review the document I sent?",
+			"direction": "outgoing",
+			"transport": "p2p",
+			"timestamp": 1234567890000,
+			"status": "delivered",
+			"attachments": [
+				{
+					"type": "transfer_reference",
+					"transferId": "transfer-789",
+					"fileName": "contract.pdf"
+				}
+			]
+		},
+		{
+			"messageId": "msg-124",
+			"type": "text",
+			"content": "Sure, I'll review it now.",
+			"direction": "incoming",
+			"transport": "p2p",
+			"timestamp": 1234567891000,
+			"status": "read"
+		}
+	],
+	"hasMore": true
+}
+```
+
+#### Mark Messages as Read
+
+Mark messages from a peer as read.
+
+```http
+POST /api/peers/:peerId/messages/read
+```
+
+**Request Body:**
+
+```json
+{
+	"messageIds": ["msg-124", "msg-125"], // Optional: specific messages
+	"readAll": true // Optional: mark all as read
+}
+```
+
+**Response:**
+
+```json
+{
+	"updated": 2,
+	"lastReadTimestamp": 1234567891000
+}
+```
+
+### Peer Groups
+
+#### Create Peer Group
+
+Create a group for multi-party document transfers and messaging.
+
+```http
+POST /api/groups
+```
+
+**Request Body:**
+
+```json
+{
+	"name": "Contract Review Team",
+	"description": "Team for reviewing Q4 contracts",
+	"members": [
+		{
+			"peerId": "peer-123",
+			"role": "admin"
+		},
+		{
+			"peerId": "peer-456",
+			"role": "member"
+		}
+	],
+	"settings": {
+		"allowMemberInvites": true,
+		"requireEncryption": true,
+		"defaultTransport": "p2p"
+	}
+}
+```
+
+**Response:**
+
+```json
+{
+	"groupId": "group-789",
+	"name": "Contract Review Team",
+	"members": 3,
+	"created": 1234567890000
+}
+```
+
+#### Send to Group
+
+Send documents or messages to all group members.
+
+```http
+POST /api/groups/:groupId/send
+```
+
+**Request Body:**
+
+```json
+{
+	"type": "document", // "document" | "message"
+	"documents": [
+		/* ... */
+	],
+	"message": "Please review and sign by EOD",
+	"transport": "auto",
+	"excludeMembers": ["peer-789"] // Optional: exclude specific members
+}
+```
+
+**Response:**
+
+```json
+{
+	"sent": true,
+	"recipients": [
+		{
+			"peerId": "peer-123",
+			"status": "sent",
+			"transport": "p2p"
+		},
+		{
+			"peerId": "peer-456",
+			"status": "sent",
+			"transport": "email"
 		}
 	]
 }
 ```
 
-### Get Bootstrap Nodes
+### Transport-Specific Operations
 
-Get list of bootstrap nodes.
+#### P2P Network Status
 
-```http
-GET /api/p2p/discovery/bootstrap
-```
-
-#### Response
-
-```json
-{
-	"nodes": [
-		{
-			"id": "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-			"address": "/ip4/104.131.131.82/tcp/4001",
-			"status": "connected",
-			"latency": 120
-		}
-	]
-}
-```
-
-### Add Bootstrap Node
-
-Add a new bootstrap node.
+Get P2P network statistics and connected nodes.
 
 ```http
-POST /api/p2p/discovery/bootstrap
+GET /api/transports/p2p/network
 ```
 
-#### Request Body
+**Response:**
 
 ```json
 {
-	"address": "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
-}
-```
-
-#### Response
-
-```json
-{
-	"success": true,
-	"nodeId": "QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ",
-	"status": "added"
-}
-```
-
-## Network Metrics
-
-### Get Network Metrics
-
-Get detailed network performance metrics.
-
-```http
-GET /api/p2p/metrics
-```
-
-#### Response
-
-```json
-{
+	"nodeId": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+	"addresses": ["/ip4/192.168.1.100/tcp/9090", "/ip4/0.0.0.0/tcp/9091/ws"],
+	"connectedPeers": 15,
+	"discoveredPeers": 45,
+	"dht": {
+		"enabled": true,
+		"providers": 120,
+		"records": 340
+	},
 	"bandwidth": {
-		"totalIn": 10485760,
-		"totalOut": 8388608,
-		"rateIn": 10240,
-		"rateOut": 8192,
-		"peakIn": 51200,
-		"peakOut": 40960
+		"totalIn": 104857600,
+		"totalOut": 52428800,
+		"rateIn": 1024000,
+		"rateOut": 512000
 	},
-	"connections": {
-		"total": 15,
-		"inbound": 8,
-		"outbound": 7,
-		"pending": 2,
-		"averageLatency": 65,
-		"medianLatency": 50
-	},
-	"transfers": {
-		"active": 2,
-		"completed": 45,
-		"failed": 3,
-		"totalBytes": 104857600,
-		"successRate": 93.75
-	},
-	"peers": {
-		"connected": 15,
-		"discovered": 8,
-		"blocked": 2,
-		"turnover": 0.2
-	},
-	"uptime": 3600,
-	"messagesPerSecond": 12.5,
-	"protocolStats": {
-		"/firma-sign/transfer/1.0.0": {
-			"requests": 150,
-			"responses": 148,
-			"errors": 2
-		}
-	}
+	"protocols": ["/firma-sign/1.0.0", "/firma-sign/transfer/1.0.0", "/firma-sign/message/1.0.0"]
 }
 ```
 
-### Get Peer Connection Quality
+#### Email Queue Status
 
-Get connection quality metrics for a specific peer.
+Get email transport queue and delivery status.
 
 ```http
-GET /api/p2p/peers/:peerId/quality
+GET /api/transports/email/queue
 ```
 
-#### Response
+**Response:**
 
 ```json
 {
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"quality": "excellent",
-	"metrics": {
-		"latency": {
-			"current": 45,
-			"average": 48,
-			"min": 35,
-			"max": 120,
-			"jitter": 5
-		},
-		"packetLoss": 0.01,
-		"bandwidth": {
-			"upload": 512000,
-			"download": 1024000
-		},
-		"reliability": 0.99,
-		"uptime": 3600,
+	"queue": {
+		"pending": 5,
+		"processing": 2,
+		"failed": 1,
+		"completed": 150
+	},
+	"smtp": {
+		"connected": true,
+		"host": "smtp.gmail.com",
 		"lastError": null
 	},
-	"score": 95
+	"limits": {
+		"dailyLimit": 1000,
+		"used": 152,
+		"resetTime": 1234567890000
+	}
 }
 ```
 
 ## WebSocket Events
 
-Connect to WebSocket for real-time P2P updates:
+Connect to WebSocket for real-time peer updates and messaging.
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8080/p2p');
+const ws = new WebSocket('ws://localhost:8080/explorer');
 ```
 
 ### Client → Server Events
 
-#### Subscribe to P2P Events
+#### Subscribe to Peer Updates
 
 ```json
 {
 	"type": "subscribe",
-	"events": ["peer:discovery", "peer:connect", "transfer:progress"]
+	"peerId": "peer-123"
 }
 ```
 
-#### Request Peer List Update
+#### Join Group
 
 ```json
 {
-	"type": "peers:refresh"
+	"type": "join_group",
+	"groupId": "group-789"
+}
+```
+
+#### Send Instant Message
+
+```json
+{
+	"type": "message",
+	"peerId": "peer-123",
+	"content": "Document signed!",
+	"transport": "p2p"
 }
 ```
 
 ### Server → Client Events
 
+#### Peer Status Update
+
+```json
+{
+	"type": "peer:status",
+	"peerId": "peer-123",
+	"status": "online",
+	"transport": "p2p",
+	"timestamp": 1234567890000
+}
+```
+
 #### Peer Discovered
 
 ```json
 {
-	"type": "peer:discovery",
+	"type": "peer:discovered",
 	"peer": {
-		"id": "12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq",
-		"addresses": ["/ip4/192.168.1.102/tcp/9090"],
-		"discoveryMethod": "mdns",
-		"timestamp": "2024-01-15T10:20:00Z"
+		"peerId": "peer-456",
+		"displayName": "Bob Smith",
+		"transports": ["p2p", "email"]
 	}
 }
 ```
 
-#### Peer Connected
+#### Message Received
 
 ```json
 {
-	"type": "peer:connect",
-	"peer": {
-		"id": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-		"direction": "inbound",
-		"latency": 45,
-		"timestamp": "2024-01-15T10:15:00Z"
+	"type": "message:received",
+	"message": {
+		"messageId": "msg-789",
+		"peerId": "peer-123",
+		"content": "Thanks for the document!",
+		"timestamp": 1234567890000
 	}
 }
 ```
 
-#### Peer Disconnected
+#### Transfer Received
 
 ```json
 {
-	"type": "peer:disconnect",
-	"peer": {
-		"id": "12D3KooWF7pZqFdkQZtJxHYSV5xzNKPaExydjCNfLkP7cLt5BF8X",
-		"reason": "timeout",
-		"timestamp": "2024-01-15T09:50:00Z"
+	"type": "transfer:received",
+	"transfer": {
+		"transferId": "transfer-123",
+		"peerId": "peer-456",
+		"documentCount": 2,
+		"transport": "p2p"
 	}
 }
 ```
 
-#### Transfer Progress
+#### Group Update
 
 ```json
 {
-	"type": "transfer:progress",
-	"transferId": "transfer-xyz789",
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"progress": 75,
-	"speed": 104857,
-	"remainingTime": 3,
-	"timestamp": "2024-01-15T10:45:05Z"
+	"type": "group:update",
+	"groupId": "group-789",
+	"event": "member_joined",
+	"data": {
+		"peerId": "peer-999",
+		"displayName": "Charlie Brown"
+	}
 }
 ```
 
-#### Transfer Completed
+#### Transport Status
 
 ```json
 {
-	"type": "transfer:complete",
-	"transferId": "transfer-xyz789",
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"duration": 10,
-	"size": 1048576,
-	"timestamp": "2024-01-15T10:45:10Z"
-}
-```
-
-#### Transfer Failed
-
-```json
-{
-	"type": "transfer:failed",
-	"transferId": "transfer-def456",
-	"peerId": "12D3KooWQvwRz7NkBfFtKmFmqzGXCsYBRYTDNmBdK3bVKkP8KLVq",
-	"error": "Connection lost",
-	"timestamp": "2024-01-15T09:50:00Z"
-}
-```
-
-#### Network Status Update
-
-```json
-{
-	"type": "network:status",
-	"status": "connected",
-	"connections": 15,
-	"bandwidth": {
-		"in": 10240,
-		"out": 8192
-	},
-	"timestamp": "2024-01-15T10:45:00Z"
-}
-```
-
-#### Incoming Transfer Request
-
-```json
-{
-	"type": "transfer:incoming",
-	"transferId": "transfer-incoming-123",
-	"peerId": "12D3KooWBHvsEKBET6FhjnZF6x9pBCijvLW3eUsobCnnjKeb3pKk",
-	"documents": [
-		{
-			"fileName": "proposal.pdf",
-			"size": 2097152
-		}
-	],
-	"metadata": {
-		"message": "Please review this proposal"
-	},
-	"timestamp": "2024-01-15T11:00:00Z"
+	"type": "transport:status",
+	"transport": "p2p",
+	"status": "reconnecting",
+	"details": {
+		"reason": "Network change detected",
+		"retryIn": 5000
+	}
 }
 ```
 
 ## Error Responses
 
-All error responses follow this format:
-
 ```json
 {
 	"error": {
-		"code": "P2P_NOT_INITIALIZED",
-		"message": "P2P node is not initialized",
+		"code": "PEER_NOT_FOUND",
+		"message": "Peer with ID peer-123 not found",
 		"details": {
-			"suggestion": "Call /api/p2p/initialize first"
+			"peerId": "peer-123",
+			"searchedTransports": ["p2p", "email"]
 		}
 	}
 }
 ```
 
-### P2P-Specific Error Codes
+### Error Codes
 
-- `P2P_NOT_INITIALIZED`: P2P node not initialized
-- `P2P_ALREADY_INITIALIZED`: P2P node already running
+- `TRANSPORT_NOT_AVAILABLE`: Requested transport not configured
 - `PEER_NOT_FOUND`: Peer not found in network
-- `PEER_NOT_CONNECTED`: Peer is not connected
-- `PEER_BLOCKED`: Peer is blocked
-- `CONNECTION_FAILED`: Failed to connect to peer
-- `CONNECTION_TIMEOUT`: Connection timed out
-- `TRANSFER_NOT_FOUND`: Transfer not found
-- `TRANSFER_FAILED`: Transfer operation failed
-- `TRANSFER_CANCELLED`: Transfer was cancelled
-- `DISCOVERY_FAILED`: Peer discovery failed
-- `INVALID_PEER_ID`: Invalid peer ID format
-- `INVALID_MULTIADDR`: Invalid multiaddress format
-- `NETWORK_ERROR`: General network error
-- `PROTOCOL_ERROR`: Protocol negotiation failed
+- `PEER_OFFLINE`: Peer is currently offline
+- `CONNECTION_FAILED`: Failed to establish connection
+- `TRANSFER_FAILED`: Document transfer failed
+- `MESSAGE_DELIVERY_FAILED`: Message could not be delivered
+- `GROUP_NOT_FOUND`: Group does not exist
+- `PERMISSION_DENIED`: Insufficient permissions for operation
+- `TRANSPORT_ERROR`: Transport-specific error
+- `QUOTA_EXCEEDED`: Message or transfer quota exceeded
 
 ## Rate Limiting
 
-P2P API endpoints have specific rate limits:
-
-- P2P initialization: 1 request per minute
-- Peer operations: 30 requests per minute
-- Transfer operations: 60 requests per minute
-- Discovery operations: 10 requests per minute
-- Metrics endpoints: 120 requests per minute
+- Peer discovery: 10 requests per minute
+- Message sending: 100 messages per minute per peer
+- Document transfers: 20 transfers per hour per peer
+- Group operations: 30 requests per minute
 
 ## Security Considerations
 
-### Peer Authentication
+### Peer Verification
 
-- Each peer has a cryptographic identity
-- Peer IDs are derived from public keys
-- All connections use encryption (TLS/Noise)
+- Public key verification for P2P connections
+- Email domain verification
+- Discord/Telegram account verification
 
-### Transfer Security
+### Encryption
 
-- Documents are encrypted during transfer
-- Hash verification for integrity
-- Optional end-to-end encryption with recipient's public key
+- End-to-end encryption for P2P messages and transfers
+- TLS for email transport
+- Transport-specific encryption for other protocols
 
-### Access Control
+### Trust Levels
 
-- JWT authentication required for API access
-- Peer blocking and allowlisting support
-- Rate limiting to prevent abuse
+1. **Unverified**: New peer, no verification
+2. **Email Verified**: Email address confirmed
+3. **Identity Verified**: Multiple transports verified
+4. **Trusted**: Manual trust or organization member
 
-## Implementation Notes
+## Transport Selection Algorithm
 
-### Server Components Required
+The system automatically selects the best transport based on:
 
-1. **P2PManager Service**
-   - Initialize and manage libp2p node
-   - Handle peer connections
-   - Manage transfer operations
+1. **Availability**: Is the peer online on this transport?
+2. **Capability**: Does the transport support required features?
+3. **Performance**: Latency and bandwidth considerations
+4. **Preference**: User-defined transport preferences
+5. **Fallback**: Automatic fallback to alternative transports
 
-2. **PeerRepository**
-   - Store peer information in database
-   - Track peer history and statistics
-   - Manage blocked peers list
+## Usage Examples
 
-3. **TransferService**
-   - Handle P2P document transfers
-   - Track transfer progress
-   - Manage transfer queue
+### Discover and Connect to Peer
 
-4. **WebSocket Handler**
-   - Emit real-time P2P events
-   - Handle client subscriptions
-   - Broadcast network updates
+```javascript
+// Discover peers
+const response = await fetch('/api/peers/discover', {
+	method: 'POST',
+	body: JSON.stringify({
+		query: 'alice@example.com',
+	}),
+});
+const { peers } = await response.json();
 
-### Database Schema Additions
-
-```sql
--- Peers table
-CREATE TABLE peers (
-  id TEXT PRIMARY KEY,           -- Peer ID
-  nickname TEXT,                  -- User-friendly name
-  first_seen INTEGER NOT NULL,   -- Unix timestamp
-  last_seen INTEGER NOT NULL,    -- Unix timestamp
-  status TEXT NOT NULL,           -- connected/disconnected/blocked
-  metadata TEXT,                  -- JSON metadata
-  stats TEXT,                     -- JSON statistics
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
--- P2P Transfers table
-CREATE TABLE p2p_transfers (
-  id TEXT PRIMARY KEY,
-  peer_id TEXT NOT NULL,
-  type TEXT NOT NULL,             -- incoming/outgoing
-  status TEXT NOT NULL,           -- active/completed/failed/cancelled
-  document_id TEXT,
-  document_name TEXT,
-  size INTEGER,
-  progress INTEGER,
-  started_at INTEGER NOT NULL,
-  completed_at INTEGER,
-  error TEXT,
-  metadata TEXT,                  -- JSON metadata
-  FOREIGN KEY (peer_id) REFERENCES peers(id)
-);
-
--- Peer connections table
-CREATE TABLE peer_connections (
-  id TEXT PRIMARY KEY,
-  peer_id TEXT NOT NULL,
-  direction TEXT NOT NULL,        -- inbound/outbound
-  connected_at INTEGER NOT NULL,
-  disconnected_at INTEGER,
-  latency INTEGER,
-  quality TEXT,                   -- excellent/good/poor
-  FOREIGN KEY (peer_id) REFERENCES peers(id)
-);
+// Connect to first peer
+const peer = peers[0];
+const connectResponse = await fetch(`/api/peers/${peer.peerId}/connect`, {
+	method: 'POST',
+	body: JSON.stringify({
+		transport: 'auto',
+		fallbackTransports: ['email'],
+	}),
+});
 ```
 
----
+### Send Document with Message
 
-**Status**: API design complete. Ready for server implementation to support Peer Explorer frontend feature.
+```javascript
+// Send document to peer
+const transferResponse = await fetch(`/api/peers/${peerId}/transfers`, {
+	method: 'POST',
+	body: JSON.stringify({
+		documents: [documentData],
+		transport: 'auto',
+		options: {
+			message: 'Please sign this contract',
+		},
+	}),
+});
+
+// Follow up with message
+const messageResponse = await fetch(`/api/peers/${peerId}/messages`, {
+	method: 'POST',
+	body: JSON.stringify({
+		content: 'I just sent you the contract. Let me know if you have questions!',
+		attachments: [
+			{
+				type: 'transfer_reference',
+				transferId: transferResponse.transferId,
+			},
+		],
+	}),
+});
+```
+
+### Real-time Messaging
+
+```javascript
+const ws = new WebSocket('ws://localhost:8080/explorer');
+
+ws.onopen = () => {
+	// Subscribe to peer updates
+	ws.send(
+		JSON.stringify({
+			type: 'subscribe',
+			peerId: 'peer-123',
+		}),
+	);
+};
+
+ws.onmessage = (event) => {
+	const data = JSON.parse(event.data);
+
+	switch (data.type) {
+		case 'message:received':
+			console.log('New message:', data.message);
+			break;
+		case 'peer:status':
+			console.log('Peer status:', data.status);
+			break;
+		case 'transfer:received':
+			console.log('New transfer:', data.transfer);
+			break;
+	}
+};
+
+// Send instant message
+ws.send(
+	JSON.stringify({
+		type: 'message',
+		peerId: 'peer-123',
+		content: 'Are you available for a quick review?',
+	}),
+);
+```
