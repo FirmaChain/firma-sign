@@ -463,9 +463,6 @@ importers:
       '@chainsafe/libp2p-yamux':
         specifier: ^7.0.4
         version: 7.0.4
-      '@ipshipyard/node-datachannel':
-        specifier: ^0.26.6
-        version: 0.26.6
       '@libp2p/crypto':
         specifier: ^5.0.7
         version: 5.1.7
@@ -537,6 +534,9 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.16.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.43.1)(tsx@4.20.3)(yaml@2.8.0)
     optionalDependencies:
+      '@ipshipyard/node-datachannel':
+        specifier: ^0.26.6
+        version: 0.26.6
       '@libp2p/webrtc':
         specifier: ^5.0.21
         version: 5.2.23(react-native@0.80.2(@babel/core@7.28.0)(@types/react@19.1.8)(react@19.1.0))
@@ -7074,6 +7074,7 @@ snapshots:
   '@ipshipyard/node-datachannel@0.26.6':
     dependencies:
       prebuild-install: 7.1.3
+    optional: true
 
   '@isaacs/cliui@8.0.2':
     dependencies:
