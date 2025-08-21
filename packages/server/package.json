@@ -27,7 +27,7 @@
 		"@firmachain/firma-sign-database-sqlite": "workspace:*",
 		"@firmachain/firma-sign-storage-local": "workspace:*",
 		"@firmachain/firma-sign-transport-p2p": "workspace:*",
-		"better-sqlite3": "^9.6.0",
+		"better-sqlite3": "catalog:",
 		"cors": "catalog:",
 		"dotenv": "catalog:",
 		"express": "catalog:",
@@ -45,7 +45,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
-		"@types/better-sqlite3": "^7.6.10",
+		"@types/better-sqlite3": "catalog:",
 		"@types/cors": "catalog:",
 		"@types/express": "catalog:",
 		"@types/jsonwebtoken": "catalog:",

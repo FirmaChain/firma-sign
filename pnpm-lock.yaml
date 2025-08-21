@@ -614,8 +614,8 @@ importers:
         specifier: workspace:*
         version: link:../@firmachain/firma-sign-transport-p2p
       better-sqlite3:
-        specifier: ^9.6.0
-        version: 9.6.0
+        specifier: 'catalog:'
+        version: 11.10.0
       cors:
         specifier: 'catalog:'
         version: 2.8.5
@@ -663,7 +663,7 @@ importers:
         specifier: 'catalog:'
         version: 9.30.1
       '@types/better-sqlite3':
-        specifier: ^7.6.10
+        specifier: 'catalog:'
         version: 7.6.13
       '@types/cors':
         specifier: 'catalog:'
@@ -2846,9 +2846,6 @@ packages:
 
   better-sqlite3@11.10.0:
     resolution: {integrity: sha512-EwhOpyXiOEL/lKzHz9AW1msWFNzGc/z+LzeB3/jnFJpxu+th2yqvzsSWas1v9jgs9+xiXJcD5A8CJxAG2TaghQ==}
-
-  better-sqlite3@9.6.0:
-    resolution: {integrity: sha512-yR5HATnqeYNVnkaUTf4bOP2dJSnyhP4puJN/QPRyx4YkBEEUxib422n2XzPqDEHjQQqazoYoADdAm5vE15+dAQ==}
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -9085,11 +9082,6 @@ snapshots:
       open: 8.4.2
 
   better-sqlite3@11.10.0:
-    dependencies:
-      bindings: 1.5.0
-      prebuild-install: 7.1.3
-
-  better-sqlite3@9.6.0:
     dependencies:
       bindings: 1.5.0
       prebuild-install: 7.1.3
