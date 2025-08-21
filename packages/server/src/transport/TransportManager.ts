@@ -136,6 +136,13 @@ export class TransportManager extends EventEmitter {
   }
 
   /**
+   * Get a specific transport by name
+   */
+  getTransport(transportName: string): Transport | undefined {
+    return this.transports.get(transportName);
+  }
+
+  /**
    * Get detailed information about all transports (installed and not installed)
    */
   async getTransportInfo(): Promise<Array<{

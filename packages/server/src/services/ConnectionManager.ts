@@ -99,6 +99,34 @@ export class ConnectionManager extends EventEmitter {
 
 	private async initializeP2P(config?: TransportConfig['p2p']): Promise<TransportStatus> {
 		try {
+			// Use the existing transport from TransportManager if available
+			if (this.transportManager) {
+				const tm = this.transportManager as { getTransport(name: string): TransportInstance | undefined };
+				// Try both the short name and the full package name
+				let existingTransport = tm.getTransport('p2p');
+				if (!existingTransport) {
+					existingTransport = tm.getTransport('@firmachain/firma-sign-transport-p2p');
+				}
+				
+				if (existingTransport) {
+					// Transport already initialized by TransportManager
+					const status = existingTransport.getStatus();
+					const statusInfo = status as { info?: { peerId?: string; addresses?: string[] } };
+					const result: TransportStatus = {
+						status: 'active',
+						nodeId: statusInfo.info?.peerId,
+						addresses: statusInfo.info?.addresses,
+					};
+					
+					this.transports.set('p2p', existingTransport);
+					this.transportStatus.set('p2p', result);
+					
+					logger.info('Using existing P2P transport from TransportManager', { nodeId: result.nodeId });
+					return result;
+				}
+			}
+			
+			// Fallback: create new transport if TransportManager not available
 			const p2pTransport = new P2PTransport();
 			await p2pTransport.initialize({
 				port: config?.port || parseInt(process.env.P2P_PORT || '9090', 10),

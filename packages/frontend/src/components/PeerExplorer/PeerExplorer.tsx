@@ -105,7 +105,6 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 	);
 
 	const checkTransportStatus = useCallback(async () => {
-		setIsInitializing(true);
 		try {
 			// Check server's transport status instead of initializing our own
 			const result = await apiClient.getConnectionStatus();
@@ -140,10 +139,39 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 				...prev,
 				networkStatus: 'disconnected',
 			}));
+		}
+	}, []);
+	
+	const handleInitialize = useCallback(async () => {
+		setIsInitializing(true);
+		try {
+			// Initialize the transports with default configuration
+			const config = {
+				p2p: {
+					enableDHT: false,
+					enableMDNS: true, // cspell:ignore MDNS
+				},
+			};
+			
+			const result = await apiClient.initializeTransports({
+				transports: ['p2p'],
+				config,
+			});
+			
+			if (result.initialized) {
+				// After initialization, check the status
+				await checkTransportStatus();
+			}
+		} catch (error) {
+			console.error('Failed to initialize transports:', error);
+			setState((prev) => ({
+				...prev,
+				networkStatus: 'disconnected',
+			}));
 		} finally {
 			setIsInitializing(false);
 		}
-	}, []);
+	}, [checkTransportStatus]);
 
 	// Check transport status on component mount
 	useEffect(() => {
@@ -219,7 +247,7 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 				transports={state.transports.available}
 				initialized={state.transports.initialized}
 				networkStatus={state.networkStatus}
-				onInitialize={() => void checkTransportStatus()}
+				onInitialize={() => void handleInitialize()}
 				onSettings={handleSettings}
 				onRefresh={() => void handleRefresh()}
 				isInitializing={isInitializing}
