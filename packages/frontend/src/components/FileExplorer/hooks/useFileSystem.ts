@@ -73,7 +73,7 @@ const organizeDocumentsManually = (documents: DocumentMetadata[], existingStruct
 	const findExistingDocs = (items: FileItem[]) => {
 		items.forEach(item => {
 			if (item.type === 'file' && item.metadata && typeof item.metadata === 'object' && 'serverId' in item.metadata) {
-				const metadata = item.metadata as Record<string, unknown>;
+				const metadata = item.metadata;
 				const serverId = metadata.serverId;
 				if (typeof serverId === 'string') {
 					existingDocs.add(serverId);
@@ -102,7 +102,7 @@ const organizeDocumentsManually = (documents: DocumentMetadata[], existingStruct
 	const removeDeletedDocs = (items: FileItem[]): FileItem[] => {
 		return items.filter(item => {
 			if (item.type === 'file' && item.metadata && typeof item.metadata === 'object' && 'serverId' in item.metadata) {
-				const metadata = item.metadata as Record<string, unknown>;
+				const metadata = item.metadata;
 				const serverId = metadata.serverId;
 				if (typeof serverId === 'string') {
 					return serverDocIds.has(serverId);

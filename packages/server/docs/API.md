@@ -1,13 +1,98 @@
-# Server API Reference
+# Firma-Sign API Reference
 
 ## Overview
 
-The Firma-Sign server provides RESTful API endpoints and WebSocket events for document transfer operations. It integrates with the modular packages documented in the main project:
+This document provides a unified API reference for the Firma-Sign document signing system, covering both server REST endpoints and WebSocket events, as well as client-side integration patterns.
 
-- **Transport Layer**: See [@firmachain/firma-sign-core](../../@firmachain/firma-sign-core/docs/API.md) for Transport interface
-- **Storage**: See [@firmachain/firma-sign-storage-local](../../@firmachain/firma-sign-storage-local/docs/API.md)
-- **Database**: See [@firmachain/firma-sign-database-sqlite](../../@firmachain/firma-sign-database-sqlite/docs/API.md)
-- **P2P Transport**: See [@firmachain/firma-sign-transport-p2p](../../@firmachain/firma-sign-transport-p2p/docs/API.md)
+### Architecture Integration
+
+The API integrates with the modular package ecosystem:
+
+- **Transport Layer**: [@firmachain/firma-sign-core](../../@firmachain/firma-sign-core/docs/API.md) Transport interface
+- **Storage**: [@firmachain/firma-sign-storage-local](../../@firmachain/firma-sign-storage-local/docs/API.md)
+- **Database**: [@firmachain/firma-sign-database-sqlite](../../@firmachain/firma-sign-database-sqlite/docs/API.md)
+- **P2P Transport**: [@firmachain/firma-sign-transport-p2p](../../@firmachain/firma-sign-transport-p2p/docs/API.md)
+- **Document Components**: [@firmachain/firma-sign-documents](../../@firmachain/firma-sign-documents/docs/API.md)
+
+### Document Formation Process
+
+Documents in Firma-Sign follow a unified lifecycle across frontend and backend:
+
+1. **Client Upload**: PDF files uploaded via frontend API
+2. **Server Processing**: Documents processed by DocumentService with metadata extraction
+3. **Storage Organization**: Hierarchical storage with category-based organization
+4. **Transfer Integration**: Documents linked to transfers for multi-party workflows
+5. **Status Tracking**: Real-time status updates via WebSocket
+
+### Unified Document Interface
+
+```typescript
+interface Document {
+	// Core identification
+	id: string;
+	originalName: string;
+	fileName: string; // Sanitized filename for storage
+
+	// Content metadata
+	size: number;
+	hash: string;
+	mimeType: string;
+
+	// Organization
+	category: DocumentCategory;
+	status: DocumentStatus;
+
+	// Transfer context
+	transferId?: string;
+
+	// Temporal tracking
+	uploadedAt: Date;
+	lastModified: Date;
+	signedAt?: Date;
+
+	// User context
+	uploadedBy?: string;
+	signedBy?: string[];
+
+	// Versioning
+	version: number;
+	previousVersionId?: string;
+
+	// Extensibility
+	tags?: string[];
+	metadata?: Record<string, unknown>;
+}
+```
+
+### Document Categories
+
+```typescript
+enum DocumentCategory {
+	UPLOADED = 'uploaded', // User uploaded documents
+	RECEIVED = 'received', // Documents received from others
+	SENT = 'sent', // Documents sent to others
+	SIGNED = 'signed', // Documents that have been signed
+	TEMPLATES = 'templates', // Document templates
+	ARCHIVED = 'archived', // Archived documents
+	DELETED = 'deleted', // Soft-deleted documents
+}
+```
+
+### Document Status States
+
+```typescript
+enum DocumentStatus {
+	DRAFT = 'draft', // Initial upload state
+	PENDING = 'pending', // Awaiting action
+	IN_PROGRESS = 'in_progress', // Being processed
+	SIGNED = 'signed', // Successfully signed
+	COMPLETED = 'completed', // Workflow complete
+	REJECTED = 'rejected', // Rejected by signer
+	EXPIRED = 'expired', // Past deadline
+	ARCHIVED = 'archived', // Moved to archive
+	DELETED = 'deleted', // Soft deleted
+}
+```
 
 ## Base URL
 
@@ -45,9 +130,9 @@ POST /api/auth/connect
 }
 ```
 
-### Generate Keypair
+### Generate Key Pair
 
-Generate RSA keypair for encryption.
+Generate RSA key pair for encryption.
 
 ```http
 POST /api/auth/generate-keypair
@@ -61,6 +146,192 @@ POST /api/auth/generate-keypair
 	"privateKey": "-----BEGIN PRIVATE KEY-----..."
 }
 ```
+
+## Document Management
+
+### Upload Document
+
+Upload a new document to the system.
+
+```http
+POST /api/documents/upload
+```
+
+#### Request Body (multipart/form-data)
+
+- `document`: PDF file
+- `category`: Document category (default: 'uploaded')
+- `transferId`: Optional transfer ID to associate
+- `tags`: JSON array of tags
+- `metadata`: JSON object with additional metadata
+
+#### Response
+
+```json
+{
+	"success": true,
+	"document": {
+		"id": "doc-1710123456789-abc123",
+		"originalName": "contract.pdf",
+		"fileName": "contract.pdf",
+		"size": 2048000,
+		"hash": "sha256:abc123...",
+		"mimeType": "application/pdf",
+		"category": "uploaded",
+		"status": "draft",
+		"uploadedAt": "2024-03-11T10:30:56.789Z",
+		"version": 1,
+		"tags": [],
+		"transferId": "transfer-xyz"
+	}
+}
+```
+
+### Get Document
+
+Download a document by ID.
+
+```http
+GET /api/documents/{documentId}
+```
+
+#### Response
+
+Binary PDF data with headers:
+
+- `Content-Type: application/pdf`
+- `Content-Disposition: attachment; filename="contract.pdf"`
+
+### Get Document Metadata
+
+Get document metadata without downloading the file.
+
+```http
+GET /api/documents/{documentId}/metadata
+```
+
+#### Response
+
+```json
+{
+	"success": true,
+	"metadata": {
+		"id": "doc-1710123456789-abc123",
+		"originalName": "contract.pdf",
+		"fileName": "contract.pdf",
+		"size": 2048000,
+		"hash": "sha256:abc123...",
+		"mimeType": "application/pdf",
+		"category": "uploaded",
+		"status": "draft",
+		"uploadedAt": "2024-03-11T10:30:56.789Z",
+		"lastModified": "2024-03-11T10:30:56.789Z",
+		"version": 1,
+		"tags": ["contract", "legal"]
+	}
+}
+```
+
+### Search Documents
+
+Search documents with filters.
+
+```http
+GET /api/documents?category=uploaded&status=draft&limit=20&offset=0
+```
+
+#### Query Parameters
+
+- `category`: Filter by document category
+- `status`: Filter by document status
+- `transferId`: Filter by transfer ID
+- `uploadedBy`: Filter by uploader
+- `signedBy`: Filter by signer
+- `tags`: Filter by tags (multiple allowed)
+- `fromDate`: Filter from date (ISO string)
+- `toDate`: Filter to date (ISO string)
+- `searchText`: Text search in filename
+- `limit`: Page size (default: 100)
+- `offset`: Page offset (default: 0)
+
+#### Response
+
+```json
+{
+	"success": true,
+	"documents": [
+		/* array of document metadata */
+	],
+	"total": 25,
+	"limit": 20,
+	"offset": 0
+}
+```
+
+### Update Document Status
+
+Update the status of a document.
+
+```http
+PATCH /api/documents/{documentId}
+```
+
+#### Request Body
+
+```json
+{
+	"status": "signed",
+	"signedBy": "user@example.com",
+	"signedAt": "2024-03-11T14:30:00Z"
+}
+```
+
+### Move Document Category
+
+Move a document to a different category.
+
+```http
+POST /api/documents/{documentId}/move
+```
+
+#### Request Body
+
+```json
+{
+	"category": "signed"
+}
+```
+
+### Document Versions
+
+#### Get Document Versions
+
+```http
+GET /api/documents/{documentId}/versions
+```
+
+#### Create New Version
+
+```http
+POST /api/documents/{documentId}/versions
+```
+
+#### Request Body (multipart/form-data)
+
+- `document`: PDF file (new version)
+- `metadata`: JSON object with version metadata
+
+### Delete Document
+
+Delete a document (soft delete by default).
+
+```http
+DELETE /api/documents/{documentId}?permanent=false
+```
+
+#### Query Parameters
+
+- `permanent`: Set to `true` for permanent deletion
 
 ## Transfers
 
@@ -78,9 +349,9 @@ POST /api/transfers/create
 {
 	"documents": [
 		{
-			"id": "doc-1",
+			"id": "doc-1710123456789-abc123",
 			"fileName": "contract.pdf",
-			"fileData": "base64-encoded-data" // Optional, can be uploaded separately
+			"fileData": "base64-encoded-data" // Optional, can reference existing document
 		}
 	],
 	"recipients": [
@@ -88,7 +359,7 @@ POST /api/transfers/create
 			"identifier": "user@example.com",
 			"transport": "email",
 			"signerAssignments": {
-				"doc-1": true
+				"doc-1710123456789-abc123": true
 			},
 			"preferences": {
 				"fallbackTransport": "web",
@@ -337,17 +608,290 @@ Returns transport capabilities from loaded packages:
 }
 ```
 
-## P2P Network & Peer Management
+## Peer Explorer & Network Management
 
-For P2P network operations, peer discovery, and direct peer-to-peer document transfers, see the dedicated [Peer Explorer API documentation](./API-PEER-EXPLORER.md).
+The Peer Explorer API provides a unified interface for discovering and connecting with other users across multiple transport protocols (P2P, Email, Discord, Telegram, etc.).
 
-Key P2P endpoints include:
+### WebSocket Endpoint
 
-- `/api/p2p/initialize` - Initialize P2P node
-- `/api/p2p/status` - Network status
-- `/api/p2p/peers` - Peer management
-- `/api/p2p/transfers` - P2P document transfers
-- WebSocket at `ws://localhost:8080/p2p` for real-time P2P events
+```
+ws://localhost:8080/explorer
+```
+
+### Connection Management
+
+#### Initialize Connection Manager
+
+Initialize the connection manager with selected transports.
+
+```http
+POST /api/connections/initialize
+```
+
+**Request Body:**
+
+```json
+{
+	"transports": ["p2p", "email", "discord"],
+	"config": {
+		"p2p": {
+			"port": 9090,
+			"enableDHT": true,
+			"enableMDNS": true
+		},
+		"email": {
+			"smtp": {
+				"host": "smtp.gmail.com",
+				"port": 587,
+				"auth": {
+					"user": "user@example.com",
+					"pass": "password"
+				}
+			}
+		},
+		"discord": {
+			"botToken": "discord-bot-token",
+			"guildId": "guild-id"
+		}
+	}
+}
+```
+
+**Response:**
+
+```json
+{
+	"initialized": true,
+	"transports": {
+		"p2p": {
+			"status": "active",
+			"nodeId": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+			"addresses": ["/ip4/192.168.1.100/tcp/9090"]
+		},
+		"email": {
+			"status": "active",
+			"address": "user@example.com"
+		},
+		"discord": {
+			"status": "active",
+			"username": "FirmaSign#1234"
+		}
+	}
+}
+```
+
+#### Get Connection Status
+
+Get the current status of all connections and transports.
+
+```http
+GET /api/connections/status
+```
+
+**Response:**
+
+```json
+{
+	"connections": {
+		"active": 15,
+		"pending": 3,
+		"failed": 1
+	},
+	"transports": {
+		"p2p": {
+			"status": "active",
+			"connections": 10,
+			"bandwidth": {
+				"in": 1024000,
+				"out": 512000
+			}
+		},
+		"email": {
+			"status": "active",
+			"connections": 5,
+			"queue": 2
+		},
+		"discord": {
+			"status": "inactive",
+			"error": "Bot token expired"
+		}
+	}
+}
+```
+
+### Peer Discovery & Management
+
+#### Discover Peers
+
+Discover available peers across all configured transports.
+
+```http
+POST /api/peers/discover
+```
+
+**Request Body:**
+
+```json
+{
+	"transports": ["p2p", "email"], // Optional: specific transports
+	"query": "alice@example.com", // Optional: search query
+	"filters": {
+		"online": true,
+		"verified": true
+	}
+}
+```
+
+**Response:**
+
+```json
+{
+	"peers": [
+		{
+			"peerId": "peer-123",
+			"displayName": "Alice Johnson",
+			"identifiers": {
+				"p2p": "12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+				"email": "alice@example.com",
+				"discord": "Alice#1234"
+			},
+			"availableTransports": ["p2p", "email"],
+			"status": "online",
+			"verified": true,
+			"lastSeen": 1234567890000,
+			"capabilities": {
+				"maxFileSize": 104857600,
+				"supportsEncryption": true,
+				"supportsMessaging": true
+			}
+		}
+	],
+	"total": 25,
+	"discovered": 10
+}
+```
+
+#### Get Peer Details
+
+Get detailed information about a specific peer.
+
+```http
+GET /api/peers/{peerId}
+```
+
+#### Connect to Peer
+
+Establish a connection to a peer.
+
+```http
+POST /api/peers/{peerId}/connect
+```
+
+**Request Body:**
+
+```json
+{
+	"transport": "p2p", // Preferred transport
+	"fallbackTransports": ["email"], // Fallback options
+	"timeout": 30000
+}
+```
+
+#### Send Document to Peer
+
+Send a document directly to a connected peer.
+
+```http
+POST /api/peers/{peerId}/transfers
+```
+
+**Request Body:**
+
+```json
+{
+	"documentId": "doc-1710123456789-abc123",
+	"transport": "p2p", // Optional: specify transport
+	"message": "Please review and sign",
+	"deadline": "2024-12-31T23:59:59Z",
+	"requireSignature": true
+}
+```
+
+### Messaging
+
+#### Send Message to Peer
+
+Send a message to a connected peer.
+
+```http
+POST /api/peers/{peerId}/messages
+```
+
+**Request Body:**
+
+```json
+{
+	"type": "text",
+	"content": "Hello, can you review this document?",
+	"transport": "p2p", // Optional: specify transport
+	"attachments": [
+		{
+			"type": "document_reference",
+			"documentId": "doc-1710123456789-abc123"
+		}
+	]
+}
+```
+
+#### Get Message History
+
+Get message history with a peer.
+
+```http
+GET /api/peers/{peerId}/messages?limit=50&offset=0
+```
+
+### Group Management
+
+#### Create Group
+
+Create a group for multi-party document workflows.
+
+```http
+POST /api/groups
+```
+
+**Request Body:**
+
+```json
+{
+	"name": "Legal Review Team",
+	"description": "Group for legal document reviews",
+	"members": [
+		{
+			"peerId": "peer-123",
+			"role": "admin"
+		},
+		{
+			"peerId": "peer-456",
+			"role": "member"
+		}
+	],
+	"settings": {
+		"allowMemberInvites": true,
+		"requireEncryption": true,
+		"defaultTransport": "p2p"
+	}
+}
+```
+
+#### Send Document to Group
+
+Send a document to all group members.
+
+```http
+POST /api/groups/{groupId}/transfers
+```
 
 ## Blockchain
 

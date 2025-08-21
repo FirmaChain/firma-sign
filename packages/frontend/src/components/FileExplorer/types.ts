@@ -1,24 +1,54 @@
+// FileItem interface - compatible with unified Document interface
 export interface FileItem {
+	// Core identification (compatible with DocumentMetadata)
 	id: string;
-	name: string;
+	name: string; // originalName equivalent
 	type: 'file' | 'folder';
 	path: string;
+	
+	// Content metadata (compatible with DocumentMetadata)
 	size?: number;
 	mimeType?: string;
+	hash?: string;
+	
+	// Temporal tracking (compatible with DocumentMetadata)
 	createdAt: Date;
 	modifiedAt: Date;
-	status?: 'draft' | 'pending' | 'signed' | 'expired';
+	
+	// Status tracking (compatible with DocumentStatus)
+	status?: 'draft' | 'pending' | 'in_progress' | 'signed' | 'completed' | 'rejected' | 'expired' | 'archived' | 'deleted';
+	
+	// Transfer context
+	transferId?: string;
+	
+	// File explorer specific
 	children?: FileItem[];
 	data?: string; // Base64 data for PDF files
+	
+	// Document metadata compatibility
+	uploadedBy?: string;
+	signedBy?: string[];
+	version?: number;
+	tags?: string[];
+	metadata?: Record<string, unknown>;
 }
 
 export interface FileExplorerState {
 	files: FileItem[];
 	selectedFiles: string[];
-	expandedFolders: string[];
+	expandedFolders: {
+		manual: string[];
+		automatic: string[];
+	};
 	searchQuery: string;
-	sortBy: 'name' | 'date' | 'size';
+	sortBy: 'name' | 'date' | 'size' | 'status';
 	sortOrder: 'asc' | 'desc';
+	organizationMode: 'manual' | 'automatic';
+	filter?: {
+		status?: string[];
+		tags?: string[];
+		category?: string;
+	};
 }
 
 export interface ContextMenuPosition {

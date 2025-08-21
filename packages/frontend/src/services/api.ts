@@ -27,17 +27,15 @@ async function apiCall<T>(
 	const token = getAuthToken();
 	const isDevelopment = import.meta.env.MODE === 'development';
 	
-	const headers: HeadersInit = {
-		...options.headers,
-	};
+	const headers = new Headers(options.headers);
 
 	// Add auth header if we have a token or in development mode
 	if (token || isDevelopment) {
-		headers['Authorization'] = `Bearer ${token || 'dev-token'}`;
+		headers.set('Authorization', `Bearer ${token || 'dev-token'}`);
 	}
 
 	if (!(options.body instanceof FormData)) {
-		headers['Content-Type'] = 'application/json';
+		headers.set('Content-Type', 'application/json');
 	}
 
 	const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -63,43 +61,63 @@ async function apiCall<T>(
 	return response.json() as Promise<T>;
 }
 
-// Document Categories
+// Document Categories - Unified with server
 export enum DocumentCategory {
-	UPLOADED = 'uploaded',
-	SIGNED = 'signed',
-	RECEIVED = 'received',
-	SENT = 'sent',
-	TEMPLATES = 'templates',
-	ARCHIVED = 'archived',
-	DELETED = 'deleted',
+	UPLOADED = 'uploaded',    // User uploaded documents
+	RECEIVED = 'received',    // Documents received from others
+	SENT = 'sent',           // Documents sent to others
+	SIGNED = 'signed',       // Documents that have been signed
+	TEMPLATES = 'templates',  // Document templates
+	ARCHIVED = 'archived',   // Archived documents
+	DELETED = 'deleted'      // Soft-deleted documents
 }
 
-// Document Status
+// Document Status - Unified with server
 export enum DocumentStatus {
-	DRAFT = 'draft',
-	PENDING = 'pending',
-	SIGNED = 'signed',
-	REJECTED = 'rejected',
-	EXPIRED = 'expired',
-	DELETED = 'deleted',
+	DRAFT = 'draft',           // Initial upload state
+	PENDING = 'pending',       // Awaiting action
+	IN_PROGRESS = 'in_progress', // Being processed
+	SIGNED = 'signed',         // Successfully signed
+	COMPLETED = 'completed',   // Workflow complete
+	REJECTED = 'rejected',     // Rejected by signer
+	EXPIRED = 'expired',       // Past deadline
+	ARCHIVED = 'archived',     // Moved to archive
+	DELETED = 'deleted'        // Soft deleted
 }
 
-// Document interfaces
+// Unified Document interface - matches server DocumentMetadata
 export interface DocumentMetadata {
+	// Core identification
 	id: string;
 	originalName: string;
-	category: DocumentCategory;
-	status: DocumentStatus;
+	fileName: string; // Sanitized filename for storage
+	
+	// Content metadata
 	size: number;
 	hash: string;
 	mimeType: string;
-	uploadedAt: string;
-	uploadedBy?: string;
-	signedAt?: string;
-	signedBy?: string;
+	
+	// Organization
+	category: DocumentCategory;
+	status: DocumentStatus;
+	
+	// Transfer context
 	transferId?: string;
-	version?: number;
+	
+	// Temporal tracking
+	uploadedAt: string; // ISO string for frontend
+	lastModified: string;
+	signedAt?: string;
+	
+	// User context
+	uploadedBy?: string;
+	signedBy?: string[];
+	
+	// Versioning
+	version: number;
 	previousVersionId?: string;
+	
+	// Extensibility
 	tags?: string[];
 	metadata?: Record<string, unknown>;
 }
@@ -156,6 +174,7 @@ export const documentsAPI = {
 			method: 'GET',
 		});
 	},
+
 
 	// Get document metadata
 	async getMetadata(documentId: string): Promise<{ success: boolean; metadata: DocumentMetadata }> {
@@ -289,8 +308,8 @@ export const authAPI = {
 		return response;
 	},
 
-	// Generate keypair
-	async generateKeypair(): Promise<{
+	// Generate key pair
+	async generateKeyPair(): Promise<{
 		publicKey: string;
 		privateKey: string;
 	}> {
@@ -376,3 +395,55 @@ export const transfersAPI = {
 		});
 	},
 };
+
+// Utility functions for unified document interface
+
+// Convert FileItem to DocumentMetadata for unified interface
+export function convertFileItemToDocument(fileItem: {
+	id: string;
+	name: string;
+	size?: number;
+	hash?: string;
+	mimeType?: string;
+	status?: string;
+	createdAt?: Date | string;
+	modifiedAt?: Date | string;
+	transferId?: string;
+	uploadedBy?: string;
+	signedBy?: string[];
+	version?: number;
+	tags?: string[];
+}): DocumentMetadata {
+	return {
+		id: fileItem.id,
+		originalName: fileItem.name,
+		fileName: fileItem.name,
+		size: fileItem.size || 0,
+		hash: fileItem.hash || '',
+		mimeType: fileItem.mimeType || 'application/pdf',
+		category: mapStatusToCategory(fileItem.status),
+		status: (fileItem.status as DocumentStatus) || DocumentStatus.DRAFT,
+		uploadedAt: typeof fileItem.createdAt === 'string' 
+			? fileItem.createdAt 
+			: (fileItem.createdAt?.toISOString() || new Date().toISOString()),
+		lastModified: typeof fileItem.modifiedAt === 'string' 
+			? fileItem.modifiedAt 
+			: (fileItem.modifiedAt?.toISOString() || new Date().toISOString()),
+		version: fileItem.version || 1,
+		tags: fileItem.tags || [],
+		transferId: fileItem.transferId,
+		uploadedBy: fileItem.uploadedBy,
+		signedBy: fileItem.signedBy
+	};
+}
+
+// Map file status to appropriate category
+export function mapStatusToCategory(status?: string): DocumentCategory {
+	switch (status) {
+		case 'signed': return DocumentCategory.SIGNED;
+		case 'expired': 
+		case 'archived': return DocumentCategory.ARCHIVED;
+		case 'deleted': return DocumentCategory.DELETED;
+		default: return DocumentCategory.UPLOADED;
+	}
+}
