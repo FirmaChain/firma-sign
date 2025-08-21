@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger';
@@ -15,6 +15,10 @@ export function initializeDatabase(config: DatabaseConfig = {}): Database.Databa
 	const dbPath = config.path || join(process.cwd(), 'firma-sign.db');
 	
 	try {
+		// Ensure the database directory exists
+		const dbDir = dirname(dbPath);
+		mkdirSync(dbDir, { recursive: true });
+		
 		db = new Database(dbPath);
 		
 		if (config.verbose) {
