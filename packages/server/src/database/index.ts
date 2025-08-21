@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger';
 
 let db: Database.Database | null = null;
@@ -28,6 +29,7 @@ export function initializeDatabase(config: DatabaseConfig = {}): Database.Databa
 		db.pragma('foreign_keys = ON');
 		
 		// Run schema
+		const __dirname = dirname(fileURLToPath(import.meta.url));
 		const schemaPath = join(__dirname, 'schema.sql');
 		const schema = readFileSync(schemaPath, 'utf-8');
 		db.exec(schema);

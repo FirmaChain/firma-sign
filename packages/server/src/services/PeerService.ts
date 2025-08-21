@@ -267,7 +267,7 @@ export class PeerService extends EventEmitter {
 		});
 	}
 
-	async connectToPeer(peerId: string, options: ConnectOptions): Promise<{ success: boolean; transport: string; connectionId?: string; latency?: number; encrypted?: boolean; sessionToken?: string }> {
+	async connectToPeerWithOptions(peerId: string, options: ConnectOptions): Promise<{ success: boolean; transport: string; connectionId?: string; latency?: number; encrypted?: boolean; sessionToken?: string }> {
 		const peer = await this.getPeerDetails(peerId);
 		if (!peer) {
 			throw new Error('Peer not found');
@@ -345,17 +345,6 @@ export class PeerService extends EventEmitter {
 		};
 	}
 
-	async disconnectFromPeer(peerId: string): Promise<{ success: boolean }> {
-		// Update connection status
-		this.db.prepare(`
-			UPDATE peer_connections 
-			SET status = 'disconnected', disconnected_at = ?
-			WHERE peer_id = ? AND status = 'connected'
-		`).run(now(), peerId);
-
-		this.emit('peer:disconnected', { peerId });
-		return Promise.resolve({ success: true });
-	}
 
 	async sendTransferToPeer(peerId: string, transfer: { documents?: Array<{ id: string; fileName: string; fileData?: string; fileSize?: number }>; transport?: string; options?: unknown }): Promise<{ transferId: string; status: string; transport: string; deliveryStatus: { sent: number; delivered: null; read: null; signed: null }; trackingUrl: string }> {
 		const transferId = generateId('transfer');
@@ -465,6 +454,116 @@ export class PeerService extends EventEmitter {
 	async getTransfersWithPeer(peerId: string): Promise<Array<{ transferId: string; type: string; documentCount: number; transport: string; status: string; createdAt: number; completedAt?: number }>> {
 		const result = await this.getPeerTransfers(peerId);
 		return result.transfers;
+	}
+
+	async initializeTransports(transports: string[], config: Record<string, unknown>): Promise<boolean> {
+		// Initialize requested transports through connection manager
+		for (const transport of transports) {
+			const transportConfig = (config[transport] as Record<string, unknown>) || {};
+			await this.connectionManager.initializeTransport(transport, transportConfig);
+		}
+		return true;
+	}
+
+	getConnectionStatus(): {
+		connections: { active: number; pending: number; failed: number };
+		transports: Record<string, unknown>;
+	} {
+		const activeConnections = this.db.prepare(`
+			SELECT COUNT(*) as count FROM peer_connections WHERE status = 'connected'
+		`).get() as { count: number };
+
+		const transports = this.connectionManager.getTransportStatuses();
+		
+		return {
+			connections: {
+				active: activeConnections.count,
+				pending: 0,
+				failed: 0,
+			},
+			transports,
+		};
+	}
+
+	async connectToPeer(peerId: string, options: {
+		preferredTransport?: string;
+		fallbackTransports?: string[];
+	}): Promise<{
+		connected: boolean;
+		connectionId: string;
+		transport: string;
+		latency?: number;
+		sessionToken?: string;
+	}> {
+		const connectOptions: ConnectOptions = {
+			transport: options.preferredTransport || 'p2p',
+			fallbackTransports: options.fallbackTransports,
+			options: {
+				encrypted: true,
+			},
+		};
+		
+		const result = await this.connectToPeerWithOptions(peerId, connectOptions);
+		
+		return {
+			connected: result.success,
+			connectionId: result.connectionId || '',
+			transport: result.transport,
+			latency: result.latency,
+			sessionToken: result.sessionToken,
+		};
+	}
+
+	async disconnectFromPeer(peerId: string): Promise<{ disconnected: boolean }> {
+		// Update connection status
+		this.db.prepare(`
+			UPDATE peer_connections 
+			SET status = 'disconnected', disconnected_at = ?
+			WHERE peer_id = ? AND status = 'connected'
+		`).run(now(), peerId);
+
+		this.emit('peer:disconnected', { peerId });
+		return Promise.resolve({ disconnected: true });
+	}
+
+
+	async sendTransfer(peerId: string, transfer: {
+		documentIds: string[];
+		transport?: string;
+		options?: Record<string, unknown>;
+	}): Promise<{
+		transferId: string;
+		status: string;
+		transport: string;
+	}> {
+		const documents = transfer.documentIds.map(id => ({
+			id,
+			fileName: `document-${id}.pdf`,
+		}));
+		
+		const result = await this.sendDocumentsToPeer(peerId, {
+			documents,
+			transport: transfer.transport,
+		});
+		
+		return result;
+	}
+
+	async getTransfers(peerId: string): Promise<Array<{
+		transferId: string;
+		type: string;
+		status: string;
+		documentCount: number;
+		createdAt: Date;
+	}>> {
+		const result = await this.getPeerTransfers(peerId);
+		return result.transfers.map(t => ({
+			transferId: t.transferId,
+			type: t.type,
+			status: t.status,
+			documentCount: t.documentCount,
+			createdAt: new Date(t.createdAt),
+		}));
 	}
 
 	updatePeerTrustLevel(peerId: string, trustLevel: string): void {

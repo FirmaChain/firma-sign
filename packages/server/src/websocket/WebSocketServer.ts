@@ -45,7 +45,10 @@ export class WebSocketServer extends EventEmitter {
   constructor(server: HTTPServer, jwtSecret?: string) {
     super();
     this.jwtSecret = jwtSecret || configManager.getJwtSecret() || 'default-secret';
-    this.wss = new WSServer({ server });
+    this.wss = new WSServer({ 
+      server,
+      path: '/ws' // Specify a path to avoid conflicts with /explorer
+    });
     this.setupWebSocketServer();
     this.startCleanupInterval();
   }

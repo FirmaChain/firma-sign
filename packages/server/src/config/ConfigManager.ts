@@ -187,8 +187,11 @@ export class ConfigManager {
     // P2P Transport configuration - set defaults if package is installed
     // Always create default P2P config if not exists
     if (!this.config.transports.p2p) {
+      // Use dynamic port selection in development to avoid conflicts
+      const basePort = this.isDevelopment() ? 9090 + Math.floor(Math.random() * 100) : 9090;
+      
       this.config.transports.p2p = {
-        port: 9090,
+        port: basePort,
         enableDHT: false,  // Disable DHT by default for local development
         enableMDNS: true,   // Enable mDNS for local discovery
         maxConnections: 50,

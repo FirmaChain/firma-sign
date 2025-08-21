@@ -33,16 +33,27 @@ export class ExplorerWebSocketServer extends EventEmitter {
 		this.groupService = groupService;
 
 		// Create WebSocket server
-		this.wss = new WebSocketServer({
-			server,
-			path: '/explorer',
-		});
+		try {
+			this.wss = new WebSocketServer({
+				server,
+				path: '/explorer',
+			});
+			logger.info('ExplorerWebSocketServer initialized on path /explorer');
+		} catch (error) {
+			logger.error('Failed to initialize ExplorerWebSocketServer:', error);
+			throw error;
+		}
 
 		this.setupWebSocketServer();
 		this.setupEventListeners();
 	}
 
 	private setupWebSocketServer(): void {
+		// Add error handling for the WebSocket server itself
+		this.wss.on('error', (error: Error) => {
+			logger.error('ExplorerWebSocketServer error:', error);
+		});
+
 		this.wss.on('connection', (ws: WebSocket) => {
 			const clientId = this.generateClientId();
 			const client: WebSocketClient = {

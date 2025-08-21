@@ -104,21 +104,11 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 		},
 	);
 
-	const initializeDefaultTransports = useCallback(async () => {
+	const checkTransportStatus = useCallback(async () => {
 		setIsInitializing(true);
 		try {
-			const config = {
-				transports: ['p2p'],
-				config: {
-					p2p: {
-						port: 9090,
-						enableDHT: true,
-						enableMDNS: true, // cspell:disable-line
-					},
-				},
-			};
-
-			const result = await apiClient.initializeTransports(config);
+			// Check server's transport status instead of initializing our own
+			const result = await apiClient.getConnectionStatus();
 			const transportStatuses: TransportStatus[] = Object.entries(
 				result.transports as Record<string, unknown>,
 			).map(([type, info]) => {
@@ -133,17 +123,19 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 				};
 			});
 
+			const hasActiveTransports = transportStatuses.some(t => t.status === 'active');
+
 			setState((prev) => ({
 				...prev,
 				transports: {
 					...prev.transports,
-					initialized: result.initialized,
+					initialized: hasActiveTransports,
 					available: transportStatuses,
 				},
-				networkStatus: result.initialized ? 'connected' : 'disconnected',
+				networkStatus: hasActiveTransports ? 'connected' : 'disconnected',
 			}));
 		} catch (error) {
-			console.error('Failed to initialize transports:', error);
+			console.error('Failed to check transport status:', error);
 			setState((prev) => ({
 				...prev,
 				networkStatus: 'disconnected',
@@ -153,10 +145,11 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 		}
 	}, []);
 
-	// Initialize transports on component mount
+	// Check transport status on component mount
 	useEffect(() => {
-		void initializeDefaultTransports();
-	}, [initializeDefaultTransports]);
+		void checkTransportStatus();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Empty dependency array - only run once on mount
 
 	const discoverPeers = useCallback(async () => {
 		try {
@@ -226,7 +219,7 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 				transports={state.transports.available}
 				initialized={state.transports.initialized}
 				networkStatus={state.networkStatus}
-				onInitialize={() => void initializeDefaultTransports()}
+				onInitialize={() => void checkTransportStatus()}
 				onSettings={handleSettings}
 				onRefresh={() => void handleRefresh()}
 				isInitializing={isInitializing}
@@ -346,7 +339,7 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 								</div>
 								{!state.transports.initialized && (
 									<button
-										onClick={() => void initializeDefaultTransports()}
+										onClick={() => void checkTransportStatus()}
 										disabled={isInitializing}
 										className="mt-2 px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded transition-colors"
 									>

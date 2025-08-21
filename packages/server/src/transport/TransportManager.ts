@@ -194,8 +194,44 @@ export class TransportManager extends EventEmitter {
     return false;
   }
 
-  async shutdown(): Promise<void> {
-    logger.info('Shutting down all transports');
+  /**
+   * Reconnect to existing transport instances (useful for development hot reload)
+   */
+  async reconnect(): Promise<void> {
+    if (this.initialized) {
+      logger.info('Attempting to reconnect to existing transports...');
+      
+      // Try to re-initialize existing transports that may still be running
+      for (const [name, transport] of this.transports) {
+        try {
+          const status = transport.getStatus();
+          if (!status.isInitialized) {
+            const transportConfig = this.configManager.getTransportConfig(this.getTransportType(name)) as TransportConfig;
+            if (transportConfig) {
+              await this.configure(name, transportConfig);
+              logger.info(`✅ Reconnected to transport ${name}`);
+            }
+          }
+        } catch (error) {
+          logger.warn(`⚠️  Could not reconnect to transport ${name}:`, error);
+        }
+      }
+    }
+  }
+
+  async shutdown(options?: { graceful?: boolean; preserveConnections?: boolean }): Promise<void> {
+    const { graceful = true, preserveConnections = false } = options || {};
+    
+    if (preserveConnections) {
+      logger.info('Preserving transport connections during shutdown');
+      // Don't actually shutdown transports, just clear references
+      this.transports.clear();
+      this.handlers.clear();
+      this.removeAllListeners();
+      return;
+    }
+
+    logger.info(`${graceful ? 'Gracefully shutting down' : 'Force shutting down'} all transports`);
     
     const shutdownPromises = Array.from(this.transports.values()).map(transport =>
       transport.shutdown().catch(err => 
@@ -203,7 +239,16 @@ export class TransportManager extends EventEmitter {
       )
     );
 
-    await Promise.all(shutdownPromises);
+    if (graceful) {
+      // Give transports 10 seconds to shutdown gracefully
+      await Promise.race([
+        Promise.all(shutdownPromises),
+        new Promise(resolve => setTimeout(resolve, 10000))
+      ]);
+    } else {
+      await Promise.all(shutdownPromises);
+    }
+    
     this.transports.clear();
     this.handlers.clear();
     this.removeAllListeners();

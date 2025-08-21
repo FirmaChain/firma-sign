@@ -22,13 +22,14 @@ const transferCodes = new Map<string, string>();
 export function createAuthRoutes(): Router {
   const router = Router();
 
-  router.post('/connect', validateRequest(connectSchema), (req, res) => {
+  router.post('/connect', validateRequest(connectSchema), (req, res): void => {
     try {
       const { code } = req.body as { code: string; transport?: string };
       
       const transferId = transferCodes.get(code);
       if (!transferId) {
-        return res.status(401).json({ error: 'Invalid transfer code' });
+        res.status(401).json({ error: 'Invalid transfer code' });
+        return;
       }
 
       const sessionId = nanoid();
@@ -55,7 +56,7 @@ export function createAuthRoutes(): Router {
     }
   });
 
-  router.post('/generate-keypair', (req, res) => {
+  router.post('/generate-keypair', (req, res): void => {
     try {
       const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048 });
       const publicKeyPem = forge.pki.publicKeyToPem(keypair.publicKey);

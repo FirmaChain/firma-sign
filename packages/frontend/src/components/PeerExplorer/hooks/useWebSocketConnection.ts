@@ -37,8 +37,8 @@ interface WebSocketEventHandlers {
 
 const DEFAULT_OPTIONS: Required<WebSocketConnectionOptions> = {
 	url: 'ws://localhost:8080/explorer',
-	reconnectInterval: 3000,
-	maxReconnectAttempts: 10,
+	reconnectInterval: import.meta.env.DEV ? 1000 : 3000, // Faster reconnect in development
+	maxReconnectAttempts: import.meta.env.DEV ? -1 : 10, // Infinite retries in development
 	enableHeartbeat: true,
 	heartbeatInterval: 30000,
 };
@@ -52,6 +52,8 @@ export const useWebSocketConnection = (
 	const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const heartbeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const isManuallyClosedRef = useRef(false);
+	const isConnectingRef = useRef(false);
+	const hasInitializedRef = useRef(false);
 
 	const [state, setState] = useState<WebSocketConnectionState>({
 		isConnected: false,
@@ -70,6 +72,7 @@ export const useWebSocketConnection = (
 			clearTimeout(heartbeatTimeoutRef.current);
 			heartbeatTimeoutRef.current = null;
 		}
+		isConnectingRef.current = false; // Reset connecting flag on cleanup
 	}, []);
 
 	const startHeartbeat = useCallback(() => {
@@ -89,6 +92,10 @@ export const useWebSocketConnection = (
 				const data: WebSocketEvent = JSON.parse(event.data as string) as WebSocketEvent;
 
 				switch (data.type) {
+					case 'connected':
+						// Server connection confirmation, ignore or handle if needed
+						console.log('WebSocket connection confirmed by server');
+						break;
 					case 'peer:status':
 						handlers.onPeerStatus?.(data as PeerStatusEvent);
 						break;
@@ -118,10 +125,27 @@ export const useWebSocketConnection = (
 	);
 
 	const connect = useCallback(() => {
-		if (wsRef.current?.readyState === WebSocket.OPEN || state.isConnecting) {
+		// Don't connect if manually closed
+		if (isManuallyClosedRef.current) {
 			return;
 		}
 
+		// Don't connect if already connected
+		if (wsRef.current?.readyState === WebSocket.OPEN) {
+			return;
+		}
+
+		// Use ref to check if already connecting without causing re-renders
+		if (isConnectingRef.current) {
+			return;
+		}
+
+		// Close any existing connection that might be in a connecting state
+		if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+			wsRef.current.close();
+		}
+
+		isConnectingRef.current = true;
 		setState((prev) => ({
 			...prev,
 			isConnecting: true,
@@ -129,10 +153,13 @@ export const useWebSocketConnection = (
 		}));
 
 		try {
+			console.log('Attempting WebSocket connection to:', config.url);
 			const ws = new WebSocket(config.url);
 			wsRef.current = ws;
 
 			ws.onopen = () => {
+				console.log('WebSocket connection opened successfully');
+				isConnectingRef.current = false; // Reset connecting flag
 				setState((prev) => ({
 					...prev,
 					isConnected: true,
@@ -149,6 +176,12 @@ export const useWebSocketConnection = (
 			ws.onmessage = handleMessage;
 
 			ws.onclose = (event) => {
+				console.log('WebSocket connection closed:', {
+					code: event.code,
+					reason: event.reason,
+					wasClean: event.wasClean,
+				});
+				isConnectingRef.current = false; // Reset connecting flag
 				setState((prev) => ({
 					...prev,
 					isConnected: false,
@@ -162,11 +195,11 @@ export const useWebSocketConnection = (
 				if (!isManuallyClosedRef.current && !event.wasClean) {
 					setState((prev) => {
 						const newAttempts = prev.reconnectAttempts + 1;
-						if (newAttempts < config.maxReconnectAttempts) {
-							reconnectTimeoutRef.current = setTimeout(
-								() => connect(),
-								config.reconnectInterval,
-							);
+						const shouldRetry =
+							config.maxReconnectAttempts < 0 || newAttempts < config.maxReconnectAttempts;
+
+						if (shouldRetry) {
+							reconnectTimeoutRef.current = setTimeout(() => connect(), config.reconnectInterval);
 						} else {
 							return {
 								...prev,
@@ -182,29 +215,52 @@ export const useWebSocketConnection = (
 			};
 
 			ws.onerror = (event) => {
-				setState((prev) => ({
-					...prev,
-					isConnecting: false,
-					error: 'WebSocket connection error',
-				}));
+				console.log('WebSocket connection error:', event);
+				isConnectingRef.current = false; // Reset connecting flag on error
+				// Prevent infinite loops by checking if we're already in error state
+				setState((prev) => {
+					if (prev.error === 'WebSocket connection error' && !prev.isConnecting) {
+						return prev; // No state change if already in error state
+					}
+					return {
+						...prev,
+						isConnecting: false,
+						error: 'WebSocket connection error',
+					};
+				});
 
-				handlers.onError?.(event);
+				// Only call error handler if provided
+				if (handlers.onError) {
+					handlers.onError(event);
+				}
 			};
 		} catch (error) {
+			isConnectingRef.current = false; // Reset connecting flag on error
 			setState((prev) => ({
 				...prev,
 				isConnecting: false,
 				error: error instanceof Error ? error.message : 'Connection failed',
 			}));
 		}
-	}, [config, handleMessage, startHeartbeat, cleanup, handlers, state.isConnecting]);
+	}, [
+		config.url,
+		config.maxReconnectAttempts,
+		config.reconnectInterval,
+		handleMessage,
+		startHeartbeat,
+		cleanup,
+		handlers,
+	]);
 
 	const disconnect = useCallback(() => {
 		isManuallyClosedRef.current = true;
 		cleanup();
 
 		if (wsRef.current) {
-			wsRef.current.close(1000, 'Manual disconnect');
+			// Only close if the connection is not in CONNECTING state
+			if (wsRef.current.readyState !== WebSocket.CONNECTING) {
+				wsRef.current.close(1000, 'Manual disconnect');
+			}
 			wsRef.current = null;
 		}
 
@@ -265,21 +321,38 @@ export const useWebSocketConnection = (
 		[send],
 	);
 
-	// Auto-connect on mount
+	// Store connect and disconnect in refs to avoid re-render issues
+	const connectRef = useRef(connect);
+	const disconnectRef = useRef(disconnect);
+
 	useEffect(() => {
+		connectRef.current = connect;
+		disconnectRef.current = disconnect;
+	});
+
+	// Auto-connect on mount with delay to avoid React Strict Mode issues
+	useEffect(() => {
+		// Prevent multiple initializations in React Strict Mode
+		if (hasInitializedRef.current) {
+			return;
+		}
+		hasInitializedRef.current = true;
+
 		isManuallyClosedRef.current = false;
-		connect();
+
+		// Add a small delay to ensure the component is fully mounted
+		const timeoutId = setTimeout(() => {
+			connectRef.current();
+		}, 100);
 
 		return () => {
+			clearTimeout(timeoutId);
 			isManuallyClosedRef.current = true;
-			disconnect();
+			disconnectRef.current();
 		};
-	}, [connect, disconnect]);
+	}, []); // Empty dependencies to run only on mount/unmount
 
-	// Cleanup on unmount
-	useEffect(() => {
-		return cleanup;
-	}, [cleanup]);
+	// Cleanup is handled in the auto-connect useEffect's cleanup function
 
 	return {
 		// Connection state

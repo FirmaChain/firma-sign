@@ -511,7 +511,7 @@ GET /api/info
 Connect to WebSocket for real-time updates:
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8080');
+const ws = new WebSocket('ws://localhost:8080/ws');
 ```
 
 ### Client → Server Events

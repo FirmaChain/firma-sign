@@ -58,6 +58,7 @@ export class ConnectionManager extends EventEmitter {
 	private transports: Map<string, TransportInstance> = new Map();
 	private transportStatus: Map<string, TransportStatus> = new Map();
 	private db = getDatabase();
+	private transportManager: unknown;
 
 	async initialize(transports: string[], config: unknown): Promise<{ initialized: boolean; transports: Record<string, TransportStatus> }> {
 		const result: Record<string, TransportStatus> = {};
@@ -100,7 +101,7 @@ export class ConnectionManager extends EventEmitter {
 		try {
 			const p2pTransport = new P2PTransport();
 			await p2pTransport.initialize({
-				port: config?.port || 9090,
+				port: config?.port || parseInt(process.env.P2P_PORT || '9090', 10),
 				enableDHT: config?.enableDHT ?? true,
 				enableMDNS: config?.enableMDNS ?? true,
 			});
@@ -307,5 +308,17 @@ export class ConnectionManager extends EventEmitter {
 			logger.error(`Failed to initialize ${transport}`, error);
 			throw error;
 		}
+	}
+
+	setTransportManager(transportManager: unknown): void {
+		this.transportManager = transportManager;
+	}
+
+	getTransportStatuses(): Record<string, unknown> {
+		const statuses: Record<string, unknown> = {};
+		for (const [name, status] of this.transportStatus.entries()) {
+			statuses[name] = status;
+		}
+		return statuses;
 	}
 }
