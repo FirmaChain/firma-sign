@@ -463,6 +463,9 @@ importers:
       '@chainsafe/libp2p-yamux':
         specifier: ^7.0.4
         version: 7.0.4
+      '@ipshipyard/node-datachannel':
+        specifier: ^0.26.6
+        version: 0.26.6
       '@libp2p/crypto':
         specifier: ^5.0.7
         version: 5.1.7
@@ -7071,7 +7074,6 @@ snapshots:
   '@ipshipyard/node-datachannel@0.26.6':
     dependencies:
       prebuild-install: 7.1.3
-    optional: true
 
   '@isaacs/cliui@8.0.2':
     dependencies:

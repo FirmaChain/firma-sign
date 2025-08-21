@@ -1,77 +1,78 @@
 {
-  "name": "@firmachain/firma-sign-transport-p2p",
-  "version": "0.0.1",
-  "description": "P2P transport implementation for Firma-Sign document signing",
-  "author": "FirmaChain",
-  "license": "MIT",
-  "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint src",
-    "type-check": "tsc --noEmit"
-  },
-  "keywords": [
-    "firma-sign",
-    "p2p",
-    "transport",
-    "webrtc",
-    "libp2p",
-    "document-signing",
-    "firmachain"
-  ],
-  "peerDependencies": {
-    "@firmachain/firma-sign-core": "workspace:*"
-  },
-  "optionalDependencies": {
-    "@libp2p/webrtc": "^5.0.21"
-  },
-  "dependencies": {
-    "@chainsafe/libp2p-noise": "^16.1.0",
-    "@chainsafe/libp2p-yamux": "^7.0.4",
-    "@libp2p/crypto": "^5.0.7",
-    "@libp2p/identify": "^3.0.38",
-    "@libp2p/interface": "^2.2.1",
-    "@libp2p/kad-dht": "^14.1.2",
-    "@libp2p/mdns": "^11.0.17",
-    "@libp2p/mplex": "^11.0.17",
-    "@libp2p/peer-id": "^5.0.0",
-    "@libp2p/tcp": "^10.1.10",
-    "@libp2p/tls": "^2.2.2",
-    "@libp2p/websockets": "^9.0.16",
-    "@multiformats/multiaddr": "^12.3.4",
-    "it-pipe": "^3.0.1",
-    "libp2p": "^2.3.2",
-    "nanoid": "catalog:",
-    "uint8arrays": "^5.1.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "catalog:",
-    "@firmachain/firma-sign-core": "workspace:*",
-    "@types/node": "catalog:",
-    "eslint": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
-    "vitest": "catalog:"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+	"name": "@firmachain/firma-sign-transport-p2p",
+	"version": "0.0.1",
+	"description": "P2P transport implementation for Firma-Sign document signing",
+	"author": "FirmaChain",
+	"license": "MIT",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"lint": "eslint src",
+		"type-check": "tsc --noEmit"
+	},
+	"keywords": [
+		"firma-sign",
+		"p2p",
+		"transport",
+		"webrtc",
+		"libp2p",
+		"document-signing",
+		"firmachain"
+	],
+	"peerDependencies": {
+		"@firmachain/firma-sign-core": "workspace:*"
+	},
+	"optionalDependencies": {
+		"@libp2p/webrtc": "^5.0.21"
+	},
+	"dependencies": {
+		"@chainsafe/libp2p-noise": "^16.1.0",
+		"@chainsafe/libp2p-yamux": "^7.0.4",
+		"@ipshipyard/node-datachannel": "^0.26.6",
+		"@libp2p/crypto": "^5.0.7",
+		"@libp2p/identify": "^3.0.38",
+		"@libp2p/interface": "^2.2.1",
+		"@libp2p/kad-dht": "^14.1.2",
+		"@libp2p/mdns": "^11.0.17",
+		"@libp2p/mplex": "^11.0.17",
+		"@libp2p/peer-id": "^5.0.0",
+		"@libp2p/tcp": "^10.1.10",
+		"@libp2p/tls": "^2.2.2",
+		"@libp2p/websockets": "^9.0.16",
+		"@multiformats/multiaddr": "^12.3.4",
+		"it-pipe": "^3.0.1",
+		"libp2p": "^2.3.2",
+		"nanoid": "catalog:",
+		"uint8arrays": "^5.1.0"
+	},
+	"devDependencies": {
+		"@eslint/js": "catalog:",
+		"@firmachain/firma-sign-core": "workspace:*",
+		"@types/node": "catalog:",
+		"eslint": "catalog:",
+		"tsup": "catalog:",
+		"typescript": "catalog:",
+		"typescript-eslint": "catalog:",
+		"vitest": "catalog:"
+	},
+	"engines": {
+		"node": ">=18"
+	}
 }
