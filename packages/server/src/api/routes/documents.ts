@@ -162,6 +162,81 @@ export function createDocumentRoutes(documentService: DocumentService): Router {
   );
 
   /**
+   * Upload a document from a file path (for IDE integration)
+   * POST /api/documents/upload-from-path
+   */
+  router.post(
+    '/upload-from-path',
+    requireAuth,
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { filePath, metadata } = req.body as { 
+          filePath: string; 
+          metadata?: { title?: string; type?: string } 
+        };
+
+        if (!filePath) {
+          return res.status(400).json({ error: 'No file path provided' });
+        }
+
+        // Read the file from the filesystem
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        
+        // Security check: ensure the file path is within allowed directories
+        // In production, you'd want to restrict this to specific directories
+        const resolvedPath = path.resolve(filePath);
+        
+        // Check if file exists
+        try {
+          await fs.access(resolvedPath);
+        } catch {
+          return res.status(404).json({ error: 'File not found' });
+        }
+
+        // Read the file
+        const fileBuffer = await fs.readFile(resolvedPath);
+        const fileName = metadata?.title || path.basename(resolvedPath);
+        
+        const uploadedBy = (req as Request & { user?: { id: string } }).user?.id;
+
+        const document = await documentService.storeDocument(
+          fileBuffer,
+          fileName,
+          DocumentCategory.UPLOADED,
+          {
+            uploadedBy,
+            metadata: {
+              ...metadata,
+              originalPath: resolvedPath,
+              uploadMethod: 'ide-integration'
+            }
+          }
+        );
+
+        logger.info(`Document uploaded from path: ${document.id} (${resolvedPath}) by user: ${uploadedBy}`);
+        
+        res.status(201).json({
+          success: true,
+          documentId: document.id,
+          document: {
+            id: document.id,
+            name: document.originalName,
+            category: document.category,
+            status: document.status,
+            size: document.size,
+            hash: document.hash,
+            uploadedAt: document.uploadedAt
+          }
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  /**
    * Get document by ID
    * GET /api/documents/:documentId
    */

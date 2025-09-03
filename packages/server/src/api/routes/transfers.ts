@@ -42,12 +42,84 @@ const signDocumentsSchema = z.object({
   returnTransport: z.string().optional()
 });
 
+const simpleTransferSchema = z.object({
+  documentId: z.string(),
+  recipients: z.array(z.object({
+    peerId: z.string().optional(),
+    identifier: z.string().optional(),
+    transport: z.string()
+  })).min(1, "At least one recipient is required"),
+  requiresSignature: z.boolean().optional(),
+  message: z.string().optional()
+});
+
 export function createTransferRoutes(
   transportManager: TransportManager,
   storageManager: StorageManager,
-  _documentService?: DocumentService
+  documentService?: DocumentService
 ): Router {
   const router = Router();
+
+  // Simple transfer route for frontend
+  router.post('/', validateRequest(simpleTransferSchema), (req, res) => {
+    void (async () => {
+    try {
+      const transferId = nanoid();
+      const body = req.body as {
+        documentId: string;
+        recipients: Array<{ peerId?: string; identifier?: string; transport: string }>;
+        requiresSignature?: boolean;
+        message?: string;
+      };
+      const { documentId, recipients, message } = body;
+
+      // Get document metadata if DocumentService is available
+      let document;
+      if (documentService) {
+        try {
+          const result = await documentService.getDocument(documentId);
+          document = result.metadata;
+        } catch (error) {
+          logger.warn(`Document ${documentId} not found in DocumentService, creating transfer anyway`, error);
+        }
+      }
+
+      // Format recipients for storage
+      const formattedRecipients = recipients.map(rec => ({
+        identifier: rec.peerId || rec.identifier || '',
+        transport: rec.transport,
+        preferences: {}
+      }));
+
+      // Create the transfer record
+      await storageManager.createTransfer({
+        transferId,
+        type: 'outgoing',
+        documents: [{
+          id: documentId,
+          fileName: document?.originalName || `document-${documentId}.pdf`,
+          fileHash: document?.hash,
+          fileSize: document?.size
+        }],
+        recipients: formattedRecipients,
+        metadata: {
+          message,
+          createdAt: Date.now()
+        }
+      });
+
+      logger.info(`Simple transfer created: ${transferId} for document: ${documentId}`);
+
+      res.json({
+        transferId,
+        status: 'created'
+      });
+    } catch (error) {
+      logger.error('Error creating simple transfer:', error);
+      res.status(500).json({ error: 'Failed to create transfer' });
+    }
+    })();
+  });
 
   router.post('/create', validateRequest(createTransferSchema), (req, res) => {
     void (async () => {

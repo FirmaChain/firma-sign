@@ -20,7 +20,7 @@ const getAuthToken = (): string | null => {
 };
 
 // Helper function for API calls
-async function apiCall<T>(
+export async function apiCall<T>(
 	endpoint: string,
 	options: RequestInit = {},
 ): Promise<T> {

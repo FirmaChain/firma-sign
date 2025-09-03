@@ -295,7 +295,7 @@ const AppContent: React.FC = () => {
 
 								{/* PeerExplorer Content */}
 								<div className="flex-1 overflow-hidden bg-gray-800 h-full">
-									<PeerExplorer className="h-full" />
+									<PeerExplorer className="h-full" selectedFile={selectedFile} />
 								</div>
 							</div>
 

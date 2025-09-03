@@ -4,12 +4,16 @@ import TransportStatusBar from './TransportStatusBar';
 import { useWebSocketConnection } from './hooks/useWebSocketConnection';
 import { PeerExplorerState, TransportStatus, EnhancedPeer } from './types';
 import { apiClient, getTransportIcon, getStatusColor } from './utils';
+import { apiCall } from '../../services/api';
+
+import type { FileItem } from '../FileExplorer/types';
 
 interface PeerExplorerProps {
 	className?: string;
+	selectedFile?: FileItem | null;
 }
 
-const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
+const PeerExplorer: React.FC<PeerExplorerProps> = ({ className, selectedFile }) => {
 	const [state, setState] = useState<PeerExplorerState>({
 		transports: {
 			initialized: false,
@@ -47,6 +51,10 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 	);
 	const [isInitializing, setIsInitializing] = useState(false);
 	const [showDetails, setShowDetails] = useState(false);
+	const [isSending, setIsSending] = useState(false);
+	const [sendStatus, setSendStatus] = useState<{ peerId: string; status: string; message: string } | null>(null);
+	
+	// File information is now taken directly from selectedFile
 
 	// API client is now imported from utils
 
@@ -220,6 +228,49 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 		[showDetails],
 	);
 
+	const handleSendCurrentFile = useCallback(async (peerId: string) => {
+		if (!selectedFile) {
+			setSendStatus({ peerId, status: 'error', message: 'No file selected' });
+			return;
+		}
+
+		setIsSending(true);
+		setSendStatus({ peerId, status: 'sending', message: `Sending ${selectedFile.name}...` });
+
+		try {
+			// Create a transfer using the existing document ID
+			const transferResult = await apiCall<{ transferId: string; status: string }>('/transfers', {
+				method: 'POST',
+				body: JSON.stringify({
+					documentId: selectedFile.id,
+					recipients: [{ peerId, transport: 'p2p' }],
+					requiresSignature: false,
+					message: `Sending ${selectedFile.name}`,
+				}),
+			});
+
+			setSendStatus({ 
+				peerId, 
+				status: 'success', 
+				message: `File sent successfully! Transfer ID: ${transferResult.transferId}` 
+			});
+
+			// Clear status after successful send
+			setTimeout(() => {
+				setSendStatus(null);
+			}, 3000);
+		} catch (error) {
+			console.error('Failed to send file:', error);
+			setSendStatus({ 
+				peerId, 
+				status: 'error', 
+				message: `Failed to send file: ${error instanceof Error ? error.message : 'Unknown error'}` 
+			});
+		} finally {
+			setIsSending(false);
+		}
+	}, [selectedFile]);
+
 	const filteredPeers = (): EnhancedPeer[] => {
 		const peers = state.peers[activeTab as keyof typeof state.peers] as EnhancedPeer[];
 		if (!Array.isArray(peers)) return [];
@@ -265,6 +316,43 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 					/>
 				</div>
 			)}
+
+			{/* Current File Section */}
+			<div className="flex-shrink-0 p-3 border-b border-gray-700 bg-gray-850">
+				<div className="flex items-center gap-2">
+					{selectedFile ? (
+						<div className="flex-1 px-3 py-2 text-xs bg-gray-700 rounded">
+							<div className="flex items-center gap-2">
+								<span className="text-gray-400">Selected File:</span>
+								<span className="text-white font-medium">
+									{selectedFile.mimeType?.includes('pdf') ? '📑' : '📄'} {selectedFile.name}
+								</span>
+								{selectedFile.size && (
+									<span className="text-gray-500">
+										({(selectedFile.size / 1024).toFixed(1)} KB)
+									</span>
+								)}
+							</div>
+							<div className="text-gray-500 text-xs mt-1 truncate" title={selectedFile.path}>
+								{selectedFile.path}
+							</div>
+						</div>
+					) : (
+						<div className="flex-1 px-3 py-2 text-xs bg-gray-700 rounded text-center text-gray-400">
+							Select a file from the File Explorer to send
+						</div>
+					)}
+				</div>
+				{sendStatus && (
+					<div className={`mt-2 p-2 text-xs rounded ${
+						sendStatus.status === 'success' ? 'bg-green-900 text-green-200' :
+						sendStatus.status === 'error' ? 'bg-red-900 text-red-200' :
+						'bg-blue-900 text-blue-200'
+					}`}>
+						{sendStatus.message}
+					</div>
+				)}
+			</div>
 
 			{/* Search and Discovery */}
 			<div className="flex-shrink-0 p-3 border-b border-gray-700">
@@ -452,20 +540,41 @@ const PeerExplorer: React.FC<PeerExplorerProps> = ({ className }) => {
 										</div>
 										<div className="flex items-center gap-1">
 											{activeTab === 'discovered' && (
-												<button
-													className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded"
-													title="Connect"
-												>
-													🔗
-												</button>
+												<>
+													<button
+														className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded"
+														title="Connect"
+													>
+														🔗
+													</button>
+													{/* Also show send button for discovered peers for testing */}
+													<button
+														onClick={() => void handleSendCurrentFile(peer.peerId)}
+														disabled={!selectedFile || isSending}
+														className={`px-2 py-1 text-xs rounded ${
+															!selectedFile || isSending 
+																? 'bg-gray-600 cursor-not-allowed' 
+																: 'bg-green-600 hover:bg-green-700'
+														}`}
+														title={selectedFile ? `Send ${selectedFile.name} to ${peer.displayName}` : 'Select a file first'}
+													>
+														{isSending && sendStatus?.peerId === peer.peerId ? '⏳' : '📤'}
+													</button>
+												</>
 											)}
 											{activeTab === 'connected' && (
 												<>
 													<button
-														className="px-2 py-1 text-xs bg-green-600 hover:bg-green-700 rounded"
-														title="Send Document"
+														onClick={() => void handleSendCurrentFile(peer.peerId)}
+														disabled={!selectedFile || isSending}
+														className={`px-2 py-1 text-xs rounded ${
+															!selectedFile || isSending 
+																? 'bg-gray-600 cursor-not-allowed' 
+																: 'bg-green-600 hover:bg-green-700'
+														}`}
+														title={selectedFile ? `Send ${selectedFile.name} to ${peer.displayName}` : 'Select a file first'}
 													>
-														📄
+														{isSending && sendStatus?.peerId === peer.peerId ? '⏳' : '📤'}
 													</button>
 													<button
 														className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded"

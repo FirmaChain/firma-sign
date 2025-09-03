@@ -111,6 +111,12 @@ export const useWebSocketConnection = (
 					case 'transport:status':
 						handlers.onTransportStatus?.(data as TransportStatusEvent);
 						break;
+					case 'error': {
+						// Handle error events from the server
+						const errorData = data as { type: string; message?: string; error?: string; code?: string };
+						console.error('WebSocket server error:', errorData.message || errorData.error || 'Unknown error', errorData);
+						break;
+					}
 					case 'pong':
 						// Heartbeat response, connection is alive
 						break;
