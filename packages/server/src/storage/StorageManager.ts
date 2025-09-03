@@ -109,6 +109,7 @@ export class StorageManager {
       fileName: string;
       fileSize?: number;
       fileHash?: string;
+      originalDocumentId?: string;
     }>;
     recipients?: Array<{
       identifier: string;
@@ -152,6 +153,7 @@ export class StorageManager {
             fileSize: doc.fileSize || 0,
             fileHash: doc.fileHash || '',
             status: 'pending',
+            originalDocumentId: doc.originalDocumentId,
             createdAt: new Date()
           });
           documents.push(document);

@@ -15,6 +15,7 @@ export class DocumentRepository extends SQLiteRepository<DocumentEntity> {
       fileSize: row.file_size as number,
       fileHash: row.file_hash as string,
       status: row.status as string,
+      originalDocumentId: row.original_document_id as string | undefined,
       signedAt: row.signed_at ? this.deserializeValue(row.signed_at, 'date') as Date : undefined,
       signedBy: row.signed_by as string | undefined,
       blockchainTxOriginal: row.blockchain_tx_original as string | undefined,
@@ -32,6 +33,7 @@ export class DocumentRepository extends SQLiteRepository<DocumentEntity> {
     if (entity.fileSize !== undefined) row.file_size = entity.fileSize;
     if (entity.fileHash !== undefined) row.file_hash = entity.fileHash;
     if (entity.status !== undefined) row.status = entity.status;
+    if (entity.originalDocumentId !== undefined) row.original_document_id = entity.originalDocumentId;
     if (entity.signedAt !== undefined) row.signed_at = this.serializeValue(entity.signedAt);
     if (entity.signedBy !== undefined) row.signed_by = entity.signedBy;
     if (entity.blockchainTxOriginal !== undefined) row.blockchain_tx_original = entity.blockchainTxOriginal;

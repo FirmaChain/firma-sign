@@ -181,6 +181,7 @@ export class SQLiteDatabase implements IDatabase {
         file_size INTEGER NOT NULL,
         file_hash TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'pending',
+        original_document_id TEXT,
         signed_at INTEGER,
         signed_by TEXT,
         blockchain_tx_original TEXT,

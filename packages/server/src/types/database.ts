@@ -38,6 +38,7 @@ export interface Document {
   fileSize: number;
   fileHash: string;
   status: DocumentStatus;
+  originalDocumentId?: string;  // Reference to original document ID
   signedAt?: Date;
   signedBy?: string;
   blockchainTxOriginal?: string;

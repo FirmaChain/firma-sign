@@ -185,6 +185,7 @@ export interface DocumentEntity {
   fileSize: number;
   fileHash: string;
   status: string;
+  originalDocumentId?: string;  // Reference to original document ID
   signedAt?: Date;
   signedBy?: string;
   blockchainTxOriginal?: string;

@@ -91,15 +91,16 @@ export function createTransferRoutes(
         preferences: {}
       }));
 
-      // Create the transfer record
+      // Create the transfer record with unique document record ID
       await storageManager.createTransfer({
         transferId,
         type: 'outgoing',
         documents: [{
-          id: documentId,
+          id: `${transferId}-${documentId}`, // Unique ID for this document record
           fileName: document?.originalName || `document-${documentId}.pdf`,
           fileHash: document?.hash,
-          fileSize: document?.size
+          fileSize: document?.size,
+          originalDocumentId: documentId // Store original document ID as metadata
         }],
         recipients: formattedRecipients,
         metadata: {
