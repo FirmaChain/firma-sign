@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SQLiteDatabase } from '../../SQLiteDatabase';
 import { RecipientRepository } from '../../repositories/RecipientRepository';
-import { RecipientEntity } from '@firmachain/firma-sign-core';
+import { RecipientEntity, TransferEntity } from '@firmachain/firma-sign-core';
 import { createTestDatabase, cleanupTestDatabase, seedTestData } from '../utils/testDb';
 
 describe('RecipientRepository', () => {
@@ -21,7 +21,7 @@ describe('RecipientRepository', () => {
   describe('create', () => {
     beforeEach(async () => {
       // Create a transfer first for foreign key constraint
-      const transferRepo = database.getRepository<any>('Transfer');
+      const transferRepo = database.getRepository<TransferEntity>('Transfer');
       await transferRepo.create({
         id: 'test-transfer',
         type: 'outgoing',
@@ -111,7 +111,7 @@ describe('RecipientRepository', () => {
 
     it('should mark recipient as notified', async () => {
       // Create a pending recipient first
-      const transferRepo = database.getRepository<any>('Transfer');
+      const transferRepo = database.getRepository<TransferEntity>('Transfer');
       await transferRepo.create({
         id: 'test-transfer-2',
         type: 'outgoing',

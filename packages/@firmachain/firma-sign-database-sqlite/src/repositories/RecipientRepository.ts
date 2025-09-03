@@ -15,9 +15,9 @@ export class RecipientRepository extends SQLiteRepository<RecipientEntity> {
       transport: row.transport as string,
       status: row.status as string,
       preferences: this.deserializeValue(row.preferences, 'json'),
-      notifiedAt: row.notified_at ? this.deserializeValue(row.notified_at, 'date') : undefined,
-      viewedAt: row.viewed_at ? this.deserializeValue(row.viewed_at, 'date') : undefined,
-      signedAt: row.signed_at ? this.deserializeValue(row.signed_at, 'date') : undefined,
+      notifiedAt: row.notified_at ? this.deserializeValue(row.notified_at, 'date') as Date : undefined,
+      viewedAt: row.viewed_at ? this.deserializeValue(row.viewed_at, 'date') as Date : undefined,
+      signedAt: row.signed_at ? this.deserializeValue(row.signed_at, 'date') as Date : undefined,
       createdAt: this.deserializeValue(row.created_at, 'date')
     };
   }

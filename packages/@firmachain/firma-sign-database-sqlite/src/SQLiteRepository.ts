@@ -23,7 +23,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   async findAll(options?: QueryOptions): Promise<T[]> {
     let query = `SELECT * FROM ${this.tableName}`;
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Apply ordering
     if (options?.orderBy) {
@@ -54,7 +54,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   async find(criteria: Partial<T>, options?: QueryOptions): Promise<T[]> {
     const whereClauses: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Build WHERE clause from criteria
     for (const [key, value] of Object.entries(criteria)) {
@@ -95,9 +95,9 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     const now = new Date();
     const entity = {
       ...data,
-      id: (data as any).id || nanoid(),
-      createdAt: (data as any).createdAt || now,
-      updatedAt: (data as any).updatedAt || now
+      id: (data as Record<string, unknown>).id as string || nanoid(),
+      createdAt: (data as Record<string, unknown>).createdAt as Date || now,
+      updatedAt: (data as Record<string, unknown>).updatedAt as Date || now
     };
 
     const row = this.mapEntityToRow(entity);
@@ -132,7 +132,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
       ...existing,
       ...data,
       id, // Ensure ID doesn't change
-      updatedAt: (data as any).updatedAt || new Date()
+      updatedAt: (data as Record<string, unknown>).updatedAt as Date || new Date()
     };
 
     const row = this.mapEntityToRow(updated);
@@ -184,7 +184,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   async updateMany(criteria: Partial<T>, data: Partial<T>): Promise<number> {
     const whereClauses: string[] = [];
-    const whereParams: any[] = [];
+    const whereParams: unknown[] = [];
 
     for (const [key, value] of Object.entries(criteria)) {
       if (value !== undefined) {
@@ -210,7 +210,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   async deleteMany(criteria: Partial<T>): Promise<number> {
     const whereClauses: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     for (const [key, value] of Object.entries(criteria)) {
       if (value !== undefined) {
@@ -231,7 +231,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
   async count(criteria?: Partial<T>): Promise<number> {
     let query = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (criteria) {
       const whereClauses: string[] = [];
@@ -248,7 +248,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
 
     const stmt = this.db.prepare(query);
     const result = params.length > 0 ? stmt.get(...params) : stmt.get();
-    return (result as any).count || 0;
+    return (result as { count: number }).count || 0;
   }
 
   async exists(criteria: Partial<T>): Promise<boolean> {
@@ -261,9 +261,9 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     const now = new Date();
     const entity = {
       ...data,
-      id: (data as any).id || nanoid(),
-      createdAt: (data as any).createdAt || now,
-      updatedAt: (data as any).updatedAt || now
+      id: (data as Record<string, unknown>).id as string || nanoid(),
+      createdAt: (data as Record<string, unknown>).createdAt as Date || now,
+      updatedAt: (data as Record<string, unknown>).updatedAt as Date || now
     };
 
     const row = this.mapEntityToRow(entity);
@@ -290,7 +290,7 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
 
-  protected serializeValue(value: any): any {
+  protected serializeValue(value: unknown): unknown {
     if (value instanceof Date) {
       return Math.floor(value.getTime() / 1000);
     }
@@ -300,7 +300,10 @@ export abstract class SQLiteRepository<T> implements Repository<T> {
     return value;
   }
 
-  protected deserializeValue(value: any, type?: string): any {
+  protected deserializeValue(value: unknown, type: 'date'): Date;
+  protected deserializeValue(value: unknown, type: 'json'): Record<string, unknown> | undefined;
+  protected deserializeValue(value: unknown, type?: string): unknown;
+  protected deserializeValue(value: unknown, type?: string): unknown {
     if (value === null) {
       return undefined;
     }

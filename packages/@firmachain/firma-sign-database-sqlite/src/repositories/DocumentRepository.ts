@@ -15,7 +15,7 @@ export class DocumentRepository extends SQLiteRepository<DocumentEntity> {
       fileSize: row.file_size as number,
       fileHash: row.file_hash as string,
       status: row.status as string,
-      signedAt: row.signed_at ? this.deserializeValue(row.signed_at, 'date') : undefined,
+      signedAt: row.signed_at ? this.deserializeValue(row.signed_at, 'date') as Date : undefined,
       signedBy: row.signed_by as string | undefined,
       blockchainTxOriginal: row.blockchain_tx_original as string | undefined,
       blockchainTxSigned: row.blockchain_tx_signed as string | undefined,

@@ -30,7 +30,7 @@ export class SQLiteDatabase implements IDatabase {
   };
 
   private db?: Database.Database;
-  private repositories = new Map<string, Repository<any>>();
+  private repositories = new Map<string, Repository<unknown>>();
   private config?: DatabaseConfig;
   private isInitialized = false;
 
@@ -231,14 +231,18 @@ export class SQLiteDatabase implements IDatabase {
     if (!this.db) return;
 
     // Register entity repositories
-    this.repositories.set('Transfer', new TransferRepository(this.db));
-    this.repositories.set('Document', new DocumentRepository(this.db));
-    this.repositories.set('Recipient', new RecipientRepository(this.db));
+    const transferRepo = new TransferRepository(this.db);
+    const documentRepo = new DocumentRepository(this.db);
+    const recipientRepo = new RecipientRepository(this.db);
+    
+    this.repositories.set('Transfer', transferRepo);
+    this.repositories.set('Document', documentRepo);
+    this.repositories.set('Recipient', recipientRepo);
     
     // Alternative names for convenience
-    this.repositories.set('TransferEntity', this.repositories.get('Transfer')!);
-    this.repositories.set('DocumentEntity', this.repositories.get('Document')!);
-    this.repositories.set('RecipientEntity', this.repositories.get('Recipient')!);
+    this.repositories.set('TransferEntity', transferRepo);
+    this.repositories.set('DocumentEntity', documentRepo);
+    this.repositories.set('RecipientEntity', recipientRepo);
   }
 
   // Helper method to get the database instance (for internal use)

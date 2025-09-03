@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SQLiteDatabase } from '../../SQLiteDatabase';
 import { DocumentRepository } from '../../repositories/DocumentRepository';
-import { DocumentEntity } from '@firmachain/firma-sign-core';
+import { DocumentEntity, TransferEntity } from '@firmachain/firma-sign-core';
 import { createTestDatabase, cleanupTestDatabase, seedTestData } from '../utils/testDb';
 
 describe('DocumentRepository', () => {
@@ -21,7 +21,7 @@ describe('DocumentRepository', () => {
   describe('create', () => {
     beforeEach(async () => {
       // Create a transfer first for foreign key constraint
-      const transferRepo = database.getRepository<any>('Transfer');
+      const transferRepo = database.getRepository<TransferEntity>('Transfer');
       await transferRepo.create({
         id: 'test-transfer',
         type: 'outgoing',

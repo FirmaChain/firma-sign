@@ -7,10 +7,10 @@ import {
 
 export class SQLiteTransaction implements Transaction {
   private db: Database.Database;
-  private repositories: Map<string, Repository<any>>;
+  private repositories: Map<string, Repository<unknown>>;
   private isActive = true;
 
-  constructor(db: Database.Database, repositories: Map<string, Repository<any>>) {
+  constructor(db: Database.Database, repositories: Map<string, Repository<unknown>>) {
     this.db = db;
     this.repositories = repositories;
   }
