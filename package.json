@@ -6,7 +6,7 @@
 	"scripts": {
 		"preinstall": "node scripts/block-npm-install.js",
 		"build": "pnpm -r build",
-		"dev": "turbo run dev --parallel",
+		"dev": "pnpm build && turbo run dev",
 		"test": "pnpm -r test",
 		"install:all": "pnpm install",
 		"format": "turbo run format && node scripts/format.mjs",
