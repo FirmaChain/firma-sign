@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
+
+/* Theme configuration */
+@theme {
+	--color-brand-primary: #1050dd;
+	--color-brand-secondary: #316bff;
+	--color-brand-accent: #4a7fff;
+
+	--color-dark-bg-primary: #121417;
+	--color-dark-bg-secondary: #1a1b20;
+	--color-dark-bg-tertiary: #242530;
+
+	--color-text-primary: #ffffff;
+	--color-text-secondary: #a0a3bd;
+	--color-text-tertiary: #6b7280;
+
+	--font-family-metropolis: 'Metropolis', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--font-family-lato: 'Lato', 'Inter', sans-serif;
+}
