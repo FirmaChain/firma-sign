@@ -4,20 +4,20 @@
 
 ### Tagline
 
-**Sign Documents. Peer-to-Peer. No Middleman.**
+**Open Source. Self-Hosted. Truly Yours.**
 
 ### Headline
 
-Transform Document Signing with True Web3 Technology
+Build Your Own Document Signing System
 
 ### Subheadline
 
-Experience the future of document signing - directly between peers, secured by blockchain, owned by you.
+A free, open-source tool for peer-to-peer document signing. Run it locally, control your data, and customize everything.
 
 ### Call to Action
 
-- Primary: "Start Signing for Free"
-- Secondary: "See How It Works"
+- Primary: "Get Started on GitHub"
+- Secondary: "View Documentation"
 
 ---
 
@@ -25,14 +25,15 @@ Experience the future of document signing - directly between peers, secured by b
 
 ### The Problem We Solve
 
-In a world moving towards decentralization, why do we still rely on centralized services for something as fundamental as document signing?
+Traditional e-signature platforms lock you into their ecosystem. They control your data, charge recurring fees, and you're dependent on their servers staying online.
 
-Traditional e-signature platforms:
+What if you could:
 
-- Store your sensitive documents on their servers
-- Charge recurring fees for basic functionality
-- Create single points of failure
-- Own your data and signing history
+- Run your own document signing system
+- Own 100% of your code and data
+- Customize every aspect to your needs
+- Never pay subscription fees
+- Connect directly peer-to-peer without intermediaries
 
 ---
 
@@ -48,67 +49,76 @@ A world where document signing is as simple as sending a message, as secure as b
 
 ---
 
-## How It Works (Simple 3-Step Process)
+## How It Works (Simple 4-Step Process)
 
-### 1. Upload & Prepare
+### 1. Install & Setup
 
-Upload your document and add signature fields - everything happens in your browser
+Clone from GitHub and install with pnpm - runs locally on your machine
 
-### 2. Share Directly
+```bash
+git clone https://github.com/FirmaChain/firma-sign
+pnpm install && pnpm -F frontend dev
+```
 
-Send documents directly to recipients through peer-to-peer connections - no server required
+### 2. Upload & Prepare
 
-### 3. Sign & Certify
+Upload documents and add signature fields - all processing happens locally in your browser
 
-Recipients sign instantly, blockchain certifies permanently - complete transparency
+### 3. Share Directly
+
+Send documents peer-to-peer through libp2p - no central server, direct connections only
+
+### 4. Sign & Certify (Optional)
+
+Recipients sign locally, optional blockchain certification provides permanent proof
 
 ---
 
-## Key Features (Non-Technical)
+## Key Features
 
-### 🌐 **True Peer-to-Peer**
+### 💻 **100% Open Source**
 
-Documents travel directly from you to recipients. No uploads to corporate servers. Your data stays yours.
+Full source code available on GitHub. Audit, modify, and contribute freely. MIT licensed.
 
-### 🔐 **Blockchain Certified**
+### 🏠 **Self-Hosted & Local**
 
-Every signature is permanently recorded on the blockchain - tamper-proof and verifiable forever.
+Runs entirely on your machine. No cloud dependencies, no data leaves your control.
 
-### 💸 **Forever Free Core**
+### 🌐 **P2P Technology**
 
-No subscriptions, no per-document fees. The peer-to-peer network is yours to use freely.
+Built on libp2p for direct peer-to-peer document transfer. No servers, no middlemen.
 
-### 🚀 **Works Everywhere**
+### 🔐 **Optional Blockchain Proof**
 
-Sign from any device, any location. If you can connect to the internet, you can sign documents.
+Integrate with FirmaChain for tamper-proof certification when you need it.
 
-### 🤝 **Multi-Party Signing**
+### 🛠️ **Fully Customizable**
 
-Collect signatures from multiple parties seamlessly. Everyone signs the same document, transparently.
+Modular architecture lets you add transports, storage backends, and custom features.
 
-### 🔒 **End-to-End Security**
+### 📦 **Easy to Deploy**
 
-Military-grade encryption protects your documents from the moment they leave your device.
+Simple pnpm commands get you running. Comprehensive docs guide your setup.
 
 ---
 
 ## Why Firma-Sign is Different
 
-### Traditional E-Signatures
+### Traditional E-Signature Services
 
-- ❌ Centralized servers store your documents
-- ❌ Monthly/yearly subscription fees
+- ❌ Hosted services with subscription fees
+- ❌ Your data on their servers
+- ❌ Proprietary closed-source software
 - ❌ Vendor lock-in
-- ❌ Privacy concerns
-- ❌ Single point of failure
+- ❌ Limited customization
 
-### Firma-Sign
+### Firma-Sign (Open Source Tool)
 
-- ✅ Direct peer-to-peer transfer
-- ✅ Free core functionality forever
-- ✅ Open source & transparent
-- ✅ You own your data
-- ✅ Decentralized & resilient
+- ✅ Run on your own infrastructure
+- ✅ 100% free and open source (MIT)
+- ✅ Complete data ownership
+- ✅ Fully customizable codebase
+- ✅ Community-driven development
 
 ---
 
@@ -170,37 +180,50 @@ Your actual documents never touch the blockchain - only a unique "fingerprint" (
 
 ## FAQs
 
+### How do I install Firma-Sign?
+
+Clone the GitHub repository and run `pnpm install`. Full installation guide available in the README. Requires Node.js 18+ and pnpm.
+
 ### Is it really free?
 
-Yes! The core P2P signing functionality will always be free. Premium features like advanced workflows may have optional fees.
+Yes! It's 100% open source (MIT license). Free to use, modify, and deploy forever. No hidden costs or premium tiers.
 
-### Do I need cryptocurrency?
+### What are the system requirements?
 
-No! While blockchain certifies your signatures, you don't need to own or understand cryptocurrency to use Firma-Sign.
+Node.js 18 or higher, pnpm package manager, and a modern browser. Works on Windows, macOS, and Linux.
 
-### Is it legally binding?
+### Is there a hosted version available?
 
-Digital signatures are legally recognized in most countries. Blockchain certification adds an extra layer of verification.
+No. Firma-Sign is designed to run locally on your infrastructure. This ensures complete data ownership and privacy.
 
-### What if the recipient isn't online?
+### Can I customize it for my needs?
 
-Documents can be shared through multiple methods - direct P2P, email links, or temporary encrypted storage.
+Absolutely! The modular architecture allows you to add custom transports, storage backends, or modify any functionality.
+
+### Do I need blockchain/cryptocurrency?
+
+No! Blockchain integration is optional. You can use P2P document signing without any blockchain or crypto knowledge.
 
 ---
 
 ## Call to Action
 
-### Ready to Experience True Digital Freedom?
+### Ready to Build Your Own Signing System?
 
-Join thousands who've already discovered the future of document signing.
+Join the community of developers creating the future of decentralized document signing.
 
-**[Launch Firma-Sign]** **[Learn More]**
+**[Get Started on GitHub]** **[Read Documentation]**
 
-### For Developers
+### Quick Start
 
-Firma-Sign is open source! Contribute to the future of decentralized document signing.
+```bash
+git clone https://github.com/FirmaChain/firma-sign
+cd firma-sign
+pnpm install
+pnpm -F frontend dev
+```
 
-**[View on GitHub]** **[Read Documentation]**
+**[View on GitHub]** **[Join Our Community]**
 
 ---
 
@@ -208,20 +231,20 @@ Firma-Sign is open source! Contribute to the future of decentralized document si
 
 ### One-Liner
 
-"Signing documents the way the internet was meant to work - peer to peer, no gatekeepers."
+"Open-source document signing tool - run locally, own your data, customize everything."
 
 ### Trust Indicators
 
-- Open Source
-- No Vendor Lock-in
+- 100% Open Source (MIT)
+- Self-Hosted & Local
 - Community Driven
-- Blockchain Secured
+- Fully Customizable
 
 ### Social Proof
 
-"Finally, a signing solution that respects user privacy and data ownership. This is what Web3 should be."
+"Finally, a signing tool that gives developers complete control. This is how open-source software should work."
 
-- _Web3 Developer Community_
+- _Open Source Developer Community_
 
 ---
 

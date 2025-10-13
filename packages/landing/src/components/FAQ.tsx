@@ -7,36 +7,36 @@ const FAQ = () => {
 
   const faqs = [
     {
+      question: 'How do I install Firma-Sign?',
+      answer: 'Clone the GitHub repository and run `pnpm install`. Full installation guide is available in the README. You need Node.js 18+ and pnpm package manager. Run `pnpm -F frontend dev` to start the frontend application locally.',
+    },
+    {
       question: 'Is it really free?',
-      answer: 'Yes! The core P2P signing functionality will always be free. Premium features like advanced workflows may have optional fees in the future, but basic document signing between peers will remain free forever.',
+      answer: 'Yes! It\'s 100% open source (MIT license). Free to use, modify, and deploy forever. No hidden costs, no premium tiers, no subscriptions. Download the code and run it on your own infrastructure.',
     },
     {
-      question: 'Do I need cryptocurrency?',
-      answer: "No! While blockchain certifies your signatures, you don't need to own or understand cryptocurrency to use Firma-Sign. The blockchain verification happens automatically in the background.",
+      question: 'What are the system requirements?',
+      answer: 'Node.js 18 or higher, pnpm package manager, and a modern browser (Chrome, Firefox, or Safari). Works on Windows, macOS, and Linux. The server package is optional - frontend can run standalone.',
     },
     {
-      question: 'Is it legally binding?',
-      answer: 'Digital signatures are legally recognized in most countries under laws like eIDAS (EU), ESIGN Act (US), and similar regulations worldwide. Blockchain certification adds an extra layer of verification and proof.',
+      question: 'Is there a hosted version available?',
+      answer: 'No. Firma-Sign is designed to run locally on your infrastructure. This ensures complete data ownership and privacy. You control where it runs, how it\'s configured, and who has access.',
     },
     {
-      question: "What if the recipient isn't online?",
-      answer: 'Documents can be shared through multiple methods. If direct P2P connection is not available, you can use fallback methods like email links or temporary encrypted storage until the recipient comes online.',
+      question: 'Can I customize it for my needs?',
+      answer: 'Absolutely! The modular architecture allows you to add custom transports, storage backends, or modify any functionality. Fork the repo, make your changes, and deploy your own version.',
+    },
+    {
+      question: 'Do I need blockchain/cryptocurrency?',
+      answer: 'No! Blockchain integration is optional. You can use P2P document signing without any blockchain or crypto knowledge. The optional FirmaChain integration provides tamper-proof certification when you need it.',
     },
     {
       question: 'How secure is it?',
-      answer: 'Extremely secure. Documents are encrypted end-to-end during transfer, and only signature hashes are stored on the blockchain. Your actual documents never leave your control or get stored on any central server.',
-    },
-    {
-      question: 'What file formats are supported?',
-      answer: 'Currently, Firma-Sign supports PDF documents, which is the standard for legal documents. Support for other formats like Word documents and images is planned for future updates.',
-    },
-    {
-      question: 'Can I use it for my business?',
-      answer: 'Absolutely! Firma-Sign is perfect for businesses of all sizes. From startups to enterprises, the decentralized nature ensures your business documents remain under your control.',
+      answer: 'Extremely secure. All code is open source and auditable. Documents are encrypted end-to-end during P2P transfer. Everything runs locally on your machine - no data sent to third-party servers.',
     },
     {
       question: 'How does it compare to DocuSign or Adobe Sign?',
-      answer: 'Unlike traditional services, Firma-Sign is decentralized, has no vendor lock-in, and the core features are free forever. Your documents transfer directly between parties without being stored on corporate servers.',
+      answer: 'Unlike those services, Firma-Sign is a self-hosted tool, not a SaaS platform. You run it yourself, own all the code and data, pay nothing, and can customize everything. Trade-off: you need to set it up yourself.',
     },
   ];
 
@@ -45,7 +45,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="section bg-dark-bg-secondary">
+    <section id="faq" className="section bg-dark-bg-secondary">
       <div className="section-container max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -114,15 +114,25 @@ const FAQ = () => {
           className="text-center mt-16"
         >
           <p className="text-text-secondary mb-6">
-            Still have questions? We're here to help!
+            Need help getting started? Check out our resources!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="btn btn-secondary">
+            <a
+              href="https://github.com/FirmaChain/firma-sign#readme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+            >
               Read Documentation
-            </button>
-            <button className="btn btn-ghost">
-              Join Community
-            </button>
+            </a>
+            <a
+              href="https://github.com/FirmaChain/firma-sign/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost"
+            >
+              GitHub Issues
+            </a>
           </div>
         </motion.div>
       </div>

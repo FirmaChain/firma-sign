@@ -50,7 +50,7 @@ const UseCases = () => {
   ];
 
   return (
-    <section className="section">
+    <section id="use-cases" className="section">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -97,30 +97,6 @@ const UseCases = () => {
         </div>
 
         {/* Success Stories */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-          viewport={{ once: true }}
-          className="mt-20 text-center"
-        >
-          <div className="inline-flex items-center gap-8 flex-wrap justify-center">
-            <div>
-              <p className="text-4xl font-bold text-gradient">10,000+</p>
-              <p className="text-text-secondary">Documents Signed</p>
-            </div>
-            <div className="w-px h-12 bg-white/10 hidden sm:block" />
-            <div>
-              <p className="text-4xl font-bold text-gradient">50+</p>
-              <p className="text-text-secondary">Countries</p>
-            </div>
-            <div className="w-px h-12 bg-white/10 hidden sm:block" />
-            <div>
-              <p className="text-4xl font-bold text-gradient">100%</p>
-              <p className="text-text-secondary">Decentralized</p>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

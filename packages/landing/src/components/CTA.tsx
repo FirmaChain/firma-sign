@@ -27,8 +27,8 @@ const CTA = () => {
               viewport={{ once: true }}
               className="text-4xl md:text-5xl lg:text-6xl font-bold font-metropolis mb-6"
             >
-              Ready to Experience
-              <span className="block text-gradient mt-2">True Digital Freedom?</span>
+              Ready to Build
+              <span className="block text-gradient mt-2">Your Own Signing System?</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0 }}
@@ -37,7 +37,7 @@ const CTA = () => {
               viewport={{ once: true }}
               className="text-xl text-text-secondary max-w-2xl mx-auto mb-12"
             >
-              Join thousands who've already discovered the future of document signing.
+              Join the community of developers creating the future of decentralized document signing.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -46,17 +46,28 @@ const CTA = () => {
               viewport={{ once: true }}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center"
             >
-              <button className="btn btn-primary text-lg px-10 py-4 group animate-pulse-glow">
-                Launch Firma-Sign
+              <a
+                href="https://github.com/FirmaChain/firma-sign"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary text-lg px-10 py-4 group animate-pulse-glow"
+              >
+                <Github className="mr-2 w-5 h-5" />
+                Get Started on GitHub
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button className="btn btn-secondary text-lg px-10 py-4">
-                Learn More
-              </button>
+              </a>
+              <a
+                href="https://github.com/FirmaChain/firma-sign#readme"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary text-lg px-10 py-4"
+              >
+                Read Documentation
+              </a>
             </motion.div>
           </div>
 
-          {/* Developer CTA */}
+          {/* Quick Start Instructions */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -64,13 +75,21 @@ const CTA = () => {
             viewport={{ once: true }}
             className="py-12 px-8 bg-dark-bg-tertiary rounded-2xl"
           >
-            <h3 className="text-2xl font-bold mb-4">For Developers</h3>
-            <p className="text-text-secondary mb-8 max-w-2xl mx-auto">
-              Firma-Sign is open source! Contribute to the future of decentralized document signing.
+            <h3 className="text-2xl font-bold mb-4">Quick Start</h3>
+            <p className="text-text-secondary mb-6 max-w-2xl mx-auto">
+              Get Firma-Sign running on your machine in minutes:
             </p>
+            <div className="bg-dark-bg-primary rounded-lg p-6 mb-8 text-left max-w-2xl mx-auto">
+              <pre className="text-sm text-text-primary overflow-x-auto">
+                <code>{`git clone https://github.com/FirmaChain/firma-sign
+cd firma-sign
+pnpm install
+pnpm dev`}</code>
+              </pre>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="https://github.com/firmachain/firma-sign"
+                href="https://github.com/FirmaChain/firma-sign"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-ghost inline-flex items-center"
@@ -79,11 +98,13 @@ const CTA = () => {
                 View on GitHub
               </a>
               <a
-                href="#"
+                href="https://github.com/FirmaChain/firma-sign#readme"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-ghost inline-flex items-center"
               >
                 <BookOpen className="w-5 h-5 mr-2" />
-                Read Documentation
+                Full Documentation
               </a>
             </div>
           </motion.div>
@@ -96,20 +117,19 @@ const CTA = () => {
             viewport={{ once: true }}
             className="mt-20"
           >
-            <p className="text-text-tertiary mb-8">Trusted by innovators worldwide</p>
+            <p className="text-text-tertiary mb-8">Built by developers, for developers</p>
             <div className="flex flex-wrap justify-center gap-12 items-center opacity-50">
-              {/* Placeholder for logos */}
               <div className="text-text-secondary">
-                <p className="text-sm">Open Source</p>
+                <p className="text-sm">100% Open Source</p>
+              </div>
+              <div className="text-text-secondary">
+                <p className="text-sm">Self-Hosted</p>
               </div>
               <div className="text-text-secondary">
                 <p className="text-sm">Community Driven</p>
               </div>
               <div className="text-text-secondary">
-                <p className="text-sm">Blockchain Secured</p>
-              </div>
-              <div className="text-text-secondary">
-                <p className="text-sm">Privacy First</p>
+                <p className="text-sm">MIT Licensed</p>
               </div>
             </div>
           </motion.div>
@@ -123,11 +143,11 @@ const CTA = () => {
             className="mt-20 max-w-3xl mx-auto"
           >
             <blockquote className="text-xl text-text-secondary italic">
-              "Finally, a signing solution that respects user privacy and data ownership.
-              This is what Web3 should be - practical, accessible, and truly decentralized."
+              "Finally, a signing tool that gives developers complete control.
+              This is how open-source software should work - transparent, customizable, and truly free."
             </blockquote>
             <p className="mt-4 text-brand-primary font-semibold">
-              - Web3 Developer Community
+              - Open Source Developer Community
             </p>
           </motion.div>
         </motion.div>

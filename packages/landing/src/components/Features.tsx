@@ -63,7 +63,7 @@ const Features = () => {
   };
 
   return (
-    <section className="section bg-dark-bg-secondary">
+    <section id="features" className="section bg-dark-bg-secondary">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -120,11 +120,11 @@ const Features = () => {
           className="text-center mt-16"
         >
           <p className="text-text-secondary mb-6">
-            Ready to experience true digital freedom?
+            Need help with implementation or custom integration?
           </p>
-          <button className="btn btn-primary">
-            Try Firma-Sign Now
-          </button>
+          <a href="#vendors" className="btn btn-primary">
+            Contact Vendor Companies
+          </a>
         </motion.div>
       </div>
     </section>

@@ -3,7 +3,7 @@ import { Network, Shield, Eye } from 'lucide-react';
 
 const Technology = () => {
   return (
-    <section className="section bg-dark-bg-secondary">
+    <section id="technology" className="section bg-dark-bg-secondary">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -124,43 +124,6 @@ const Technology = () => {
             </div>
           </motion.div>
         </div>
-
-        {/* Visual Diagram */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-          viewport={{ once: true }}
-          className="mt-16 p-8 bg-dark-bg-tertiary rounded-2xl"
-        >
-          <h3 className="text-2xl font-bold text-center mb-8">The Complete Flow</h3>
-          <div className="grid md:grid-cols-5 gap-4 items-center">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-2xl font-bold">
-                1
-              </div>
-              <p className="text-sm">Upload Document</p>
-            </div>
-            <div className="hidden md:block">
-              <div className="h-0.5 bg-gradient-to-r from-blue-500 to-brand-primary" />
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center text-2xl font-bold">
-                2
-              </div>
-              <p className="text-sm">P2P Transfer</p>
-            </div>
-            <div className="hidden md:block">
-              <div className="h-0.5 bg-gradient-to-r from-brand-secondary to-green-500" />
-            </div>
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-2xl font-bold">
-                3
-              </div>
-              <p className="text-sm">Blockchain Certify</p>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

@@ -17,7 +17,7 @@ const Problem = () => {
   ];
 
   return (
-    <section className="section bg-dark-bg-secondary">
+    <section id="problem" className="section bg-dark-bg-secondary">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

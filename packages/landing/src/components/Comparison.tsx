@@ -46,7 +46,7 @@ const Comparison = () => {
   ];
 
   return (
-    <section className="section">
+    <section id="comparison" className="section">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -64,12 +64,13 @@ const Comparison = () => {
           </p>
         </motion.div>
 
+        {/* Desktop Table View */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="overflow-x-auto"
+          className="hidden lg:block"
         >
           <table className="w-full">
             <thead>
@@ -115,6 +116,42 @@ const Comparison = () => {
             </tbody>
           </table>
         </motion.div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-6">
+          {comparisons.map((row, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.5 }}
+              viewport={{ once: true }}
+              className="card"
+            >
+              <h3 className="text-lg font-bold mb-4 text-brand-primary">{row.feature}</h3>
+
+              <div className="space-y-3">
+                {/* Traditional */}
+                <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <span className="text-xs text-red-400 font-semibold">Traditional</span>
+                  </div>
+                  <p className="text-sm text-red-400">{row.traditional}</p>
+                </div>
+
+                {/* Firma-Sign */}
+                <div className="p-3 bg-brand-primary/5 border border-brand-primary/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="w-4 h-4 text-brand-primary flex-shrink-0" />
+                    <span className="text-xs text-brand-primary font-semibold">Firma-Sign</span>
+                  </div>
+                  <p className="text-sm text-brand-primary font-medium">{row.firmaSign}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
 
         {/* Summary Cards */}
         <motion.div

@@ -3,7 +3,7 @@ import { ArrowRight, Github } from 'lucide-react';
 
 const Hero = () => {
   return (
-    <section className="min-h-screen flex items-center justify-center relative section">
+    <section id="hero" className="min-h-screen flex items-center justify-center relative section">
       <div className="section-container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -18,7 +18,7 @@ const Hero = () => {
             transition={{ delay: 0.2, duration: 0.8 }}
             className="text-brand-primary font-semibold text-lg mb-6"
           >
-            Sign Documents. Peer-to-Peer. No Middleman.
+            Open Source. Self-Hosted. Truly Yours.
           </motion.p>
 
           {/* Main Headline */}
@@ -28,8 +28,8 @@ const Hero = () => {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="text-5xl md:text-7xl lg:text-8xl font-bold font-metropolis mb-6 leading-tight"
           >
-            Transform Document Signing
-            <span className="block text-gradient mt-2">with True Web3 Technology</span>
+            Build Your Own
+            <span className="block text-gradient mt-2 pb-2">Document Signing System</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -39,8 +39,8 @@ const Hero = () => {
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-xl md:text-2xl text-text-secondary mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            Experience the future of document signing - directly between peers,
-            secured by blockchain, owned by you.
+            A free, open-source tool for peer-to-peer document signing.
+            Run it locally, control your data, and customize everything.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -50,13 +50,24 @@ const Hero = () => {
             transition={{ delay: 0.7, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <button className="btn btn-primary text-lg px-8 py-4 group">
-              Start Signing for Free
+            <a
+              href="https://github.com/FirmaChain/firma-sign"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary text-lg px-8 py-4 group"
+            >
+              <Github className="mr-2 w-5 h-5" />
+              Get Started on GitHub
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button className="btn btn-secondary text-lg px-8 py-4">
-              See How It Works
-            </button>
+            </a>
+            <a
+              href="https://github.com/FirmaChain/firma-sign#readme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary text-lg px-8 py-4"
+            >
+              View Documentation
+            </a>
           </motion.div>
 
           {/* Trust Indicators */}
@@ -68,19 +79,19 @@ const Hero = () => {
           >
             <div className="flex items-center gap-2">
               <Github className="w-5 h-5" />
-              <span>Open Source</span>
+              <span>100% Open Source</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span>No Vendor Lock-in</span>
+              <span>Self-Hosted</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-brand-primary">∞</span>
-              <span>Forever Free Core</span>
+              <span className="text-brand-primary">💻</span>
+              <span>Runs Locally</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-brand-primary">🔒</span>
-              <span>Blockchain Secured</span>
+              <span className="text-brand-primary">🔧</span>
+              <span>Fully Customizable</span>
             </div>
           </motion.div>
         </motion.div>
