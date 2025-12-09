@@ -1,5 +1,7 @@
 # Firma-Sign
 
+<img width="550px" height="auto" alt="firmasign_banner" src="https://github.com/user-attachments/assets/c3203fe9-c046-4aaf-85ff-860c12e7268d" />
+
 > **Zero‑friction digital signatures — anywhere, any device, no lock‑in.**  
 > Decentralized document signing with multi-protocol transport support.
 
